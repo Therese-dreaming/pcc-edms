@@ -1,0 +1,1946 @@
+{
+  "meta": {
+    "name": "PCC-EDMS Knowledge Graph",
+    "version": "1.2",
+    "generated": "2026-07-02",
+    "description": "Structured entity/relationship graph of PCC-EDMS covering DPO (DPREQ, DPNDA) and ORD/REC (REMIS, incl. Incident Reporting) modules, shared infrastructure, and reporting. Source of truth for cross-module relationships; update this file whenever a module doc (0.x-9.x) changes structurally.",
+    "sourceFiles": "docs/0.1-*.md through docs/9.0-*.md, docs/REMIS_Functional_Requirements_Specification.md, docs/0.4-dpo-ethics-integration.md, reqs/DPO EFORM 1/2/3/5 SAMPLE.pdf",
+    "updateProcess": "See docs/knowledge-graph.md for the maintenance procedure.",
+    "nodeCount": 88,
+    "edgeCount": 184
+  },
+  "nodes": [
+    {
+      "id": "office.dpo",
+      "type": "Office",
+      "label": "Data Privacy Office",
+      "properties": {
+        "sourceFile": "0.1-purpose-and-scope.md"
+      }
+    },
+    {
+      "id": "office.ord",
+      "type": "Office",
+      "label": "Office of Research and Development",
+      "properties": {
+        "sourceFile": "0.1-purpose-and-scope.md"
+      }
+    },
+    {
+      "id": "office.rec",
+      "type": "Office",
+      "label": "Research Ethics Committee",
+      "properties": {
+        "note": "Sub-unit of ORD",
+        "sourceFile": "0.1-purpose-and-scope.md"
+      }
+    },
+    {
+      "id": "module.dpreq",
+      "type": "Module",
+      "label": "DPREQ",
+      "properties": {
+        "code": "Module 1",
+        "sourceFile": "1.1-dpreq-application-form.md"
+      }
+    },
+    {
+      "id": "module.dpnda",
+      "type": "Module",
+      "label": "DPNDA",
+      "properties": {
+        "code": "Module 2",
+        "sourceFile": "2.1-dpnda-nda-template.md"
+      }
+    },
+    {
+      "id": "module.remis",
+      "type": "Module",
+      "label": "REMIS",
+      "properties": {
+        "code": "Module 3",
+        "sourceFile": "3.1-remis-application-form.md"
+      }
+    },
+    {
+      "id": "module.remis_incident",
+      "type": "Module",
+      "label": "REMIS Incident Reporting",
+      "properties": {
+        "code": "Module 3.5",
+        "sourceFile": "3.5-remis-incident-reporting.md"
+      }
+    },
+    {
+      "id": "module.shared_infra",
+      "type": "Module",
+      "label": "Shared Infrastructure",
+      "properties": {
+        "code": "Module 4.x",
+        "sourceFile": "4.1-user-roles-permissions.md"
+      }
+    },
+    {
+      "id": "module.reporting",
+      "type": "Module",
+      "label": "Reporting",
+      "properties": {
+        "code": "Module 5.x",
+        "sourceFile": "5.1-reports-shared.md"
+      }
+    },
+    {
+      "id": "role.researcher_internal",
+      "type": "Role",
+      "label": "Researcher (Internal)",
+      "properties": {
+        "side": "DPO",
+        "status": "ASSUMPTION",
+        "sourceFile": "0.2-stakeholders-and-roles.md"
+      }
+    },
+    {
+      "id": "role.researcher_external",
+      "type": "Role",
+      "label": "Researcher (External)",
+      "properties": {
+        "side": "DPO",
+        "status": "ASSUMPTION",
+        "sourceFile": "0.2-stakeholders-and-roles.md"
+      }
+    },
+    {
+      "id": "role.ojt_internal",
+      "type": "Role",
+      "label": "OJT/Trainee (Internal)",
+      "properties": {
+        "side": "DPO",
+        "status": "ASSUMPTION",
+        "sourceFile": "0.2-stakeholders-and-roles.md"
+      }
+    },
+    {
+      "id": "role.ojt_external",
+      "type": "Role",
+      "label": "OJT/Trainee (External)",
+      "properties": {
+        "side": "DPO",
+        "status": "ASSUMPTION",
+        "sourceFile": "0.2-stakeholders-and-roles.md"
+      }
+    },
+    {
+      "id": "role.student_teacher",
+      "type": "Role",
+      "label": "Student Teacher",
+      "properties": {
+        "side": "DPO",
+        "status": "ASSUMPTION",
+        "sourceFile": "0.2-stakeholders-and-roles.md"
+      }
+    },
+    {
+      "id": "role.dept_coordinator",
+      "type": "Role",
+      "label": "Department/Office Coordinator",
+      "properties": {
+        "side": "DPO",
+        "status": "ASSUMPTION",
+        "sourceFile": "0.2-stakeholders-and-roles.md"
+      }
+    },
+    {
+      "id": "role.dpo_staff",
+      "type": "Role",
+      "label": "DPO Staff/Reviewer",
+      "properties": {
+        "side": "DPO",
+        "status": "ASSUMPTION",
+        "sourceFile": "0.2-stakeholders-and-roles.md"
+      }
+    },
+    {
+      "id": "role.dpo_approver",
+      "type": "Role",
+      "label": "DPO Approver/Head",
+      "properties": {
+        "side": "DPO",
+        "status": "ASSUMPTION",
+        "sourceFile": "0.2-stakeholders-and-roles.md"
+      }
+    },
+    {
+      "id": "role.remis_researcher",
+      "type": "Role",
+      "label": "Researcher (Student/Faculty/Academic Non-Teaching/Non-teaching Support)",
+      "properties": {
+        "side": "REMIS",
+        "status": "CONFIRMED",
+        "source": "FRS \u00a7II",
+        "sourceFile": "0.2-stakeholders-and-roles.md"
+      }
+    },
+    {
+      "id": "role.adviser",
+      "type": "Role",
+      "label": "Adviser",
+      "properties": {
+        "side": "REMIS",
+        "status": "CONFIRMED",
+        "source": "FRS \u00a7II",
+        "sourceFile": "0.2-stakeholders-and-roles.md"
+      }
+    },
+    {
+      "id": "role.program_head",
+      "type": "Role",
+      "label": "Program Head",
+      "properties": {
+        "side": "REMIS",
+        "status": "CONFIRMED",
+        "source": "FRS \u00a7II",
+        "sourceFile": "0.2-stakeholders-and-roles.md"
+      }
+    },
+    {
+      "id": "role.dean",
+      "type": "Role",
+      "label": "Dean/Academic Head",
+      "properties": {
+        "side": "REMIS",
+        "status": "CONFIRMED",
+        "source": "FRS \u00a7II",
+        "sourceFile": "0.2-stakeholders-and-roles.md"
+      }
+    },
+    {
+      "id": "role.ethics_secretariat",
+      "type": "Role",
+      "label": "Ethics Secretariat",
+      "properties": {
+        "side": "REMIS",
+        "status": "CONFIRMED",
+        "source": "FRS \u00a7II",
+        "sourceFile": "0.2-stakeholders-and-roles.md"
+      }
+    },
+    {
+      "id": "role.ethics_reviewer",
+      "type": "Role",
+      "label": "Ethics Reviewer",
+      "properties": {
+        "side": "REMIS",
+        "status": "CONFIRMED",
+        "source": "FRS \u00a7II",
+        "sourceFile": "0.2-stakeholders-and-roles.md"
+      }
+    },
+    {
+      "id": "role.ethics_committee_chair",
+      "type": "Role",
+      "label": "Ethics Committee Chair",
+      "properties": {
+        "side": "REMIS",
+        "status": "CONFIRMED",
+        "source": "FRS \u00a7II",
+        "sourceFile": "0.2-stakeholders-and-roles.md"
+      }
+    },
+    {
+      "id": "role.system_admin",
+      "type": "Role",
+      "label": "System Administrator",
+      "properties": {
+        "side": "Shared",
+        "sourceFile": "0.2-stakeholders-and-roles.md"
+      }
+    },
+    {
+      "id": "entity.research_application",
+      "type": "Entity",
+      "label": "Research Application (Form 1)",
+      "properties": {
+        "sourceFile": "0.4-dpo-ethics-integration.md",
+        "note": "Shared parent record for a single Form 1 submission; dpreq_application and remis_application are its two 1:1 review tracks, converging on one dual-signed clearance certificate."
+      }
+    },
+    {
+      "id": "entity.research_team_nda",
+      "type": "Entity",
+      "label": "Research Team NDA (Form 2)",
+      "properties": {
+        "sourceFile": "2.1-dpnda-nda-template.md",
+        "note": "Distinct from entity.dpnda_record (Form 5, OJT/Trainee NDA) - signed by every research team member, gates the DPO track's Approved status."
+      }
+    },
+    {
+      "id": "entity.dpreq_application",
+      "type": "Entity",
+      "label": "DPREQ Application",
+      "properties": {
+        "sourceFile": "1.1-dpreq-application-form.md"
+      }
+    },
+    {
+      "id": "entity.dpnda_record",
+      "type": "Entity",
+      "label": "DPNDA/NDA Record",
+      "properties": {
+        "sourceFile": "2.1-dpnda-nda-template.md"
+      }
+    },
+    {
+      "id": "entity.placement",
+      "type": "Entity",
+      "label": "Placement Record",
+      "properties": {
+        "sourceFile": "5.3-reports-dpo.md"
+      }
+    },
+    {
+      "id": "entity.ojt_evaluation_report",
+      "type": "Entity",
+      "label": "OJT Evaluation Report",
+      "properties": {
+        "sourceFile": "5.3-reports-dpo.md"
+      }
+    },
+    {
+      "id": "entity.remis_application",
+      "type": "Entity",
+      "label": "REMIS Application",
+      "properties": {
+        "sourceFile": "3.1-remis-application-form.md"
+      }
+    },
+    {
+      "id": "entity.progress_report",
+      "type": "Entity",
+      "label": "Research Progress Report",
+      "properties": {
+        "sourceFile": "3.4-remis-monitoring-archiving.md"
+      }
+    },
+    {
+      "id": "entity.completion_report",
+      "type": "Entity",
+      "label": "Final Ethics Completion Report",
+      "properties": {
+        "sourceFile": "3.4-remis-monitoring-archiving.md"
+      }
+    },
+    {
+      "id": "entity.incident",
+      "type": "Entity",
+      "label": "Incident Record",
+      "properties": {
+        "sourceFile": "3.5-remis-incident-reporting.md"
+      }
+    },
+    {
+      "id": "entity.document",
+      "type": "Entity",
+      "label": "Document",
+      "properties": {
+        "sourceFile": "4.2-file-management-naming.md"
+      }
+    },
+    {
+      "id": "entity.audit_event",
+      "type": "Entity",
+      "label": "Audit Trail Event",
+      "properties": {
+        "sourceFile": "4.4-audit-trail-status-tracking.md"
+      }
+    },
+    {
+      "id": "entity.user_account",
+      "type": "Entity",
+      "label": "User Account",
+      "properties": {
+        "sourceFile": "4.1-user-roles-permissions.md"
+      }
+    },
+    {
+      "id": "entity.notification",
+      "type": "Entity",
+      "label": "Notification",
+      "properties": {
+        "sourceFile": "4.3-esignature-notifications.md"
+      }
+    },
+    {
+      "id": "entity.clearance_certificate_dpreq",
+      "type": "Entity",
+      "label": "Data Privacy Clearance Certificate",
+      "properties": {
+        "sourceFile": "1.1-dpreq-application-form.md"
+      }
+    },
+    {
+      "id": "entity.clearance_certificate_remis",
+      "type": "Entity",
+      "label": "Research Ethics Clearance Certificate",
+      "properties": {
+        "sourceFile": "3.1-remis-application-form.md"
+      }
+    },
+    {
+      "id": "entity.verification_portal_entry",
+      "type": "Entity",
+      "label": "Verification Portal Entry",
+      "properties": {
+        "sourceFile": "3.1-remis-application-form.md"
+      }
+    },
+    {
+      "id": "status.dpreq.draft",
+      "type": "Status",
+      "label": "Draft",
+      "properties": {
+        "module": "dpreq",
+        "sourceFile": "1.2-dpreq-workflow.md"
+      }
+    },
+    {
+      "id": "status.dpreq.submitted",
+      "type": "Status",
+      "label": "Submitted",
+      "properties": {
+        "module": "dpreq",
+        "sourceFile": "1.2-dpreq-workflow.md"
+      }
+    },
+    {
+      "id": "status.dpreq.screening",
+      "type": "Status",
+      "label": "Screening",
+      "properties": {
+        "module": "dpreq",
+        "sourceFile": "1.2-dpreq-workflow.md"
+      }
+    },
+    {
+      "id": "status.dpreq.returned",
+      "type": "Status",
+      "label": "Returned",
+      "properties": {
+        "module": "dpreq",
+        "sourceFile": "1.2-dpreq-workflow.md"
+      }
+    },
+    {
+      "id": "status.dpreq.under_review",
+      "type": "Status",
+      "label": "Under Review",
+      "properties": {
+        "module": "dpreq",
+        "sourceFile": "1.2-dpreq-workflow.md"
+      }
+    },
+    {
+      "id": "status.dpreq.endorsed",
+      "type": "Status",
+      "label": "Endorsed",
+      "properties": {
+        "module": "dpreq",
+        "sourceFile": "1.2-dpreq-workflow.md"
+      }
+    },
+    {
+      "id": "status.dpreq.rejected",
+      "type": "Status",
+      "label": "Rejected",
+      "properties": {
+        "module": "dpreq",
+        "sourceFile": "1.2-dpreq-workflow.md"
+      }
+    },
+    {
+      "id": "status.dpreq.approved",
+      "type": "Status",
+      "label": "Approved",
+      "properties": {
+        "module": "dpreq",
+        "sourceFile": "1.2-dpreq-workflow.md"
+      }
+    },
+    {
+      "id": "status.dpreq.clearance_issued",
+      "type": "Status",
+      "label": "Clearance Issued",
+      "properties": {
+        "module": "dpreq",
+        "sourceFile": "1.2-dpreq-workflow.md"
+      }
+    },
+    {
+      "id": "status.dpnda.draft",
+      "type": "Status",
+      "label": "Draft",
+      "properties": {
+        "module": "dpnda",
+        "sourceFile": "2.2-dpnda-workflow.md"
+      }
+    },
+    {
+      "id": "status.dpnda.sent_for_signing",
+      "type": "Status",
+      "label": "Sent for Signing",
+      "properties": {
+        "module": "dpnda",
+        "sourceFile": "2.2-dpnda-workflow.md"
+      }
+    },
+    {
+      "id": "status.dpnda.trainee_signed",
+      "type": "Status",
+      "label": "Trainee Signed",
+      "properties": {
+        "module": "dpnda",
+        "sourceFile": "2.2-dpnda-workflow.md"
+      }
+    },
+    {
+      "id": "status.dpnda.declined",
+      "type": "Status",
+      "label": "Declined",
+      "properties": {
+        "module": "dpnda",
+        "sourceFile": "2.2-dpnda-workflow.md"
+      }
+    },
+    {
+      "id": "status.dpnda.coordinator_countersigned",
+      "type": "Status",
+      "label": "Coordinator Countersigned",
+      "properties": {
+        "module": "dpnda",
+        "sourceFile": "2.2-dpnda-workflow.md"
+      }
+    },
+    {
+      "id": "status.dpnda.completed_archived",
+      "type": "Status",
+      "label": "Completed/Archived",
+      "properties": {
+        "module": "dpnda",
+        "sourceFile": "2.2-dpnda-workflow.md"
+      }
+    },
+    {
+      "id": "status.remis.draft_submitted",
+      "type": "Status",
+      "label": "Draft Submitted",
+      "properties": {
+        "module": "remis",
+        "sourceFile": "3.3-remis-review-workflow.md"
+      }
+    },
+    {
+      "id": "status.remis.under_endorsement",
+      "type": "Status",
+      "label": "Under Endorsement",
+      "properties": {
+        "module": "remis",
+        "sourceFile": "3.3-remis-review-workflow.md"
+      }
+    },
+    {
+      "id": "status.remis.for_screening",
+      "type": "Status",
+      "label": "For Screening",
+      "properties": {
+        "module": "remis",
+        "sourceFile": "3.3-remis-review-workflow.md"
+      }
+    },
+    {
+      "id": "status.remis.for_revision",
+      "type": "Status",
+      "label": "For Revision",
+      "properties": {
+        "module": "remis",
+        "sourceFile": "3.3-remis-review-workflow.md"
+      }
+    },
+    {
+      "id": "status.remis.for_review",
+      "type": "Status",
+      "label": "For Review",
+      "properties": {
+        "module": "remis",
+        "sourceFile": "3.3-remis-review-workflow.md"
+      }
+    },
+    {
+      "id": "status.remis.approved",
+      "type": "Status",
+      "label": "Approved",
+      "properties": {
+        "module": "remis",
+        "sourceFile": "3.3-remis-review-workflow.md"
+      }
+    },
+    {
+      "id": "status.remis.approved_with_conditions",
+      "type": "Status",
+      "label": "Approved with Conditions",
+      "properties": {
+        "module": "remis",
+        "sourceFile": "3.3-remis-review-workflow.md"
+      }
+    },
+    {
+      "id": "status.remis.deferred",
+      "type": "Status",
+      "label": "Deferred",
+      "properties": {
+        "module": "remis",
+        "sourceFile": "3.3-remis-review-workflow.md"
+      }
+    },
+    {
+      "id": "status.remis.disapproved",
+      "type": "Status",
+      "label": "Disapproved",
+      "properties": {
+        "module": "remis",
+        "sourceFile": "3.3-remis-review-workflow.md"
+      }
+    },
+    {
+      "id": "status.remis.clearance_issued",
+      "type": "Status",
+      "label": "Clearance Issued",
+      "properties": {
+        "module": "remis",
+        "sourceFile": "3.3-remis-review-workflow.md"
+      }
+    },
+    {
+      "id": "status.remis.monitoring",
+      "type": "Status",
+      "label": "Monitoring",
+      "properties": {
+        "module": "remis",
+        "sourceFile": "3.3-remis-review-workflow.md"
+      }
+    },
+    {
+      "id": "status.remis.closed",
+      "type": "Status",
+      "label": "Closed",
+      "properties": {
+        "module": "remis",
+        "sourceFile": "3.3-remis-review-workflow.md"
+      }
+    },
+    {
+      "id": "status.remis.archived",
+      "type": "Status",
+      "label": "Archived",
+      "properties": {
+        "module": "remis",
+        "sourceFile": "3.3-remis-review-workflow.md"
+      }
+    },
+    {
+      "id": "status.incident.reported",
+      "type": "Status",
+      "label": "Reported",
+      "properties": {
+        "module": "incident",
+        "sourceFile": "3.5-remis-incident-reporting.md"
+      }
+    },
+    {
+      "id": "status.incident.under_investigation",
+      "type": "Status",
+      "label": "Under Investigation",
+      "properties": {
+        "module": "incident",
+        "sourceFile": "3.5-remis-incident-reporting.md"
+      }
+    },
+    {
+      "id": "status.incident.corrective_action_in_progress",
+      "type": "Status",
+      "label": "Corrective Action in Progress",
+      "properties": {
+        "module": "incident",
+        "sourceFile": "3.5-remis-incident-reporting.md"
+      }
+    },
+    {
+      "id": "status.incident.resolved",
+      "type": "Status",
+      "label": "Resolved",
+      "properties": {
+        "module": "incident",
+        "sourceFile": "3.5-remis-incident-reporting.md"
+      }
+    },
+    {
+      "id": "status.incident.closed",
+      "type": "Status",
+      "label": "Closed",
+      "properties": {
+        "module": "incident",
+        "sourceFile": "3.5-remis-incident-reporting.md"
+      }
+    },
+    {
+      "id": "report.applications_by_department",
+      "type": "Report",
+      "label": "Applications by Department",
+      "properties": {
+        "sourceFile": "5.1-reports-shared.md"
+      }
+    },
+    {
+      "id": "report.compliance_monitoring",
+      "type": "Report",
+      "label": "Compliance Monitoring Report",
+      "properties": {
+        "sourceFile": "5.1-reports-shared.md"
+      }
+    },
+    {
+      "id": "report.incident_summary",
+      "type": "Report",
+      "label": "Incident Summary",
+      "properties": {
+        "sourceFile": "5.1-reports-shared.md"
+      }
+    },
+    {
+      "id": "report.application_by_risk_level",
+      "type": "Report",
+      "label": "Application by Risk Level",
+      "properties": {
+        "sourceFile": "5.2-reports-ord.md"
+      }
+    },
+    {
+      "id": "report.reviewer_workload",
+      "type": "Report",
+      "label": "Reviewer Workload",
+      "properties": {
+        "sourceFile": "5.2-reports-ord.md"
+      }
+    },
+    {
+      "id": "report.annual_ethics_report",
+      "type": "Report",
+      "label": "Annual Ethics Report",
+      "properties": {
+        "sourceFile": "5.2-reports-ord.md"
+      }
+    },
+    {
+      "id": "report.archive_studies",
+      "type": "Report",
+      "label": "Archive Studies Report",
+      "properties": {
+        "sourceFile": "5.2-reports-ord.md"
+      }
+    },
+    {
+      "id": "report.ndas_per_dept_grade",
+      "type": "Report",
+      "label": "NDAs per Department and Grade Level",
+      "properties": {
+        "sourceFile": "5.3-reports-dpo.md"
+      }
+    },
+    {
+      "id": "report.pending_dpo_approvals",
+      "type": "Report",
+      "label": "Pending DPO Approvals",
+      "properties": {
+        "sourceFile": "5.3-reports-dpo.md"
+      }
+    },
+    {
+      "id": "report.student_teachers_per_grade",
+      "type": "Report",
+      "label": "Student Teachers per Grade/Dept/School",
+      "properties": {
+        "sourceFile": "5.3-reports-dpo.md"
+      }
+    },
+    {
+      "id": "report.ojts_accommodated",
+      "type": "Report",
+      "label": "OJTs Accommodated per Month/Year",
+      "properties": {
+        "sourceFile": "5.3-reports-dpo.md"
+      }
+    },
+    {
+      "id": "report.ojt_whereabouts",
+      "type": "Report",
+      "label": "OJT/Student Teacher Whereabouts",
+      "properties": {
+        "sourceFile": "5.3-reports-dpo.md"
+      }
+    },
+    {
+      "id": "report.ojt_eval_upload_compliance",
+      "type": "Report",
+      "label": "OJT Evaluation Report Upload Compliance",
+      "properties": {
+        "sourceFile": "5.3-reports-dpo.md"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "office.ord::HAS_SUBUNIT::office.rec",
+      "source": "office.ord",
+      "target": "office.rec",
+      "type": "HAS_SUBUNIT"
+    },
+    {
+      "id": "office.dpo::OWNS::module.dpreq",
+      "source": "office.dpo",
+      "target": "module.dpreq",
+      "type": "OWNS"
+    },
+    {
+      "id": "office.dpo::OWNS::module.dpnda",
+      "source": "office.dpo",
+      "target": "module.dpnda",
+      "type": "OWNS"
+    },
+    {
+      "id": "office.rec::OWNS::module.remis",
+      "source": "office.rec",
+      "target": "module.remis",
+      "type": "OWNS"
+    },
+    {
+      "id": "module.remis::HAS_SUBMODULE::module.remis_incident",
+      "source": "module.remis",
+      "target": "module.remis_incident",
+      "type": "HAS_SUBMODULE"
+    },
+    {
+      "id": "office.dpo::NOTIFIED_ON_SUBSET::module.remis_incident",
+      "source": "office.dpo",
+      "target": "module.remis_incident",
+      "type": "NOTIFIED_ON_SUBSET",
+      "properties": {
+        "condition": "incidentType in [Data Breach, Confidentiality Breach]",
+        "sourceFile": "3.5-remis-incident-reporting.md"
+      }
+    },
+    {
+      "id": "role.researcher_internal::OPERATES_IN::module.dpreq",
+      "source": "role.researcher_internal",
+      "target": "module.dpreq",
+      "type": "OPERATES_IN"
+    },
+    {
+      "id": "role.researcher_external::OPERATES_IN::module.dpreq",
+      "source": "role.researcher_external",
+      "target": "module.dpreq",
+      "type": "OPERATES_IN"
+    },
+    {
+      "id": "role.ojt_internal::OPERATES_IN::module.dpnda",
+      "source": "role.ojt_internal",
+      "target": "module.dpnda",
+      "type": "OPERATES_IN"
+    },
+    {
+      "id": "role.ojt_external::OPERATES_IN::module.dpnda",
+      "source": "role.ojt_external",
+      "target": "module.dpnda",
+      "type": "OPERATES_IN"
+    },
+    {
+      "id": "role.student_teacher::OPERATES_IN::module.dpnda",
+      "source": "role.student_teacher",
+      "target": "module.dpnda",
+      "type": "OPERATES_IN"
+    },
+    {
+      "id": "role.dept_coordinator::OPERATES_IN::module.dpnda",
+      "source": "role.dept_coordinator",
+      "target": "module.dpnda",
+      "type": "OPERATES_IN"
+    },
+    {
+      "id": "role.dpo_staff::OPERATES_IN::module.dpreq",
+      "source": "role.dpo_staff",
+      "target": "module.dpreq",
+      "type": "OPERATES_IN"
+    },
+    {
+      "id": "role.dpo_staff::OPERATES_IN::module.dpnda",
+      "source": "role.dpo_staff",
+      "target": "module.dpnda",
+      "type": "OPERATES_IN"
+    },
+    {
+      "id": "role.dpo_approver::OPERATES_IN::module.dpreq",
+      "source": "role.dpo_approver",
+      "target": "module.dpreq",
+      "type": "OPERATES_IN"
+    },
+    {
+      "id": "role.remis_researcher::OPERATES_IN::module.remis",
+      "source": "role.remis_researcher",
+      "target": "module.remis",
+      "type": "OPERATES_IN"
+    },
+    {
+      "id": "role.adviser::OPERATES_IN::module.remis",
+      "source": "role.adviser",
+      "target": "module.remis",
+      "type": "OPERATES_IN"
+    },
+    {
+      "id": "role.program_head::OPERATES_IN::module.remis",
+      "source": "role.program_head",
+      "target": "module.remis",
+      "type": "OPERATES_IN"
+    },
+    {
+      "id": "role.dean::OPERATES_IN::module.remis",
+      "source": "role.dean",
+      "target": "module.remis",
+      "type": "OPERATES_IN"
+    },
+    {
+      "id": "role.ethics_secretariat::OPERATES_IN::module.remis",
+      "source": "role.ethics_secretariat",
+      "target": "module.remis",
+      "type": "OPERATES_IN"
+    },
+    {
+      "id": "role.ethics_reviewer::OPERATES_IN::module.remis",
+      "source": "role.ethics_reviewer",
+      "target": "module.remis",
+      "type": "OPERATES_IN"
+    },
+    {
+      "id": "role.ethics_committee_chair::OPERATES_IN::module.remis",
+      "source": "role.ethics_committee_chair",
+      "target": "module.remis",
+      "type": "OPERATES_IN"
+    },
+    {
+      "id": "role.system_admin::OPERATES_IN::module.shared_infra",
+      "source": "role.system_admin",
+      "target": "module.shared_infra",
+      "type": "OPERATES_IN"
+    },
+    {
+      "id": "module.dpreq::MANAGES::entity.dpreq_application",
+      "source": "module.dpreq",
+      "target": "entity.dpreq_application",
+      "type": "MANAGES"
+    },
+    {
+      "id": "module.dpnda::MANAGES::entity.dpnda_record",
+      "source": "module.dpnda",
+      "target": "entity.dpnda_record",
+      "type": "MANAGES"
+    },
+    {
+      "id": "module.dpnda::MANAGES::entity.placement",
+      "source": "module.dpnda",
+      "target": "entity.placement",
+      "type": "MANAGES"
+    },
+    {
+      "id": "module.dpnda::MANAGES::entity.ojt_evaluation_report",
+      "source": "module.dpnda",
+      "target": "entity.ojt_evaluation_report",
+      "type": "MANAGES"
+    },
+    {
+      "id": "module.remis::MANAGES::entity.remis_application",
+      "source": "module.remis",
+      "target": "entity.remis_application",
+      "type": "MANAGES"
+    },
+    {
+      "id": "module.remis::MANAGES::entity.progress_report",
+      "source": "module.remis",
+      "target": "entity.progress_report",
+      "type": "MANAGES"
+    },
+    {
+      "id": "module.remis::MANAGES::entity.completion_report",
+      "source": "module.remis",
+      "target": "entity.completion_report",
+      "type": "MANAGES"
+    },
+    {
+      "id": "module.remis_incident::MANAGES::entity.incident",
+      "source": "module.remis_incident",
+      "target": "entity.incident",
+      "type": "MANAGES"
+    },
+    {
+      "id": "module.shared_infra::MANAGES::entity.document",
+      "source": "module.shared_infra",
+      "target": "entity.document",
+      "type": "MANAGES"
+    },
+    {
+      "id": "module.shared_infra::MANAGES::entity.audit_event",
+      "source": "module.shared_infra",
+      "target": "entity.audit_event",
+      "type": "MANAGES"
+    },
+    {
+      "id": "module.shared_infra::MANAGES::entity.user_account",
+      "source": "module.shared_infra",
+      "target": "entity.user_account",
+      "type": "MANAGES"
+    },
+    {
+      "id": "module.shared_infra::MANAGES::entity.notification",
+      "source": "module.shared_infra",
+      "target": "entity.notification",
+      "type": "MANAGES"
+    },
+    {
+      "id": "module.dpreq::MANAGES::entity.clearance_certificate_dpreq",
+      "source": "module.dpreq",
+      "target": "entity.clearance_certificate_dpreq",
+      "type": "MANAGES"
+    },
+    {
+      "id": "module.remis::MANAGES::entity.clearance_certificate_remis",
+      "source": "module.remis",
+      "target": "entity.clearance_certificate_remis",
+      "type": "MANAGES"
+    },
+    {
+      "id": "module.shared_infra::MANAGES::entity.verification_portal_entry",
+      "source": "module.shared_infra",
+      "target": "entity.verification_portal_entry",
+      "type": "MANAGES"
+    },
+    {
+      "id": "entity.dpnda_record::LINKED_TO::entity.placement",
+      "source": "entity.dpnda_record",
+      "target": "entity.placement",
+      "type": "LINKED_TO",
+      "properties": {
+        "cardinality": "1:1 or 1:many",
+        "note": "Recommended per 5.3-reports-dpo.md data model note"
+      }
+    },
+    {
+      "id": "entity.placement::LINKED_TO::entity.ojt_evaluation_report",
+      "source": "entity.placement",
+      "target": "entity.ojt_evaluation_report",
+      "type": "LINKED_TO"
+    },
+    {
+      "id": "entity.remis_application::HAS_MANY::entity.progress_report",
+      "source": "entity.remis_application",
+      "target": "entity.progress_report",
+      "type": "HAS_MANY",
+      "properties": {
+        "duringStatus": "Monitoring"
+      }
+    },
+    {
+      "id": "entity.remis_application::HAS_ONE::entity.completion_report",
+      "source": "entity.remis_application",
+      "target": "entity.completion_report",
+      "type": "HAS_ONE"
+    },
+    {
+      "id": "entity.remis_application::HAS_MANY::entity.incident",
+      "source": "entity.remis_application",
+      "target": "entity.incident",
+      "type": "HAS_MANY",
+      "properties": {
+        "note": "Incident may reference an application without pausing it by default"
+      }
+    },
+    {
+      "id": "entity.incident::RELATES_TO::entity.remis_application",
+      "source": "entity.incident",
+      "target": "entity.remis_application",
+      "type": "RELATES_TO"
+    },
+    {
+      "id": "entity.progress_report::MAY_REFERENCE::entity.incident",
+      "source": "entity.progress_report",
+      "target": "entity.incident",
+      "type": "MAY_REFERENCE"
+    },
+    {
+      "id": "entity.research_application::HAS_ONE::entity.dpreq_application",
+      "source": "entity.research_application",
+      "target": "entity.dpreq_application",
+      "type": "HAS_ONE",
+      "properties": {
+        "note": "The DPO track of this shared application, see 0.4-dpo-ethics-integration.md"
+      }
+    },
+    {
+      "id": "entity.research_application::HAS_ONE::entity.remis_application",
+      "source": "entity.research_application",
+      "target": "entity.remis_application",
+      "type": "HAS_ONE",
+      "properties": {
+        "note": "The Ethics track of this shared application, see 0.4-dpo-ethics-integration.md"
+      }
+    },
+    {
+      "id": "entity.research_application::HAS_ONE::entity.research_team_nda",
+      "source": "entity.research_application",
+      "target": "entity.research_team_nda",
+      "type": "HAS_ONE",
+      "properties": {
+        "note": "Form 2 - all team members must sign before the DPO track can reach Approved"
+      }
+    },
+    {
+      "id": "entity.dpreq_application::GENERATES::entity.clearance_certificate_dpreq",
+      "source": "entity.dpreq_application",
+      "target": "entity.clearance_certificate_dpreq",
+      "type": "GENERATES",
+      "properties": {
+        "onStatus": "Approved",
+        "note": "This is the DPO half-signature on the joint certificate, see the joint-release edge below"
+      }
+    },
+    {
+      "id": "entity.remis_application::GENERATES::entity.clearance_certificate_remis",
+      "source": "entity.remis_application",
+      "target": "entity.clearance_certificate_remis",
+      "type": "GENERATES",
+      "properties": {
+        "onStatus": "Approved/Approved with Conditions",
+        "note": "This is the Ethics half-signature on the joint certificate, see the joint-release edge below"
+      }
+    },
+    {
+      "id": "entity.clearance_certificate_dpreq::CO_RELEASES_WITH::entity.clearance_certificate_remis",
+      "source": "entity.clearance_certificate_dpreq",
+      "target": "entity.clearance_certificate_remis",
+      "type": "CO_RELEASES_WITH",
+      "properties": {
+        "note": "Form 3 is one physical certificate (system-design.md clearance_certificates row, keyed to entity.research_application) requiring both signatures before issuance/download - modeled here as two GENERATES edges plus this joint-release constraint rather than merging the two certificate nodes, to preserve existing EXPOSES/LOGS_TO edges on each.",
+        "sourceFile": "0.4-dpo-ethics-integration.md"
+      }
+    },
+    {
+      "id": "entity.clearance_certificate_dpreq::EXPOSES::entity.verification_portal_entry",
+      "source": "entity.clearance_certificate_dpreq",
+      "target": "entity.verification_portal_entry",
+      "type": "EXPOSES"
+    },
+    {
+      "id": "entity.clearance_certificate_remis::EXPOSES::entity.verification_portal_entry",
+      "source": "entity.clearance_certificate_remis",
+      "target": "entity.verification_portal_entry",
+      "type": "EXPOSES"
+    },
+    {
+      "id": "entity.dpreq_application::ATTACHES::entity.document",
+      "source": "entity.dpreq_application",
+      "target": "entity.document",
+      "type": "ATTACHES"
+    },
+    {
+      "id": "entity.dpreq_application::LOGS_TO::entity.audit_event",
+      "source": "entity.dpreq_application",
+      "target": "entity.audit_event",
+      "type": "LOGS_TO"
+    },
+    {
+      "id": "entity.dpnda_record::ATTACHES::entity.document",
+      "source": "entity.dpnda_record",
+      "target": "entity.document",
+      "type": "ATTACHES"
+    },
+    {
+      "id": "entity.dpnda_record::LOGS_TO::entity.audit_event",
+      "source": "entity.dpnda_record",
+      "target": "entity.audit_event",
+      "type": "LOGS_TO"
+    },
+    {
+      "id": "entity.placement::ATTACHES::entity.document",
+      "source": "entity.placement",
+      "target": "entity.document",
+      "type": "ATTACHES"
+    },
+    {
+      "id": "entity.placement::LOGS_TO::entity.audit_event",
+      "source": "entity.placement",
+      "target": "entity.audit_event",
+      "type": "LOGS_TO"
+    },
+    {
+      "id": "entity.ojt_evaluation_report::ATTACHES::entity.document",
+      "source": "entity.ojt_evaluation_report",
+      "target": "entity.document",
+      "type": "ATTACHES"
+    },
+    {
+      "id": "entity.ojt_evaluation_report::LOGS_TO::entity.audit_event",
+      "source": "entity.ojt_evaluation_report",
+      "target": "entity.audit_event",
+      "type": "LOGS_TO"
+    },
+    {
+      "id": "entity.remis_application::ATTACHES::entity.document",
+      "source": "entity.remis_application",
+      "target": "entity.document",
+      "type": "ATTACHES"
+    },
+    {
+      "id": "entity.remis_application::LOGS_TO::entity.audit_event",
+      "source": "entity.remis_application",
+      "target": "entity.audit_event",
+      "type": "LOGS_TO"
+    },
+    {
+      "id": "entity.progress_report::ATTACHES::entity.document",
+      "source": "entity.progress_report",
+      "target": "entity.document",
+      "type": "ATTACHES"
+    },
+    {
+      "id": "entity.progress_report::LOGS_TO::entity.audit_event",
+      "source": "entity.progress_report",
+      "target": "entity.audit_event",
+      "type": "LOGS_TO"
+    },
+    {
+      "id": "entity.completion_report::ATTACHES::entity.document",
+      "source": "entity.completion_report",
+      "target": "entity.document",
+      "type": "ATTACHES"
+    },
+    {
+      "id": "entity.completion_report::LOGS_TO::entity.audit_event",
+      "source": "entity.completion_report",
+      "target": "entity.audit_event",
+      "type": "LOGS_TO"
+    },
+    {
+      "id": "entity.incident::ATTACHES::entity.document",
+      "source": "entity.incident",
+      "target": "entity.document",
+      "type": "ATTACHES"
+    },
+    {
+      "id": "entity.incident::LOGS_TO::entity.audit_event",
+      "source": "entity.incident",
+      "target": "entity.audit_event",
+      "type": "LOGS_TO"
+    },
+    {
+      "id": "entity.clearance_certificate_dpreq::ATTACHES::entity.document",
+      "source": "entity.clearance_certificate_dpreq",
+      "target": "entity.document",
+      "type": "ATTACHES"
+    },
+    {
+      "id": "entity.clearance_certificate_dpreq::LOGS_TO::entity.audit_event",
+      "source": "entity.clearance_certificate_dpreq",
+      "target": "entity.audit_event",
+      "type": "LOGS_TO"
+    },
+    {
+      "id": "entity.clearance_certificate_remis::ATTACHES::entity.document",
+      "source": "entity.clearance_certificate_remis",
+      "target": "entity.document",
+      "type": "ATTACHES"
+    },
+    {
+      "id": "entity.clearance_certificate_remis::LOGS_TO::entity.audit_event",
+      "source": "entity.clearance_certificate_remis",
+      "target": "entity.audit_event",
+      "type": "LOGS_TO"
+    },
+    {
+      "id": "entity.dpreq_application::CAN_HAVE_STATUS::status.dpreq.draft",
+      "source": "entity.dpreq_application",
+      "target": "status.dpreq.draft",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.dpreq_application::CAN_HAVE_STATUS::status.dpreq.submitted",
+      "source": "entity.dpreq_application",
+      "target": "status.dpreq.submitted",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.dpreq_application::CAN_HAVE_STATUS::status.dpreq.screening",
+      "source": "entity.dpreq_application",
+      "target": "status.dpreq.screening",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.dpreq_application::CAN_HAVE_STATUS::status.dpreq.returned",
+      "source": "entity.dpreq_application",
+      "target": "status.dpreq.returned",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.dpreq_application::CAN_HAVE_STATUS::status.dpreq.under_review",
+      "source": "entity.dpreq_application",
+      "target": "status.dpreq.under_review",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.dpreq_application::CAN_HAVE_STATUS::status.dpreq.endorsed",
+      "source": "entity.dpreq_application",
+      "target": "status.dpreq.endorsed",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.dpreq_application::CAN_HAVE_STATUS::status.dpreq.rejected",
+      "source": "entity.dpreq_application",
+      "target": "status.dpreq.rejected",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.dpreq_application::CAN_HAVE_STATUS::status.dpreq.approved",
+      "source": "entity.dpreq_application",
+      "target": "status.dpreq.approved",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.dpreq_application::CAN_HAVE_STATUS::status.dpreq.clearance_issued",
+      "source": "entity.dpreq_application",
+      "target": "status.dpreq.clearance_issued",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "status.dpreq.draft::TRANSITIONS_TO::status.dpreq.submitted",
+      "source": "status.dpreq.draft",
+      "target": "status.dpreq.submitted",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.dpreq.submitted::TRANSITIONS_TO::status.dpreq.screening",
+      "source": "status.dpreq.submitted",
+      "target": "status.dpreq.screening",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.dpreq.screening::TRANSITIONS_TO::status.dpreq.under_review",
+      "source": "status.dpreq.screening",
+      "target": "status.dpreq.under_review",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.dpreq.under_review::TRANSITIONS_TO::status.dpreq.endorsed",
+      "source": "status.dpreq.under_review",
+      "target": "status.dpreq.endorsed",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.dpreq.endorsed::TRANSITIONS_TO::status.dpreq.approved",
+      "source": "status.dpreq.endorsed",
+      "target": "status.dpreq.approved",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.dpreq.approved::TRANSITIONS_TO::status.dpreq.clearance_issued",
+      "source": "status.dpreq.approved",
+      "target": "status.dpreq.clearance_issued",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.dpreq.screening::TRANSITIONS_TO::status.dpreq.returned",
+      "source": "status.dpreq.screening",
+      "target": "status.dpreq.returned",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.dpreq.under_review::TRANSITIONS_TO::status.dpreq.rejected",
+      "source": "status.dpreq.under_review",
+      "target": "status.dpreq.rejected",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.dpreq.endorsed::TRANSITIONS_TO::status.dpreq.rejected",
+      "source": "status.dpreq.endorsed",
+      "target": "status.dpreq.rejected",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "entity.dpnda_record::CAN_HAVE_STATUS::status.dpnda.draft",
+      "source": "entity.dpnda_record",
+      "target": "status.dpnda.draft",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.dpnda_record::CAN_HAVE_STATUS::status.dpnda.sent_for_signing",
+      "source": "entity.dpnda_record",
+      "target": "status.dpnda.sent_for_signing",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.dpnda_record::CAN_HAVE_STATUS::status.dpnda.trainee_signed",
+      "source": "entity.dpnda_record",
+      "target": "status.dpnda.trainee_signed",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.dpnda_record::CAN_HAVE_STATUS::status.dpnda.declined",
+      "source": "entity.dpnda_record",
+      "target": "status.dpnda.declined",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.dpnda_record::CAN_HAVE_STATUS::status.dpnda.coordinator_countersigned",
+      "source": "entity.dpnda_record",
+      "target": "status.dpnda.coordinator_countersigned",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.dpnda_record::CAN_HAVE_STATUS::status.dpnda.completed_archived",
+      "source": "entity.dpnda_record",
+      "target": "status.dpnda.completed_archived",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "status.dpnda.draft::TRANSITIONS_TO::status.dpnda.sent_for_signing",
+      "source": "status.dpnda.draft",
+      "target": "status.dpnda.sent_for_signing",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.dpnda.sent_for_signing::TRANSITIONS_TO::status.dpnda.trainee_signed",
+      "source": "status.dpnda.sent_for_signing",
+      "target": "status.dpnda.trainee_signed",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.dpnda.trainee_signed::TRANSITIONS_TO::status.dpnda.coordinator_countersigned",
+      "source": "status.dpnda.trainee_signed",
+      "target": "status.dpnda.coordinator_countersigned",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.dpnda.coordinator_countersigned::TRANSITIONS_TO::status.dpnda.completed_archived",
+      "source": "status.dpnda.coordinator_countersigned",
+      "target": "status.dpnda.completed_archived",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.dpnda.trainee_signed::TRANSITIONS_TO::status.dpnda.declined",
+      "source": "status.dpnda.trainee_signed",
+      "target": "status.dpnda.declined",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "entity.remis_application::CAN_HAVE_STATUS::status.remis.draft_submitted",
+      "source": "entity.remis_application",
+      "target": "status.remis.draft_submitted",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.remis_application::CAN_HAVE_STATUS::status.remis.under_endorsement",
+      "source": "entity.remis_application",
+      "target": "status.remis.under_endorsement",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.remis_application::CAN_HAVE_STATUS::status.remis.for_screening",
+      "source": "entity.remis_application",
+      "target": "status.remis.for_screening",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.remis_application::CAN_HAVE_STATUS::status.remis.for_revision",
+      "source": "entity.remis_application",
+      "target": "status.remis.for_revision",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.remis_application::CAN_HAVE_STATUS::status.remis.for_review",
+      "source": "entity.remis_application",
+      "target": "status.remis.for_review",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.remis_application::CAN_HAVE_STATUS::status.remis.approved",
+      "source": "entity.remis_application",
+      "target": "status.remis.approved",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.remis_application::CAN_HAVE_STATUS::status.remis.approved_with_conditions",
+      "source": "entity.remis_application",
+      "target": "status.remis.approved_with_conditions",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.remis_application::CAN_HAVE_STATUS::status.remis.deferred",
+      "source": "entity.remis_application",
+      "target": "status.remis.deferred",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.remis_application::CAN_HAVE_STATUS::status.remis.disapproved",
+      "source": "entity.remis_application",
+      "target": "status.remis.disapproved",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.remis_application::CAN_HAVE_STATUS::status.remis.clearance_issued",
+      "source": "entity.remis_application",
+      "target": "status.remis.clearance_issued",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.remis_application::CAN_HAVE_STATUS::status.remis.monitoring",
+      "source": "entity.remis_application",
+      "target": "status.remis.monitoring",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.remis_application::CAN_HAVE_STATUS::status.remis.closed",
+      "source": "entity.remis_application",
+      "target": "status.remis.closed",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.remis_application::CAN_HAVE_STATUS::status.remis.archived",
+      "source": "entity.remis_application",
+      "target": "status.remis.archived",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "status.remis.draft_submitted::TRANSITIONS_TO::status.remis.under_endorsement",
+      "source": "status.remis.draft_submitted",
+      "target": "status.remis.under_endorsement",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.remis.under_endorsement::TRANSITIONS_TO::status.remis.for_screening",
+      "source": "status.remis.under_endorsement",
+      "target": "status.remis.for_screening",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.remis.for_screening::TRANSITIONS_TO::status.remis.for_review",
+      "source": "status.remis.for_screening",
+      "target": "status.remis.for_review",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.remis.for_review::TRANSITIONS_TO::status.remis.approved",
+      "source": "status.remis.for_review",
+      "target": "status.remis.approved",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.remis.approved::TRANSITIONS_TO::status.remis.clearance_issued",
+      "source": "status.remis.approved",
+      "target": "status.remis.clearance_issued",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.remis.clearance_issued::TRANSITIONS_TO::status.remis.monitoring",
+      "source": "status.remis.clearance_issued",
+      "target": "status.remis.monitoring",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.remis.monitoring::TRANSITIONS_TO::status.remis.closed",
+      "source": "status.remis.monitoring",
+      "target": "status.remis.closed",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.remis.closed::TRANSITIONS_TO::status.remis.archived",
+      "source": "status.remis.closed",
+      "target": "status.remis.archived",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.remis.under_endorsement::TRANSITIONS_TO::status.remis.for_revision",
+      "source": "status.remis.under_endorsement",
+      "target": "status.remis.for_revision",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.remis.for_screening::TRANSITIONS_TO::status.remis.for_revision",
+      "source": "status.remis.for_screening",
+      "target": "status.remis.for_revision",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.remis.for_review::TRANSITIONS_TO::status.remis.for_revision",
+      "source": "status.remis.for_review",
+      "target": "status.remis.for_revision",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.remis.for_review::TRANSITIONS_TO::status.remis.approved_with_conditions",
+      "source": "status.remis.for_review",
+      "target": "status.remis.approved_with_conditions",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.remis.for_review::TRANSITIONS_TO::status.remis.deferred",
+      "source": "status.remis.for_review",
+      "target": "status.remis.deferred",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.remis.for_review::TRANSITIONS_TO::status.remis.disapproved",
+      "source": "status.remis.for_review",
+      "target": "status.remis.disapproved",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.remis.for_revision::TRANSITIONS_TO::status.remis.for_review",
+      "source": "status.remis.for_revision",
+      "target": "status.remis.for_review",
+      "type": "TRANSITIONS_TO",
+      "properties": {
+        "note": "resubmit"
+      }
+    },
+    {
+      "id": "entity.incident::CAN_HAVE_STATUS::status.incident.reported",
+      "source": "entity.incident",
+      "target": "status.incident.reported",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.incident::CAN_HAVE_STATUS::status.incident.under_investigation",
+      "source": "entity.incident",
+      "target": "status.incident.under_investigation",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.incident::CAN_HAVE_STATUS::status.incident.corrective_action_in_progress",
+      "source": "entity.incident",
+      "target": "status.incident.corrective_action_in_progress",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.incident::CAN_HAVE_STATUS::status.incident.resolved",
+      "source": "entity.incident",
+      "target": "status.incident.resolved",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "entity.incident::CAN_HAVE_STATUS::status.incident.closed",
+      "source": "entity.incident",
+      "target": "status.incident.closed",
+      "type": "CAN_HAVE_STATUS"
+    },
+    {
+      "id": "status.incident.reported::TRANSITIONS_TO::status.incident.under_investigation",
+      "source": "status.incident.reported",
+      "target": "status.incident.under_investigation",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.incident.under_investigation::TRANSITIONS_TO::status.incident.corrective_action_in_progress",
+      "source": "status.incident.under_investigation",
+      "target": "status.incident.corrective_action_in_progress",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.incident.corrective_action_in_progress::TRANSITIONS_TO::status.incident.resolved",
+      "source": "status.incident.corrective_action_in_progress",
+      "target": "status.incident.resolved",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "status.incident.resolved::TRANSITIONS_TO::status.incident.closed",
+      "source": "status.incident.resolved",
+      "target": "status.incident.closed",
+      "type": "TRANSITIONS_TO"
+    },
+    {
+      "id": "role.dpo_staff::ACTOR_FOR::status.dpreq.screening",
+      "source": "role.dpo_staff",
+      "target": "status.dpreq.screening",
+      "type": "ACTOR_FOR"
+    },
+    {
+      "id": "role.dpo_staff::ACTOR_FOR::status.dpreq.under_review",
+      "source": "role.dpo_staff",
+      "target": "status.dpreq.under_review",
+      "type": "ACTOR_FOR"
+    },
+    {
+      "id": "role.dpo_staff::ACTOR_FOR::status.dpreq.endorsed",
+      "source": "role.dpo_staff",
+      "target": "status.dpreq.endorsed",
+      "type": "ACTOR_FOR"
+    },
+    {
+      "id": "role.dpo_approver::ACTOR_FOR::status.dpreq.approved",
+      "source": "role.dpo_approver",
+      "target": "status.dpreq.approved",
+      "type": "ACTOR_FOR"
+    },
+    {
+      "id": "role.adviser::ACTOR_FOR::status.remis.under_endorsement",
+      "source": "role.adviser",
+      "target": "status.remis.under_endorsement",
+      "type": "ACTOR_FOR"
+    },
+    {
+      "id": "role.program_head::ACTOR_FOR::status.remis.under_endorsement",
+      "source": "role.program_head",
+      "target": "status.remis.under_endorsement",
+      "type": "ACTOR_FOR"
+    },
+    {
+      "id": "role.dean::ACTOR_FOR::status.remis.under_endorsement",
+      "source": "role.dean",
+      "target": "status.remis.under_endorsement",
+      "type": "ACTOR_FOR"
+    },
+    {
+      "id": "role.ethics_secretariat::ACTOR_FOR::status.remis.for_screening",
+      "source": "role.ethics_secretariat",
+      "target": "status.remis.for_screening",
+      "type": "ACTOR_FOR"
+    },
+    {
+      "id": "role.ethics_reviewer::ACTOR_FOR::status.remis.for_review",
+      "source": "role.ethics_reviewer",
+      "target": "status.remis.for_review",
+      "type": "ACTOR_FOR"
+    },
+    {
+      "id": "role.ethics_committee_chair::ACTOR_FOR::status.remis.approved",
+      "source": "role.ethics_committee_chair",
+      "target": "status.remis.approved",
+      "type": "ACTOR_FOR"
+    },
+    {
+      "id": "role.ethics_committee_chair::ACTOR_FOR::status.remis.approved_with_conditions",
+      "source": "role.ethics_committee_chair",
+      "target": "status.remis.approved_with_conditions",
+      "type": "ACTOR_FOR"
+    },
+    {
+      "id": "role.ethics_committee_chair::ACTOR_FOR::status.remis.deferred",
+      "source": "role.ethics_committee_chair",
+      "target": "status.remis.deferred",
+      "type": "ACTOR_FOR"
+    },
+    {
+      "id": "role.ethics_committee_chair::ACTOR_FOR::status.remis.disapproved",
+      "source": "role.ethics_committee_chair",
+      "target": "status.remis.disapproved",
+      "type": "ACTOR_FOR"
+    },
+    {
+      "id": "entity.incident::NOTIFIES::role.dpo_staff",
+      "source": "entity.incident",
+      "target": "role.dpo_staff",
+      "type": "NOTIFIES",
+      "properties": {
+        "condition": "incidentType in [Data Breach, Confidentiality Breach]",
+        "sourceFile": "3.5-remis-incident-reporting.md"
+      }
+    },
+    {
+      "id": "entity.incident::NOTIFIES::role.ethics_committee_chair",
+      "source": "entity.incident",
+      "target": "role.ethics_committee_chair",
+      "type": "NOTIFIES"
+    },
+    {
+      "id": "entity.incident::NOTIFIES::role.ethics_secretariat",
+      "source": "entity.incident",
+      "target": "role.ethics_secretariat",
+      "type": "NOTIFIES"
+    },
+    {
+      "id": "module.reporting::DEFINES::report.applications_by_department",
+      "source": "module.reporting",
+      "target": "report.applications_by_department",
+      "type": "DEFINES"
+    },
+    {
+      "id": "entity.dpreq_application::FEEDS::report.applications_by_department",
+      "source": "entity.dpreq_application",
+      "target": "report.applications_by_department",
+      "type": "FEEDS"
+    },
+    {
+      "id": "entity.remis_application::FEEDS::report.applications_by_department",
+      "source": "entity.remis_application",
+      "target": "report.applications_by_department",
+      "type": "FEEDS"
+    },
+    {
+      "id": "module.reporting::DEFINES::report.compliance_monitoring",
+      "source": "module.reporting",
+      "target": "report.compliance_monitoring",
+      "type": "DEFINES"
+    },
+    {
+      "id": "entity.dpreq_application::FEEDS::report.compliance_monitoring",
+      "source": "entity.dpreq_application",
+      "target": "report.compliance_monitoring",
+      "type": "FEEDS"
+    },
+    {
+      "id": "entity.progress_report::FEEDS::report.compliance_monitoring",
+      "source": "entity.progress_report",
+      "target": "report.compliance_monitoring",
+      "type": "FEEDS"
+    },
+    {
+      "id": "module.reporting::DEFINES::report.incident_summary",
+      "source": "module.reporting",
+      "target": "report.incident_summary",
+      "type": "DEFINES"
+    },
+    {
+      "id": "entity.incident::FEEDS::report.incident_summary",
+      "source": "entity.incident",
+      "target": "report.incident_summary",
+      "type": "FEEDS"
+    },
+    {
+      "id": "module.reporting::DEFINES::report.application_by_risk_level",
+      "source": "module.reporting",
+      "target": "report.application_by_risk_level",
+      "type": "DEFINES"
+    },
+    {
+      "id": "entity.remis_application::FEEDS::report.application_by_risk_level",
+      "source": "entity.remis_application",
+      "target": "report.application_by_risk_level",
+      "type": "FEEDS"
+    },
+    {
+      "id": "module.reporting::DEFINES::report.reviewer_workload",
+      "source": "module.reporting",
+      "target": "report.reviewer_workload",
+      "type": "DEFINES"
+    },
+    {
+      "id": "entity.remis_application::FEEDS::report.reviewer_workload",
+      "source": "entity.remis_application",
+      "target": "report.reviewer_workload",
+      "type": "FEEDS"
+    },
+    {
+      "id": "module.reporting::DEFINES::report.annual_ethics_report",
+      "source": "module.reporting",
+      "target": "report.annual_ethics_report",
+      "type": "DEFINES"
+    },
+    {
+      "id": "entity.remis_application::FEEDS::report.annual_ethics_report",
+      "source": "entity.remis_application",
+      "target": "report.annual_ethics_report",
+      "type": "FEEDS"
+    },
+    {
+      "id": "entity.completion_report::FEEDS::report.annual_ethics_report",
+      "source": "entity.completion_report",
+      "target": "report.annual_ethics_report",
+      "type": "FEEDS"
+    },
+    {
+      "id": "module.reporting::DEFINES::report.archive_studies",
+      "source": "module.reporting",
+      "target": "report.archive_studies",
+      "type": "DEFINES"
+    },
+    {
+      "id": "entity.completion_report::FEEDS::report.archive_studies",
+      "source": "entity.completion_report",
+      "target": "report.archive_studies",
+      "type": "FEEDS"
+    },
+    {
+      "id": "module.reporting::DEFINES::report.ndas_per_dept_grade",
+      "source": "module.reporting",
+      "target": "report.ndas_per_dept_grade",
+      "type": "DEFINES"
+    },
+    {
+      "id": "entity.dpnda_record::FEEDS::report.ndas_per_dept_grade",
+      "source": "entity.dpnda_record",
+      "target": "report.ndas_per_dept_grade",
+      "type": "FEEDS"
+    },
+    {
+      "id": "module.reporting::DEFINES::report.pending_dpo_approvals",
+      "source": "module.reporting",
+      "target": "report.pending_dpo_approvals",
+      "type": "DEFINES"
+    },
+    {
+      "id": "entity.dpreq_application::FEEDS::report.pending_dpo_approvals",
+      "source": "entity.dpreq_application",
+      "target": "report.pending_dpo_approvals",
+      "type": "FEEDS"
+    },
+    {
+      "id": "module.reporting::DEFINES::report.student_teachers_per_grade",
+      "source": "module.reporting",
+      "target": "report.student_teachers_per_grade",
+      "type": "DEFINES"
+    },
+    {
+      "id": "entity.placement::FEEDS::report.student_teachers_per_grade",
+      "source": "entity.placement",
+      "target": "report.student_teachers_per_grade",
+      "type": "FEEDS"
+    },
+    {
+      "id": "module.reporting::DEFINES::report.ojts_accommodated",
+      "source": "module.reporting",
+      "target": "report.ojts_accommodated",
+      "type": "DEFINES"
+    },
+    {
+      "id": "entity.placement::FEEDS::report.ojts_accommodated",
+      "source": "entity.placement",
+      "target": "report.ojts_accommodated",
+      "type": "FEEDS"
+    },
+    {
+      "id": "module.reporting::DEFINES::report.ojt_whereabouts",
+      "source": "module.reporting",
+      "target": "report.ojt_whereabouts",
+      "type": "DEFINES"
+    },
+    {
+      "id": "entity.placement::FEEDS::report.ojt_whereabouts",
+      "source": "entity.placement",
+      "target": "report.ojt_whereabouts",
+      "type": "FEEDS"
+    },
+    {
+      "id": "module.reporting::DEFINES::report.ojt_eval_upload_compliance",
+      "source": "module.reporting",
+      "target": "report.ojt_eval_upload_compliance",
+      "type": "DEFINES"
+    },
+    {
+      "id": "entity.ojt_evaluation_report::FEEDS::report.ojt_eval_upload_compliance",
+      "source": "entity.ojt_evaluation_report",
+      "target": "report.ojt_eval_upload_compliance",
+      "type": "FEEDS"
+    }
+  ]
+}
