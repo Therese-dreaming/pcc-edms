@@ -6,6 +6,146 @@ marked accordingly in the affected file.
 
 ---
 
+## 2026-07-07 — 5 more stakeholder answers; file-size limit raised to 50MB; unified application form shared (not yet built)
+
+One code change, three questions closed as "already built correctly," one superseded, and one
+substantial pending item flagged for scope confirmation before building.
+
+**Code change:**
+- **File upload limit raised from 10MB to 50MB.** Updated `DpndaRecordController::uploadEvaluationReport()`,
+  `RemisApplicationController::submitProgressReport()`/`submitCompletionReport()` (Laravel
+  validation `max:10240` → `max:51200`), and — necessary for the Laravel-side change to actually
+  take effect — the local PHP install's `upload_max_filesize` (40M→50M) and `post_max_size`
+  (40M→60M) in `C:\xampp\php\php.ini`. Without the PHP-level change, uploads above 40MB would
+  have been silently rejected by PHP before Laravel's own validation ever ran.
+
+**Confirmed already correct, no code change:**
+- Risk-classification thresholds — confirmed deliberately non-algorithmic: reviewers pick a
+  level via a decision control + written rationale, no auto-computation, no downstream
+  consequence tied to the tier beyond the label. Matches `RemisApplicationController::submitReview()`
+  and `RiskClassification` exactly as already built.
+- Incident-filing "who can file" list (researcher, Ethics Secretariat, Ethics Reviewer, Ethics
+  Committee Chair) — confirmed, matches `RemisApplicationPolicy::file()` exactly. The
+  auto-pause-on-breach sub-question wasn't re-answered this pass, still open.
+- OJT/Trainee Whereabouts as a placement-schedule snapshot (not real-time) — reconfirmed,
+  matches the existing build.
+
+**Superseded, not yet reflected in code:**
+- The DPREQ/DPNDA form field lists and the Form 2/5 NDA template fields, both confirmed "fine
+  as-is" on 2026-07-06, were superseded one day later: "Ignore all forms sent before. We will
+  update all forms and send the approved ones." No code change until the new approved versions
+  arrive.
+
+**New, pending scope confirmation — not built:**
+- `reqs/July-7-2026_Unified-Research-Ethics-and-Data-Privacy-Clearance-Application-Form.pdf` — a
+  combined DPO+Ethics intake form with materially different fields (structured ethical-
+  considerations checklist, Data Privacy Act–aligned data classification, storage/retention/
+  disposal fields, a richer attachments checklist) and two new decision-side additions: an
+  "Exempted" outcome for the Ethics Review Result (fifth option alongside the FRS's existing
+  four), and an explicit DPIA-required Yes/No flag on the Privacy/ODP review. The requester also
+  flagged that separate student/employee form variants and a new "REC Clearance and Exemption
+  certificate" layout are still coming this week. Full breakdown of every field-level delta:
+  `docs/9.1-review-and-open-questions.md` §2b. Deliberately not implemented yet — building
+  against a form the requester has already partly superseded once this week risks the same
+  rework that prompted "ignore all forms sent before" in the first place.
+
+
+## 2026-07-06 (later same day) — Real fonts and header image applied to PDF templates, reversing the 2026-07-02 fallback decision
+
+The 2026-07-02 entry below noted system fonts (Courier New, Arial) and a text-only header were
+used "in place of the sample's bundled Aptos/Times TTFs (none supplied...)" and "no logo asset
+supplied." Both are now supplied and applied — `public/fonts/Microsoft Aptos Fonts/`,
+`public/fonts/times.ttf`, `public/fonts/cour.ttf`, and `public/images/DOCS HEADER.png` (the
+actual PCC letterhead, replacing the CSS-recreated text header). Not a docs-content change, noted
+for continuity:
+
+- **New `App\Shared\Documents\Support\PdfAssets`** — embeds each font/image as a base64 `data:`
+  URI. Necessary because `PdfGenerationService` hands rendered HTML to
+  `Browsershot::html()` (docs/architecture.md ADR-005), which loads it via a temp file, not the
+  app's web server — relative `/fonts` or `/images` URLs never resolve in that context, and
+  embedding keeps every generated PDF byte-identical regardless of what's installed on the host.
+- **Font hierarchy applied deliberately, not uniformly** across all three PDF templates
+  (`research-team-nda` / Form 2, `joint-clearance` / Form 3, `dpnda-form5` / Form 5 — DPREQ's
+  Form 1 has no PDF output today, it's a web form only): **Aptos** for structural/label text
+  (form badge, form title, section headings, table labels/headers, signature name/title,
+  approval block), **Times New Roman** for formal prose (the "I. Purpose"/"II. Scope" narrative
+  paragraphs, the certification statement, Form 3's "Remarks"), **Courier New** stays the body
+  default for filled-in answers/tracking numbers/footer document ID — preserving the existing
+  "typewritten form" aesthetic for data while giving structure and prose distinct, more legible
+  faces.
+- **`.inst-name`/`.inst-dept` text-recreation removed** from `_header.blade.php`, replaced by the
+  actual header image; `.inst-rule`'s CSS border also removed since the image already has its
+  own separator line baked in (would otherwise double up).
+- **Maroon aligned to the screen token exactly**: the form badge ("FORM 2"/"FORM 3"/"FORM 5") is
+  now colored `#891a1a`, matching `primary-700` from the front-end redesign's design tokens
+  (`resources/css/app.css`) — this is also the only place a PDF-specific hex existed
+  (`.inst-name`'s old `#8b1a1a`, now removed along with that rule).
+- Verified by generating a real PDF from each of the three templates via tinker (existing seeded
+  records) and visually inspecting the output — header image renders correctly, no doubled
+  separator line, all three font families render distinctly with no missing-glyph boxes, no
+  layout breaks from the header image's height.
+
+## 2026-07-06 — 18 outstanding open questions answered by DPO/ORD/IT; DPO Approver and Student Teacher roles retired
+
+DPO put 18 consolidated open questions (`docs/9.1`, `docs/stakeholder-package/05`) directly to
+the requester acting as DPO/ORD/IT decision-maker. Two answers required code changes; the rest
+close out existing ASSUMPTION/🔴 items with no build impact.
+
+**Code changes:**
+1. **DPO Approver retired as a separate role.** DPO now has one role, `dpo_staff`, which owns
+   the DPO track end to end — screening, endorsement, and the final `approve()`/`reject()`
+   capability that was previously `dpo_approver`-exclusive. Updated: `RoleSeeder`, `UserSeeder`,
+   `ReportDemoSeeder`; `DpreqApplicationPolicy`, `DpndaRecordPolicy`, `IncidentPolicy`;
+   `DpreqApplicationController`, `DpndaRecordController`, `IncidentController` (`$canSeeAll`);
+   `DpreqWorkflowService` (notification target); `DpoDashboardService::pendingMyAction()`
+   (collapsed the per-role status match, dpo_staff now owns `screening`/`under_review`/
+   `endorsed`); `DashboardController::DPO_ROLES`; `ChecksReportAccess` role arrays;
+   `AuthenticatedLayout.jsx` `REPORT_CAPABLE_ROLES`; `Dpreq/Show.jsx` (`canApproverAct` merged
+   into `canScreenerAct`, button copy updated). Verified end-to-end via
+   `ReportDemoSeeder`'s existing DPREQ application, which now screens → endorses → approves →
+   issues clearance entirely under `dpo_staff`.
+2. **Student Teacher retired as a distinct trainee category.** Not a population DPO tracks
+   separately from OJT. Removed: the `student_teacher` role (`RoleSeeder`); the
+   `student_teacher` value from the `placements.trainee_type` enum (migration + `StorePlacementRequest`
+   validation + `Dpnda/Create.jsx` dropdown); the standalone "Student Teachers by Grade Level"
+   report (`DpoReportService::studentTeachers()`, `DpoReportController::studentTeachers()`, the
+   `reports.student-teachers` route, `Reports/StudentTeachers.jsx`, and its entry in
+   `ReportController`'s report list). The "Trainee Whereabouts" report is untouched — it never
+   filtered by trainee type, so former student-teacher placements still show up there as
+   ordinary internal/external OJT rows. `ReportDemoSeeder`'s two former student-teacher demo
+   placements were reclassified as one internal, one external OJT placement.
+
+**Confirmed, no build impact (docs updated to close the open question):**
+- DPREQ form fields, 10MB file-size limit, and the 5-item DPO screening checklist — all correct
+  as-is.
+- NDA template fields (Form 2, Form 5) — correct as-is, no DPO/Legal changes.
+- DPO's and ORD's "Compliance Monitoring Report" — confirmed stay separate.
+- Trainee whereabouts — a placement-schedule snapshot is sufficient, no real-time check-in.
+- Audit trail read access — Admin, DPO Staff, Ethics Committee Chair (not yet built; this
+  confirms the intended list for when it is).
+- "Research Ethics Head" = Ethics Committee Chair — same person, two labels (this had already
+  been resolved and documented in `docs/0.4` and `HANDOFF.md`; today's answer just reconfirmed
+  it — `docs/9.1` had not yet been updated to reflect that, now fixed).
+- Research Team NDA (Form 2) required even for solo researchers — already built this way.
+- SSO — Microsoft 365 / `pccnet.edu.ph` confirmed as PCC's actual institutional identity
+  provider (previously just the requester's recollection); Entra ID (Azure AD) is the confirmed
+  integration target. Still blocked on IT provisioning an app registration — no code changes yet.
+- Out-of-scope list and success criteria (`0.1`) — confirmed correct as stated.
+- Bulk CSV role import — reconfirmed as needed (already built, `docs/HANDOFF.md` Part H).
+- Virus scanning on uploads — explicitly deferred by the requester until the rest of the project
+  is complete, no longer an open IT policy question in the meantime.
+
+**Still open, explicitly deferred rather than answered:** full-REMIS-track applicability for
+every submission (vs. a risk-based fast track), exact risk-classification thresholds, and
+incident-filing/auto-hold rules. Retention schedule (years for issued/rejected records) was
+asked but not answered — remains open.
+
+Docs updated: `0.2-stakeholders-and-roles.md` (role list + capability matrix),
+`9.1-review-and-open-questions.md`, `4.4-audit-trail-status-tracking.md`,
+`stakeholder-package/01-functional-design-document.md`,
+`stakeholder-package/02-workflow-charts.md`, `stakeholder-package/03-role-raci-matrix.md`,
+`stakeholder-package/05-open-questions-and-assumptions.md`.
+
 ## 2026-07-04 — Multi-reviewer panel review; monthly monitoring cadence + Overdue widget; NDA templates/discontinued-workflow/SMS declined
 
 Not a docs change alone, noted for continuity (see `HANDOFF.md` Part G for full detail). After

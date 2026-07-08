@@ -1,3 +1,339 @@
+/*
+ * PCC-EDMS design tokens — docs/DESIGN.md is the authoritative reference.
+ *
+ * Colors are HSL channel triplets (not full colors) so tailwind.config.js can
+ * wrap them as `hsl(var(--x) / <alpha-value>)`, keeping Tailwind opacity
+ * modifiers working under v3 while every value stays runtime-inspectable for
+ * contrast audits. Every pair below passed WCAG AA (body 4.5:1, UI 3:1; ink on
+ * paper reaches AAA 7:1) — audited 2026-07-04; if you change a value, re-run
+ * the audit before shipping.
+ */
+
+/* The app's font system — no serif, no decorative reading faces. See
+   tailwind.config.js's fontFamily map for which Tailwind utility exposes
+   which role: font-sans (Outfit, chrome/labels), font-display (Figtree,
+   titles), font-subtitle (Lexend, sub-titles/descriptions), font-content
+   (Inter, dense record data — Show page field values and Table cell text). */
+
+/* Outfit — variable (wght 400..800); body/content text everywhere (`body` is font-sans). */
+@font-face {
+    font-family: 'Outfit';
+    src: url('/fonts/Outfit/Outfit-Variable.woff2') format('woff2');
+    font-weight: 400 800;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Figtree — variable (wght 500..800); page/section titles. */
+@font-face {
+    font-family: 'Figtree';
+    src: url('/fonts/Figtree/Figtree-Variable.woff2') format('woff2');
+    font-weight: 500 800;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Lexend — variable (wght 400..600); sub-titles and supporting description lines. */
+@font-face {
+    font-family: 'Lexend';
+    src: url('/fonts/Lexend/Lexend-Variable.woff2') format('woff2');
+    font-weight: 400 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Inter — variable (wght 400..700); a plain UI face (not a reading/editorial
+   face like Lexend/Outfit) for dense record data — Show page field values
+   and Table cell contents, where legibility at small sizes and tabular
+   figures matter more than character. */
+@font-face {
+    font-family: 'Inter';
+    src: url('/fonts/Inter/Inter-Variable.woff2') format('woff2');
+    font-weight: 400 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Space Grotesk — variable (wght 400..700); a distinct geometric-mono-adjacent
+   face reserved for the DPREQ Index page and the shared Pagination component. */
+@font-face {
+    font-family: 'Space Grotesk';
+    src: url('/fonts/SpaceGrotesk/SpaceGrotesk-Variable.woff2') format('woff2');
+    font-weight: 400 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    /* Maroon — anchored at 700 to the institutional #8b1a1a already used in
+       the PDF templates, so print and screen share one brand color. */
+    --color-primary-50: 0 33% 97%;
+    --color-primary-100: 0 38% 94%;
+    --color-primary-200: 0 36% 87%;
+    --color-primary-300: 359 35% 74%;
+    --color-primary-400: 358 42% 57%;
+    --color-primary-500: 359 52% 44%;
+    --color-primary-600: 359 60% 38%;
+    --color-primary-700: 0 68% 32%;
+    --color-primary-800: 0 64% 25%;
+    --color-primary-900: 0 58% 18%;
+
+    /* Warm paper neutrals — replaces Tailwind's cool gray; the page is never
+       pure white, cards are. */
+    --color-paper-50: 30 20% 98%;
+    --color-paper-100: 30 15% 95%;
+    --color-paper-200: 30 10% 90%;
+    --color-paper-300: 30 8% 80%;
+    --color-paper-400: 30 6% 56%;
+    --color-paper-500: 30 5% 45%;
+    --color-paper-600: 30 6% 32%;
+    --color-paper-700: 30 8% 22%;
+    --color-paper-800: 30 10% 15%;
+    --color-paper-900: 30 12% 9%;
+
+    /* Status hues — confined to badges/alerts, never page chrome, keeping the
+       visible palette at maroon + paper (the 3-color discipline). No blue. */
+    --color-success: 152 45% 30%;
+    --color-success-bg: 152 35% 93%;
+    --color-success-text: 152 50% 20%;
+    --color-warning: 38 85% 40%;
+    --color-warning-bg: 40 75% 92%;
+    --color-warning-text: 33 85% 25%;
+    --color-danger: 0 68% 42%;
+    --color-danger-bg: 0 60% 95%;
+    --color-danger-text: 0 65% 33%;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    html,
+    body {
+        overflow-x: clip;
+    }
+
+    ::selection {
+        background-color: hsl(var(--color-primary-100));
+        color: hsl(var(--color-primary-900));
+    }
+
+    /* One focus system for clickables (outline), one for fields (border+ring,
+       recolored from the forms plugin's blue in each input component). The
+       outline is instant — never transitioned. */
+    a:focus-visible,
+    button:focus-visible,
+    [role='button']:focus-visible,
+    summary:focus-visible {
+        outline: 2px solid hsl(var(--color-primary-500));
+        outline-offset: 2px;
+        transition: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+}
+
+/* SweetAlert2 — the one shared alert/confirm/notify design used everywhere.
+   Every call goes through the single mixin in resources/js/lib/confirm.js;
+   don't define a second Swal.mixin elsewhere — style variants by adding a
+   `swal-variant-*` class via that file's customClass, not by hand-rolling a
+   new popup theme per page. Flat, solid semantic colors — no gradients. */
+.swal2-popup {
+    font-family: 'Outfit', sans-serif !important;
+    border-radius: 1.25rem !important;
+    padding: 2rem !important;
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.12), 0 8px 10px -6px rgb(0 0 0 / 0.08) !important;
+    border: 1px solid hsl(var(--color-paper-200)) !important;
+}
+
+.swal2-title {
+    font-family: 'Figtree', Georgia, serif !important;
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    color: hsl(var(--color-paper-900)) !important;
+    margin-bottom: 0.75rem !important;
+}
+
+.swal2-html-container {
+    font-family: 'Outfit', sans-serif !important;
+    font-size: 0.9375rem !important;
+    color: hsl(var(--color-paper-600)) !important;
+    line-height: 1.6 !important;
+    margin: 0 !important;
+}
+
+.swal2-icon {
+    margin: 1.5rem auto 1rem !important;
+    border-width: 3px !important;
+}
+
+.swal2-icon.swal2-success {
+    border-color: hsl(var(--color-success)) !important;
+}
+
+.swal2-icon.swal2-success .swal2-success-ring {
+    border-color: hsl(var(--color-success) / 0.3) !important;
+}
+
+.swal2-icon.swal2-success [class^='swal2-success-line'] {
+    background-color: hsl(var(--color-success)) !important;
+}
+
+.swal2-icon.swal2-error {
+    border-color: hsl(var(--color-danger)) !important;
+}
+
+.swal2-icon.swal2-error [class^='swal2-x-mark-line'] {
+    background-color: hsl(var(--color-danger)) !important;
+}
+
+.swal2-icon.swal2-warning {
+    border-color: hsl(var(--color-warning)) !important;
+    color: hsl(var(--color-warning)) !important;
+}
+
+.swal2-icon.swal2-info {
+    border-color: hsl(var(--color-primary-600)) !important;
+    color: hsl(var(--color-primary-600)) !important;
+}
+
+.swal2-actions {
+    gap: 0.75rem !important;
+    margin-top: 1.5rem !important;
+}
+
+.swal2-styled {
+    font-family: 'Outfit', sans-serif !important;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    padding: 0.625rem 1.5rem !important;
+    border-radius: 0.625rem !important;
+    border: none !important;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+    transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+/* Default confirm button — solid primary maroon, no gradient. */
+.swal2-styled.swal2-confirm {
+    background: hsl(var(--color-primary-800)) !important;
+    color: white !important;
+}
+
+.swal2-styled.swal2-confirm:hover {
+    background: hsl(var(--color-primary-900)) !important;
+    transform: translateY(-1px) !important;
+}
+
+.swal2-styled.swal2-confirm:focus {
+    box-shadow: 0 0 0 3px hsl(var(--color-primary-800) / 0.25) !important;
+}
+
+/* Semantic variants — applied via customClass: 'swal2-styled swal-variant-*'
+   in resources/js/lib/confirm.js, e.g. for a valid/expired/not-found result. */
+.swal2-styled.swal-variant-success {
+    background: hsl(var(--color-success)) !important;
+    color: white !important;
+}
+
+.swal2-styled.swal-variant-success:hover {
+    filter: brightness(0.92);
+}
+
+.swal2-styled.swal-variant-warning {
+    background: hsl(var(--color-warning)) !important;
+    color: white !important;
+}
+
+.swal2-styled.swal-variant-warning:hover {
+    filter: brightness(0.92);
+}
+
+.swal2-styled.swal-variant-danger {
+    background: hsl(var(--color-danger)) !important;
+    color: white !important;
+}
+
+.swal2-styled.swal-variant-danger:hover {
+    filter: brightness(0.92);
+}
+
+.swal2-styled.swal2-cancel {
+    background: hsl(var(--color-paper-100)) !important;
+    color: hsl(var(--color-paper-700)) !important;
+    border: 1px solid hsl(var(--color-paper-200)) !important;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
+}
+
+.swal2-styled.swal2-cancel:hover {
+    background: hsl(var(--color-paper-200)) !important;
+    transform: translateY(-1px) !important;
+}
+
+.swal2-styled.swal2-cancel:focus {
+    box-shadow: 0 0 0 3px hsl(var(--color-paper-300) / 0.5) !important;
+}
+
+/* Toast notifications */
+.swal2-toast {
+    border-radius: 0.875rem !important;
+    padding: 1rem 1.25rem !important;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+}
+
+.swal2-toast .swal2-title {
+    font-size: 0.9375rem !important;
+    margin: 0 !important;
+}
+
+.swal2-toast .swal2-icon {
+    margin: 0 0.75rem 0 0 !important;
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+}
+
+.swal2-timer-progress-bar {
+    background: hsl(var(--color-primary-600)) !important;
+}
+
+/* Close button */
+.swal2-close {
+    color: hsl(var(--color-paper-400)) !important;
+    font-size: 2rem !important;
+    transition: color 0.15s ease !important;
+}
+
+.swal2-close:hover {
+    color: hsl(var(--color-paper-700)) !important;
+}
+
+/* Input fields in alerts */
+.swal2-input {
+    font-family: 'Outfit', sans-serif !important;
+    font-size: 0.9375rem !important;
+    border: 1px solid hsl(var(--color-paper-300)) !important;
+    border-radius: 0.5rem !important;
+    padding: 0.625rem 1rem !important;
+}
+
+.swal2-input:focus {
+    border-color: hsl(var(--color-primary-600)) !important;
+    box-shadow: 0 0 0 3px hsl(var(--color-primary-600) / 0.1) !important;
+}
+
+.swal2-validation-message {
+    background: hsl(var(--color-danger-bg)) !important;
+    color: hsl(var(--color-danger-text)) !important;
+    border-radius: 0.5rem !important;
+    font-family: 'Outfit', sans-serif !important;
+}
+

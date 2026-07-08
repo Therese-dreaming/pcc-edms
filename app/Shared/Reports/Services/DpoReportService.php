@@ -74,37 +74,6 @@ class DpoReportService
     }
 
     /**
-     * @param  array{date_from?: ?string, date_to?: ?string}  $filters
-     */
-    public function studentTeachers(array $filters): array
-    {
-        $placements = Placement::query()
-            ->where('trainee_type', 'student_teacher')
-            ->when($filters['date_from'] ?? null, fn ($q, $v) => $q->whereDate('start_date', '>=', $v))
-            ->when($filters['date_to'] ?? null, fn ($q, $v) => $q->whereDate('start_date', '<=', $v))
-            ->get();
-
-        // docs/5.3 asks for an "external and internal" breakdown, but `trainee_type` only
-        // distinguishes internal/external for OJT placements (internal_ojt/external_ojt), not
-        // student teachers — that axis doesn't exist in the schema yet. Grouped without it here;
-        // flagged as a gap for the next session rather than guessed at.
-        $rows = $placements
-            ->groupBy(fn (Placement $p) => "{$p->level}|{$p->department_assigned}|{$p->enrolled_school}")
-            ->map(function ($group) {
-                $first = $group->first();
-
-                return [
-                    'level' => $first->level,
-                    'department_assigned' => $first->department_assigned,
-                    'enrolled_school' => $first->enrolled_school,
-                    'count' => $group->count(),
-                ];
-            })->values();
-
-        return ['rows' => $rows, 'total' => $placements->count()];
-    }
-
-    /**
      * @param  array{date_from?: ?string, date_to?: ?string, granularity?: ?string}  $filters
      */
     public function ojtAccommodated(array $filters): array

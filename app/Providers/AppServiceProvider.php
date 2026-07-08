@@ -15,9 +15,12 @@ use App\Modules\Remis\Monitoring\Models\ProgressReport;
 use App\Modules\Remis\Monitoring\Policies\ProgressReportPolicy;
 use App\Modules\Remis\Policies\RemisApplicationPolicy;
 use App\Models\User;
+use App\Shared\Auth\Listeners\ActivateUserOnEmailVerification;
 use App\Shared\Auth\Policies\UserPolicy;
 use App\Shared\Notifications\Models\Notification;
 use App\Shared\Notifications\Policies\NotificationPolicy;
+use Illuminate\Auth\Events\Verified;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -50,5 +53,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ProgressReport::class, ProgressReportPolicy::class);
         Gate::policy(Notification::class, NotificationPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
+
+        // docs/4.1-user-roles-permissions.md — email verification is what activates a
+        // self-registered account, not a separate manual step.
+        Event::listen(Verified::class, ActivateUserOnEmailVerification::class);
     }
 }

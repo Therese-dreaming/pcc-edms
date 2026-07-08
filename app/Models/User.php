@@ -34,6 +34,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'role_id',
         'department',
         'account_status',
+        'self_registered',
         'sso_subject_id',
     ];
 
@@ -57,6 +58,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'self_registered' => 'boolean',
         ];
     }
 

@@ -123,13 +123,15 @@ class ReportDemoSeeder extends Seeder
         ], $this->userIds['secretariat']);
         $incidents->transition($incident2, 'under_investigation');
 
-        // --- Placements + DPNDA (OJT/Trainee/Student Teacher), for the DPO reports ---
+        // --- Placements + DPNDA (OJT/Trainee), for the DPO reports. "Student teacher" is not a
+        // placement type PCC tracks separately from OJT (stakeholder-confirmed) — the two former
+        // student-teacher demo rows below are ordinary internal/external OJT placements.
         $placements = [
             ['type' => 'internal_ojt', 'school' => 'Pasig Catholic College', 'dept' => 'Registrar', 'level' => 'Grade 12', 'trainee' => 'trainee@pcc.test', 'start' => now()->subMonths(2), 'end' => now()->addMonth()],
             ['type' => 'external_ojt', 'school' => 'University of Rizal System', 'dept' => 'IT Office', 'level' => '3rd Year', 'trainee' => 'ojt.external@pcc.test', 'start' => now()->subMonth(), 'end' => now()->addMonths(2)],
             ['type' => 'external_ojt', 'school' => 'Rizal Technological University', 'dept' => 'Library', 'level' => '4th Year', 'trainee' => 'ojt.external2@pcc.test', 'start' => now()->subMonths(3), 'end' => now()->subMonth()],
-            ['type' => 'student_teacher', 'school' => 'Pasig Catholic College', 'dept' => 'Grade School', 'level' => 'Grade 4', 'trainee' => 'student.teacher@pcc.test', 'start' => now()->subWeeks(3), 'end' => now()->addMonths(2)],
-            ['type' => 'student_teacher', 'school' => 'Colegio de San Juan de Letran', 'dept' => 'Senior High School', 'level' => 'Grade 11', 'trainee' => 'student.teacher2@pcc.test', 'start' => now()->subWeek(), 'end' => now()->addMonths(3)],
+            ['type' => 'internal_ojt', 'school' => 'Pasig Catholic College', 'dept' => 'Grade School', 'level' => 'Grade 4', 'trainee' => 'student.teacher@pcc.test', 'start' => now()->subWeeks(3), 'end' => now()->addMonths(2)],
+            ['type' => 'external_ojt', 'school' => 'Colegio de San Juan de Letran', 'dept' => 'Senior High School', 'level' => 'Grade 11', 'trainee' => 'student.teacher2@pcc.test', 'start' => now()->subWeek(), 'end' => now()->addMonths(3)],
         ];
 
         Auth::onceUsingId($this->userIds['coordinator']);
@@ -192,8 +194,8 @@ class ReportDemoSeeder extends Seeder
         $dpreqWorkflow->passScreeningToReview($app6);
         $dpreqWorkflow->endorse($app6, 'Fully compliant, NDA signed.');
 
-        Auth::onceUsingId($this->userIds['dpo_approver']);
-        $dpreqWorkflow->approve($app6->fresh(), $this->userIds['dpo_approver']);
+        Auth::onceUsingId($this->userIds['dpo_staff']);
+        $dpreqWorkflow->approve($app6->fresh(), $this->userIds['dpo_staff']);
 
         $this->endorseThroughToScreening($remisWorkflow, $app6->researchApplication->remisApplication);
 
@@ -295,8 +297,8 @@ class ReportDemoSeeder extends Seeder
         $extras = [
             ['name' => 'Erika External OJT', 'email' => 'ojt.external@pcc.test', 'role' => 'ojt_trainee_external'],
             ['name' => 'Elmer External OJT', 'email' => 'ojt.external2@pcc.test', 'role' => 'ojt_trainee_external'],
-            ['name' => 'Sandy Student Teacher', 'email' => 'student.teacher@pcc.test', 'role' => 'student_teacher'],
-            ['name' => 'Steve Student Teacher', 'email' => 'student.teacher2@pcc.test', 'role' => 'student_teacher'],
+            ['name' => 'Sandy Student Teacher', 'email' => 'student.teacher@pcc.test', 'role' => 'ojt_trainee_internal'],
+            ['name' => 'Steve Student Teacher', 'email' => 'student.teacher2@pcc.test', 'role' => 'ojt_trainee_external'],
         ];
 
         foreach ($extras as $extra) {
@@ -315,7 +317,6 @@ class ReportDemoSeeder extends Seeder
         foreach ([
             'researcher' => 'researcher@pcc.test',
             'dpo_staff' => 'dpo.staff@pcc.test',
-            'dpo_approver' => 'dpo.approver@pcc.test',
             'adviser' => 'adviser@pcc.test',
             'program_head' => 'programhead@pcc.test',
             'dean' => 'dean@pcc.test',

@@ -183,7 +183,11 @@ Relationships: `belongsTo research_application`, `hasMany documents` (via polymo
 > pending this table (`docs/HANDOFF.md` Part G).
 
 **`placements`** — the first-class entity `5.3` recommended instead of deriving everything from a signed PDF. Fields below match Form 5's actual questions.
-`id, trainee_id → users.id, trainee_last_name, trainee_first_name, trainee_middle_initial, gender, age, enrolled_school, hours_needed, trainee_type (internal_ojt|external_ojt|student_teacher|community_service), department, level, course, section, address_house_no, address_street, address_barangay, address_city, department_assigned, pcc_supervisor, endorsed_by, start_date, end_date, coordinator_id → users.id, created_at`
+`id, trainee_id → users.id, trainee_last_name, trainee_first_name, trainee_middle_initial, gender, age, enrolled_school, hours_needed, trainee_type (internal_ojt|external_ojt|community_service), department, level, course, section, address_house_no, address_street, address_barangay, address_city, department_assigned, pcc_supervisor, endorsed_by, start_date, end_date, coordinator_id → users.id, created_at`
+
+`trainee_type` previously included `student_teacher` as a fourth value; retired 2026-07-06 —
+DPO confirmed student teachers are not a category distinct from OJT, so they're recorded as
+ordinary `internal_ojt`/`external_ojt` placements (`docs/CHANGELOG.md`).
 
 **`dpnda_records`** (Form 5, OJT/Trainee NDA, DPO-POL-002)
 `id, placement_id → placements.id, tracking_number (DPNDA-YYYY-NNNN), status (draft|sent_for_signing|trainee_signed|declined|coordinator_countersigned|completed), guardian_name (nullable, if minor), trainee_signature_id (nullable), trainee_signature_image (nullable, LONGTEXT base64 PNG — ADR-005), trainee_signed_at (nullable), coordinator_signature_id (nullable), coordinator_signature_image (nullable, LONGTEXT base64 PNG), coordinator_signed_at (nullable), decline_reason (nullable), created_at`
@@ -305,7 +309,7 @@ POST   /api/remis/applications/{id}/screening       Ethics Secretariat decision
 POST   /api/remis/applications/{id}/risk            Ethics Reviewer classification
 POST   /api/remis/applications/{id}/decision        Ethics Committee Chair decision
 POST   /api/remis/applications/{id}/incidents        file an incident
-POST   /api/clearance/{research_application_id}/sign-dpo      DPO Approver signs their half
+POST   /api/clearance/{research_application_id}/sign-dpo      DPO Staff signs the DPO half
 POST   /api/clearance/{research_application_id}/sign-ethics   Ethics Chair signs their half —
                                                      either endpoint triggers issuance once both
                                                      signatures exist (0.4)

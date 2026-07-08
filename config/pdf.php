@@ -34,9 +34,11 @@ return [
     | Institutional header (reqs/DPO EFORM samples)
     |--------------------------------------------------------------------------
     |
-    | Rendered as text, not an image — no logo asset was supplied. If PCC
-    | provides the seal/logo image later, swap the header partial to an <img>
-    | without touching any of the calling code.
+    | Rendered as the official letterhead image, public/images/DOCS HEADER.png
+    | (added 2026-07-06), via pdf/partials/_header.blade.php. `institution_name`
+    | stays in config since resources/views/mail/notification.blade.php also
+    | reads it; `department_name` is now only used as the header image's alt
+    | text (the image already renders both lines visually).
     |
     */
     'institution_name' => 'Pasig Catholic College, Inc.',

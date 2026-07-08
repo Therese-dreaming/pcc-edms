@@ -1,10 +1,13 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import Card from '@/Components/Card';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
+import PageHeader from '@/Components/PageHeader';
 import TextInput from '@/Components/TextInput';
 import Checkbox from '@/Components/Checkbox';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { Head, useForm } from '@inertiajs/react';
+import { IconShieldLock } from '@tabler/icons-react';
 
 // docs/1.1-dpreq-application-form.md — Form 1, the single intake shared by the DPO and Ethics
 // tracks (docs/0.4-dpo-ethics-integration.md).
@@ -67,18 +70,20 @@ export default function Create() {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Form 1 — Application for Data Privacy and Ethics Review
-                </h2>
+                <PageHeader
+                    icon={IconShieldLock}
+                    title="Form 1 — Application for Data Privacy and Ethics Review"
+                    description="Shared intake for the DPO and Ethics review tracks."
+                />
             }
         >
             <Head title="New DPREQ Application" />
 
             <div className="py-12">
                 <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white p-6 shadow-sm sm:rounded-lg">
+                    <Card bodyClassName="p-6">
                         <form onSubmit={submit} className="space-y-6">
-                            <h3 className="text-lg font-semibold">Section A — Applicant Information</h3>
+                            <h3 className="font-sans text-sm font-semibold uppercase tracking-wide text-primary-700">Section A — Applicant Information</h3>
 
                             <div>
                                 <InputLabel htmlFor="research_title" value="Research Title" />
@@ -138,7 +143,7 @@ export default function Create() {
                                 <InputLabel htmlFor="applicant_type" value="Applicant Type" />
                                 <select
                                     id="applicant_type"
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition-colors"
                                     value={data.applicant_type}
                                     onChange={(e) => setData('applicant_type', e.target.value)}
                                 >
@@ -149,7 +154,7 @@ export default function Create() {
                                 <InputError message={errors.applicant_type} className="mt-2" />
                             </div>
 
-                            <h3 className="pt-4 text-lg font-semibold">Section B — Study Information</h3>
+                            <h3 className="pt-4 font-sans text-sm font-semibold uppercase tracking-wide text-primary-700">Section B — Study Information</h3>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
@@ -183,7 +188,7 @@ export default function Create() {
                                     <InputLabel htmlFor="data_collection_method" value="Data Collection Method" />
                                     <select
                                         id="data_collection_method"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                        className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition-colors"
                                         value={data.data_collection_method}
                                         onChange={(e) => setData('data_collection_method', e.target.value)}
                                     >
@@ -198,7 +203,7 @@ export default function Create() {
                                     <InputLabel htmlFor="data_capturing_tool" value="Data Capturing Tool" />
                                     <select
                                         id="data_capturing_tool"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                        className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition-colors"
                                         value={data.data_capturing_tool}
                                         onChange={(e) => setData('data_capturing_tool', e.target.value)}
                                     >
@@ -256,13 +261,13 @@ export default function Create() {
                                 <InputLabel htmlFor="respondent_head_letter_approved" value="Approved letter from head of target respondents on file?" />
                             </div>
 
-                            <h3 className="pt-4 text-lg font-semibold">DPO Review Information</h3>
+                            <h3 className="pt-4 font-sans text-sm font-semibold uppercase tracking-wide text-primary-700">DPO Review Information</h3>
 
                             <div>
                                 <InputLabel htmlFor="purpose" value="Purpose of Data Collection" />
                                 <textarea
                                     id="purpose"
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition-colors"
                                     value={data.purpose}
                                     onChange={(e) => setData('purpose', e.target.value)}
                                     required
@@ -301,7 +306,7 @@ export default function Create() {
                                 <InputLabel htmlFor="retention_plan" value="Data Storage/Retention Plan" />
                                 <textarea
                                     id="retention_plan"
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition-colors"
                                     value={data.retention_plan}
                                     onChange={(e) => setData('retention_plan', e.target.value)}
                                     required
@@ -323,7 +328,7 @@ export default function Create() {
                                     <InputLabel htmlFor="third_party_detail" value="Third-Party Sharing Detail" />
                                     <textarea
                                         id="third_party_detail"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                        className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition-colors"
                                         value={data.third_party_detail}
                                         onChange={(e) => setData('third_party_detail', e.target.value)}
                                     />
@@ -331,8 +336,8 @@ export default function Create() {
                                 </div>
                             )}
 
-                            <h3 className="pt-4 text-lg font-semibold">Ethics Review Information</h3>
-                            <p className="text-sm text-gray-500">
+                            <h3 className="pt-4 font-sans text-sm font-semibold uppercase tracking-wide text-primary-700">Ethics Review Information</h3>
+                            <p className="text-sm text-zinc-500">
                                 Required for the Ethics/REMIS track (docs/3.1 Sections C/D) — not shown on Form 1 itself, but collected here since one submission starts both tracks (docs/0.4).
                             </p>
 
@@ -341,7 +346,7 @@ export default function Create() {
                                     <InputLabel htmlFor="study_type" value="Study Type" />
                                     <select
                                         id="study_type"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                        className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition-colors"
                                         value={data.study_type}
                                         onChange={(e) => setData('study_type', e.target.value)}
                                     >
@@ -355,7 +360,7 @@ export default function Create() {
                                     <InputLabel htmlFor="study_design" value="Study Design" />
                                     <select
                                         id="study_design"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                        className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition-colors"
                                         value={data.study_design}
                                         onChange={(e) => setData('study_design', e.target.value)}
                                     >
@@ -393,7 +398,7 @@ export default function Create() {
                                 <InputLabel htmlFor="target_population" value="Target Population" />
                                 <textarea
                                     id="target_population"
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition-colors"
                                     value={data.target_population}
                                     onChange={(e) => setData('target_population', e.target.value)}
                                     required
@@ -420,7 +425,7 @@ export default function Create() {
                                     <InputLabel htmlFor="inclusion_criteria" value="Inclusion Criteria" />
                                     <textarea
                                         id="inclusion_criteria"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                        className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition-colors"
                                         value={data.inclusion_criteria}
                                         onChange={(e) => setData('inclusion_criteria', e.target.value)}
                                         required
@@ -431,7 +436,7 @@ export default function Create() {
                                     <InputLabel htmlFor="exclusion_criteria" value="Exclusion Criteria" />
                                     <textarea
                                         id="exclusion_criteria"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                        className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition-colors"
                                         value={data.exclusion_criteria}
                                         onChange={(e) => setData('exclusion_criteria', e.target.value)}
                                         required
@@ -453,7 +458,7 @@ export default function Create() {
                                 <InputLabel htmlFor="risks_to_participants" value="Risks to Participants" />
                                 <textarea
                                     id="risks_to_participants"
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition-colors"
                                     value={data.risks_to_participants}
                                     onChange={(e) => setData('risks_to_participants', e.target.value)}
                                     required
@@ -465,7 +470,7 @@ export default function Create() {
                                 <InputLabel htmlFor="benefits" value="Benefits" />
                                 <textarea
                                     id="benefits"
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition-colors"
                                     value={data.benefits}
                                     onChange={(e) => setData('benefits', e.target.value)}
                                     required
@@ -477,7 +482,7 @@ export default function Create() {
                                 <InputLabel htmlFor="confidentiality_measures" value="Confidentiality Measures" />
                                 <textarea
                                     id="confidentiality_measures"
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition-colors"
                                     value={data.confidentiality_measures}
                                     onChange={(e) => setData('confidentiality_measures', e.target.value)}
                                     required
@@ -489,7 +494,7 @@ export default function Create() {
                                 <InputLabel htmlFor="consent_process" value="Consent Process" />
                                 <textarea
                                     id="consent_process"
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition-colors"
                                     value={data.consent_process}
                                     onChange={(e) => setData('consent_process', e.target.value)}
                                     required
@@ -501,7 +506,7 @@ export default function Create() {
                                 <InputLabel htmlFor="data_storage_plan" value="Data Storage Plan (Ethics)" />
                                 <textarea
                                     id="data_storage_plan"
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition-colors"
                                     value={data.data_storage_plan}
                                     onChange={(e) => setData('data_storage_plan', e.target.value)}
                                     required
@@ -513,7 +518,7 @@ export default function Create() {
                                 <PrimaryButton disabled={processing}>Submit Application</PrimaryButton>
                             </div>
                         </form>
-                    </div>
+                    </Card>
                 </div>
             </div>
         </AuthenticatedLayout>

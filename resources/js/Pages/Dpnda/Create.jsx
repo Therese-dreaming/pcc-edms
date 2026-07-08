@@ -1,9 +1,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
+import PageHeader from '@/Components/PageHeader';
 import TextInput from '@/Components/TextInput';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { Head, useForm } from '@inertiajs/react';
+import { IconSignature } from '@tabler/icons-react';
 
 // docs/2.1-dpnda-nda-template.md §2.1.b — Form 5 (OJT/Trainee NDA), created by the Department
 // Coordinator on behalf of the trainee.
@@ -55,15 +57,30 @@ export default function Create() {
 
     return (
         <AuthenticatedLayout
-            header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Form 5 — Non-Disclosure Agreement for On-The-Job Trainee</h2>}
+            header={
+                <PageHeader
+                    icon={IconSignature}
+                    title="Form 5 — Non-Disclosure Agreement for On-The-Job Trainee"
+                    description="Create an NDA record on behalf of the trainee."
+                />
+            }
         >
             <Head title="New DPNDA Record" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white p-6 shadow-sm sm:rounded-lg">
-                        <form onSubmit={submit} className="space-y-6">
-                            <h3 className="text-lg font-semibold">Trainee</h3>
+            <div className="py-8">
+                <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+                    <div className="bg-white rounded-lg border border-zinc-200 shadow-sm overflow-hidden">
+                        <div className="border-b border-zinc-200 bg-zinc-50/50 px-6 py-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
+                                    <IconSignature size={20} className="text-primary-700" strokeWidth={2} />
+                                </div>
+                                <h3 className="text-lg font-semibold text-zinc-900">Trainee & Placement Details</h3>
+                            </div>
+                        </div>
+
+                        <form onSubmit={submit} className="p-6 space-y-6">
+                            <h4 className="text-sm font-semibold text-zinc-700 uppercase tracking-wider">Trainee</h4>
                             <div>
                                 <InputLabel htmlFor="trainee_email" value="Trainee Account Email (must already be registered)" />
                                 <TextInput
@@ -90,13 +107,12 @@ export default function Create() {
                                     <InputLabel htmlFor="trainee_type" value="Trainee Type" />
                                     <select
                                         id="trainee_type"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                        className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition-colors"
                                         value={data.trainee_type}
                                         onChange={(e) => setData('trainee_type', e.target.value)}
                                     >
                                         <option value="internal_ojt">Internal OJT</option>
                                         <option value="external_ojt">External OJT</option>
-                                        <option value="student_teacher">Student Teacher</option>
                                         <option value="community_service">Community Service</option>
                                     </select>
                                 </div>
@@ -112,7 +128,7 @@ export default function Create() {
                             </div>
                             {field('section', 'Section')}
 
-                            <h3 className="pt-4 text-lg font-semibold">Address</h3>
+                            <h4 className="pt-4 text-sm font-semibold text-zinc-700 uppercase tracking-wider">Address</h4>
                             <div className="grid grid-cols-4 gap-4">
                                 {field('address_house_no', 'House No.')}
                                 {field('address_street', 'Street')}
@@ -120,7 +136,7 @@ export default function Create() {
                                 {field('address_city', 'City')}
                             </div>
 
-                            <h3 className="pt-4 text-lg font-semibold">Placement</h3>
+                            <h4 className="pt-4 text-sm font-semibold text-zinc-700 uppercase tracking-wider">Placement</h4>
                             {field('department_assigned', 'Department Assigned')}
                             {field('pcc_supervisor', 'PCC Supervisor/Coordinator')}
                             {field('endorsed_by', 'Endorsed By')}

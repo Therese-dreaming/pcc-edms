@@ -59,24 +59,6 @@ class DpoReportController extends Controller
         return Inertia::render('Reports/PendingApprovals', ['filters' => $filters, 'data' => $data]);
     }
 
-    public function studentTeachers(Request $request): Response|StreamedResponse
-    {
-        $this->authorizeReportAccess($request->user(), $this->dpoReportRoles);
-
-        $filters = $request->only(['date_from', 'date_to']);
-        $data = $this->reports->studentTeachers($filters);
-
-        if ($request->query('format') === 'csv') {
-            return CsvResponse::make('student-teachers.csv', [
-                'Grade Level', 'Department', 'School', 'Count',
-            ], $data['rows']->map(fn ($row) => [
-                $row['level'], $row['department_assigned'], $row['enrolled_school'], $row['count'],
-            ]));
-        }
-
-        return Inertia::render('Reports/StudentTeachers', ['filters' => $filters, 'data' => $data]);
-    }
-
     public function ojtAccommodated(Request $request): Response|StreamedResponse
     {
         $this->authorizeReportAccess($request->user(), $this->dpoReportRoles);

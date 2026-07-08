@@ -70,8 +70,9 @@ class DpreqWorkflowService
     {
         $application = $this->transition($application, 'endorsed', 'dpreq_application.endorsed', $comments);
 
-        // docs/1.2: Endorsed -> DPO Approver.
-        $this->notifications->notifyRole('dpo_approver', 'DPREQ application ready for approval', "DPREQ application {$application->tracking_number} was endorsed and is awaiting approval.", $application);
+        // docs/1.2: Endorsed -> DPO Staff (DPO Approver was retired as a separate role; dpo_staff
+        // now owns final approval too).
+        $this->notifications->notifyRole('dpo_staff', 'DPREQ application ready for final approval', "DPREQ application {$application->tracking_number} was endorsed and is awaiting final approval.", $application);
 
         return $application;
     }

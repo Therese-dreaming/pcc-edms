@@ -1,6 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import ReportToolbar from '@/Components/Reports/ReportToolbar';
 import { Head, router } from '@inertiajs/react';
+import { IconMapPin } from '@tabler/icons-react';
 import { useState } from 'react';
 
 export default function Whereabouts({ filters, data }) {
@@ -16,7 +18,13 @@ export default function Whereabouts({ filters, data }) {
 
     return (
         <AuthenticatedLayout
-            header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Trainee Whereabouts</h2>}
+            header={
+                <PageHeader
+                    icon={IconMapPin}
+                    title="Trainee Whereabouts"
+                    description="Snapshot of trainees expected on-site for a given date, by department and school."
+                />
+            }
         >
             <Head title="Trainee Whereabouts" />
 
@@ -26,41 +34,41 @@ export default function Whereabouts({ filters, data }) {
                         csvHref={route('reports.whereabouts') + '?format=csv&' + new URLSearchParams(form).toString()}
                     />
 
-                    <p className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+                    <p className="mb-4 rounded-lg bg-warning-bg p-3 text-sm text-warning-text">
                         This is a placement-schedule snapshot ("on-site expected" as of the selected date),
                         not a real-time location/attendance check-in.
                     </p>
 
-                    <form onSubmit={submit} className="mb-6 flex flex-wrap items-end gap-3 rounded-lg bg-white p-4 shadow-sm">
+                    <form onSubmit={submit} className="mb-6 flex flex-wrap items-end gap-3 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
                         <div>
-                            <label className="block text-xs font-medium text-gray-600">As of</label>
-                            <input type="date" value={form.as_of} onChange={(e) => setForm({ ...form, as_of: e.target.value })} className="rounded-md border-gray-300 text-sm" />
+                            <label className="block text-xs font-medium text-zinc-600">As of</label>
+                            <input type="date" value={form.as_of} onChange={(e) => setForm({ ...form, as_of: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600">Department</label>
-                            <input type="text" value={form.department_assigned} onChange={(e) => setForm({ ...form, department_assigned: e.target.value })} className="rounded-md border-gray-300 text-sm" />
+                            <label className="block text-xs font-medium text-zinc-600">Department</label>
+                            <input type="text" value={form.department_assigned} onChange={(e) => setForm({ ...form, department_assigned: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
                         </div>
-                        <button type="submit" className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
+                        <button type="submit" className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
                             Apply
                         </button>
                     </form>
 
-                    <p className="mb-4 text-sm text-gray-600">{data.total} trainees on-site expected as of {data.as_of}.</p>
+                    <p className="mb-4 text-sm text-zinc-600">{data.total} trainees on-site expected as of {data.as_of}.</p>
 
-                    <div className="overflow-x-auto rounded-lg bg-white shadow-sm">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+                    <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white shadow-sm">
+                        <table className="min-w-full divide-y divide-zinc-200">
+                            <thead className="bg-zinc-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Trainee</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Type</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Department</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">School</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Placement Period</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Trainee</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Type</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Department</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">School</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Placement Period</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200 bg-white">
+                            <tbody className="divide-y divide-zinc-200 bg-white">
                                 {data.rows.length === 0 && (
-                                    <tr><td colSpan={5} className="px-6 py-4 text-center text-gray-500">No trainees on-site as of the selected date.</td></tr>
+                                    <tr><td colSpan={5} className="px-6 py-4 text-center text-zinc-500">No trainees on-site as of the selected date.</td></tr>
                                 )}
                                 {data.rows.map((row, i) => (
                                     <tr key={i}>

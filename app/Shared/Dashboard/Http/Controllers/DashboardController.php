@@ -15,7 +15,7 @@ use Inertia\Response;
 // the two staff offices, not a per-role dashboard for every capability-matrix row.
 class DashboardController extends Controller
 {
-    private const DPO_ROLES = ['dpo_staff', 'dpo_approver'];
+    private const DPO_ROLES = ['dpo_staff'];
     private const ORD_ROLES = ['ethics_secretariat', 'ethics_reviewer', 'ethics_committee_chair'];
 
     public function __construct(

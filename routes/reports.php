@@ -27,7 +27,6 @@ Route::middleware(['auth', 'verified'])->prefix('reports')->name('reports.')->gr
     // docs/5.3 — DPO
     Route::get('/nda-by-department-grade-level', [DpoReportController::class, 'ndaByDepartmentAndGradeLevel'])->name('nda-by-department-grade-level');
     Route::get('/pending-dpo-approvals', [DpoReportController::class, 'pendingApprovals'])->name('pending-dpo-approvals');
-    Route::get('/student-teachers', [DpoReportController::class, 'studentTeachers'])->name('student-teachers');
     Route::get('/ojt-accommodated', [DpoReportController::class, 'ojtAccommodated'])->name('ojt-accommodated');
     Route::get('/whereabouts', [DpoReportController::class, 'whereabouts'])->name('whereabouts');
     Route::get('/ojt-evaluation-compliance', [DpoReportController::class, 'ojtEvaluationCompliance'])->name('ojt-evaluation-compliance');

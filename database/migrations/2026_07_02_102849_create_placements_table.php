@@ -21,7 +21,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('age')->nullable();
             $table->string('enrolled_school');
             $table->unsignedInteger('hours_needed')->nullable();
-            $table->enum('trainee_type', ['internal_ojt', 'external_ojt', 'student_teacher', 'community_service']);
+            $table->enum('trainee_type', ['internal_ojt', 'external_ojt', 'community_service']);
             $table->string('department')->nullable();
             $table->string('level')->nullable();
             $table->string('course')->nullable();

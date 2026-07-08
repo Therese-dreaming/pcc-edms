@@ -65,32 +65,32 @@
 <table class="bordered" style="font-size: 8pt;">
     <tr>
         <td style="padding: 8px; border: 1px solid #000;">
-            <div style="font-weight: bold; margin-bottom: 6px;">Remarks:</div>
-            <p style="margin-bottom: 6px; line-height: 1.4;">
+            <div style="font-weight: bold; margin-bottom: 6px; font-family: 'Aptos', Arial, Helvetica, sans-serif;">Remarks:</div>
+            <p class="narrative" style="margin-bottom: 6px;">
                 1. Having completed all the procedures and submitted all the required documents
                 for both data privacy and research ethics review, the undersigned issue this
                 joint clearance, effective only for the period specified in the research
                 duration above.
             </p>
-            <p style="margin-bottom: 8px; line-height: 1.4;">
+            <p class="narrative" style="margin-bottom: 8px;">
                 2. Please remember that failing to adhere to your obligations regarding data
                 privacy and ethical research procedures breaches your signed non-disclosure
                 agreement. The school reserves the right to revoke this clearance at any time if
                 the agreement is violated.
             </p>
-            <div style="margin-bottom: 8px;">Respectfully yours,</div>
+            <div class="narrative" style="margin-bottom: 8px;">Respectfully yours,</div>
 
             <table style="width: 100%; border: none; margin-top: 10px;">
                 <tr>
                     <td style="width: 50%; border: none; padding: 0; vertical-align: top;">
                         <div style="border-top: 1.5px solid #000; width: 200px; margin-top: 30px; margin-bottom: 4px;"></div>
-                        <div style="font-weight: bold; font-size: 8pt;">{{ $certificate->dpoSignedBy?->name }}</div>
-                        <div style="font-size: 8pt;">DPO Officer</div>
+                        <div class="signer-name" style="text-align: left;">{{ $certificate->dpoSignedBy?->name }}</div>
+                        <div class="signer-title" style="text-align: left;">DPO Officer</div>
                     </td>
                     <td style="width: 50%; border: none; padding: 0; vertical-align: top;">
                         <div style="border-top: 1.5px solid #000; width: 200px; margin-top: 30px; margin-bottom: 4px;"></div>
-                        <div style="font-weight: bold; font-size: 8pt;">{{ $certificate->ethicsSignedBy?->name }}</div>
-                        <div style="font-size: 8pt;">Research Ethics Head</div>
+                        <div class="signer-name" style="text-align: left;">{{ $certificate->ethicsSignedBy?->name }}</div>
+                        <div class="signer-title" style="text-align: left;">Research Ethics Head</div>
                     </td>
                 </tr>
             </table>

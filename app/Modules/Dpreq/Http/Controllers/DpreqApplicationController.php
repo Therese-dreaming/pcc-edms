@@ -28,15 +28,38 @@ class DpreqApplicationController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
+        $canSeeAll = $user->hasAnyRole(['dpo_staff', 'system_administrator']);
+
+        $scope = function ($query) use ($user, $canSeeAll) {
+            if (! $canSeeAll) {
+                $query->where('applicant_id', $user->id);
+            }
+        };
+
+        $search = trim((string) $request->string('search'));
+        $status = (string) $request->string('status');
 
         $query = DpreqApplication::with('researchApplication')->latest();
+        $scope($query);
 
-        if (! $user->hasAnyRole(['dpo_staff', 'dpo_approver', 'system_administrator'])) {
-            $query->where('applicant_id', $user->id);
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('tracking_number', 'like', "%{$search}%")
+                    ->orWhereHas('researchApplication', fn ($rq) => $rq->where('research_title', 'like', "%{$search}%"));
+            });
         }
 
+        if ($status !== '' && $status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        $countsQuery = DpreqApplication::query();
+        $scope($countsQuery);
+
         return Inertia::render('Dpreq/Index', [
-            'applications' => $query->get(),
+            'applications' => $query->paginate(5)->withQueryString(),
+            'filters' => ['search' => $search, 'status' => $status ?: 'all'],
+            'statusCounts' => $countsQuery->selectRaw('status, count(*) as count')->groupBy('status')->pluck('count', 'status'),
         ]);
     }
 
@@ -111,7 +134,7 @@ class DpreqApplicationController extends Controller
         $validated = $request->validate(['comments' => ['nullable', 'string']]);
         $this->workflow->endorse($dpreqApplication, $validated['comments'] ?? null);
 
-        return back()->with('success', 'Application endorsed to DPO Approver.');
+        return back()->with('success', 'Application endorsed for final approval.');
     }
 
     public function approve(Request $request, DpreqApplication $dpreqApplication): RedirectResponse

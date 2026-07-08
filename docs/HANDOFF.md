@@ -1,11 +1,100 @@
-# Session Handoff — 2026-07-02 (session 2)
+# Session Handoff — 2026-07-02 through 2026-07-07/08 (multi-session, agent handoff pending)
 
-Written to carry context into the next session. For "how do I run this," see
-[`GETTING_STARTED.md`](../GETTING_STARTED.md) at the project root. This file is about *what
+Written to carry context into the next session — and, as of this revision, into a **different
+agent** entirely (the requester is switching agents after 2026-07-09). For "how do I run this,"
+see [`GETTING_STARTED.md`](../GETTING_STARTED.md) at the project root. This file is about *what
 exists, why it's shaped this way, and what's still open* — read it before making changes.
 
 The previous session's handoff is preserved below under **§7 (session 1 handoff)** — its "bugs
 found" section (§7.4) is still live knowledge, worth reading once.
+
+---
+
+## 0. Start here — orientation for a new agent (read this first)
+
+If you only read one section, read this one. §1 onward is the full narrative for when you need
+the "why" behind something.
+
+**What's built:** every module — DPREQ, DPNDA, REMIS, Incident Reporting, all 13 reports,
+notifications (in-app + email), DPO/ORD dashboards, Admin/User Management with bulk CSV import,
+drawn e-signatures, PDF generation with real fonts/header image — is functionally complete and
+has been browser-verified at least once. Full list: §6.
+
+**Git state — read before touching any branch:**
+- `main` and `stakeholder-preview` both pointed at the same single commit (`6faf9be`, "Initial
+  commit") for the entire span of work described in this document — everything below existed
+  only as *uncommitted* working-tree changes until this handoff, when it was committed to `main`
+  in one commit (message references this file) so there's an actual history to hand off, not
+  just a live file state.
+- **That commit was NOT pushed to `origin`.** `stakeholder-preview` is already pushed and is
+  frozen — it's what stakeholders were shown; **do not amend or force-push it.** `main` is
+  reserved for "the finished version" per the requester's own explicit instruction early in this
+  project ("this is just we can save an unfinished version, but afterwards we will finish it, and
+  that will be main") — **do not push `main` to `origin` without asking first**, even though it's
+  now committed locally. A permission-classifier previously blocked an unprompted push to `main`
+  for exactly this reason, and the requester confirmed that boundary was correct when asked.
+- Going forward, commit your own work incrementally on `main` (or a feature branch, if you
+  prefer) rather than letting changes pile up uncommitted again.
+
+**Front-end redesign — currently PAUSED and in a genuinely mixed state. Do not "fix" it without asking:**
+- A full redesign was planned and approved around a maroon/paper design-token system
+  (`resources/css/app.css`, `tailwind.config.js`): self-hosted fonts, `@tabler/icons-react`,
+  SweetAlert2, and explicit anti-"AI slop" constraints (no gradients, no glassmorphism, no huge
+  shadows, no purple/blue accents, limit to ~3 colors/fonts). That system was applied to the
+  shared components (`Card`, `Table`, `StatusBadge`, `Alert`, `IconButton`), both layouts, the
+  dashboard, and a mechanical color-token sweep across most of `resources/js/Pages/**`.
+- Partway through, the requester began hand-editing several pages directly with a **different**
+  aesthetic: `resources/js/Pages/Auth/*.jsx` (all six auth pages), `Dpreq/Show.jsx`,
+  `Dpnda/Create.jsx` — using `stone`/`zinc` Tailwind defaults, a second icon library
+  (`@phosphor-icons/react`, installed alongside the already-established `@tabler/icons-react`),
+  gradients, glassmorphism (`backdrop-blur`), and large shadows — several of the things the
+  original plan explicitly banned. `.agents/skills/` and `.claude/skills/` (part of this same
+  commit) contain installed design skills (`industrial-brutalist-ui`, `minimalist-ui`,
+  `redesign-existing-projects`, `design-taste-frontend`, etc.) likely used to generate these.
+- When a previous pass tried to restyle the requester's hand-edited auth pages back toward the
+  token system, the requester pushed back ("You changed the design completely") and asked for a
+  revert — but the exact original pasted content for two of the six files was never fully
+  captured in the agent's context and couldn't be restored byte-for-byte. **Lesson: don't
+  unilaterally restyle pages the requester has hand-edited, even if they contradict an earlier
+  approved plan — ask first, and if you must revert something, confirm you actually have the
+  content to revert to before touching it.**
+- **Current status: paused.** The requester explicitly said to pause the redesign and move to
+  other work. Don't resume it, don't pick a direction, and don't try to reconcile the mixed
+  styles across pages unless explicitly asked. `docs/DESIGN.md` (would formally document the
+  token system) was never written; the Phase 2 full-app style migration was never finished.
+
+**Pending on external stakeholders — don't build ahead of these:**
+- A new "Unified Research Ethics and Data Privacy Clearance Application Form"
+  (`reqs/July-7-2026_Unified-Research-Ethics-and-Data-Privacy-Clearance-Application-Form.pdf`)
+  has real structural differences from the current build — new fields, an "Exempted" decision
+  outcome, a DPIA yes/no flag, Data-Privacy-Act-aligned data classification, a richer attachments
+  checklist. The requester confirmed: **wait** — separate student/employee form variants and a
+  new clearance/exemption certificate layout are still coming. Full field-level delta already
+  written up: `docs/9.1-review-and-open-questions.md` §2b. Don't implement any of it until told
+  the final versions are in — see Part K.
+- Four questions remain genuinely unanswered (not just unbuilt): full-REMIS-track applicability
+  for every submission vs. a risk-based fast track, the exact criteria thresholds *between*
+  Minimal/Moderate/High risk (the *mechanism* — manual decision buttons, no auto-classification —
+  **is** confirmed and already built, just not the thresholds themselves), whether an incident
+  should auto-pause a study's monitoring, and the DPREQ/DPNDA document retention schedule.
+- SSO (Microsoft Entra ID / `pccnet.edu.ph`) is confirmed as the target provider but blocked on
+  PCC IT registering an app and issuing credentials.
+- Virus scanning (ClamAV — researched, deemed feasible and free) is deliberately deferred by the
+  requester until the rest of the project is otherwise complete.
+
+**Collaboration notes learned across this project:**
+- The requester answers batches of open questions in one message, sometimes tersely — read every
+  answer carefully before acting, since a short "Ok with this one" can address only part of a
+  multi-part question (e.g. confirming an incident-filing role list without addressing the
+  separate auto-pause-on-breach question in the same item).
+- When a scope decision is ambiguous or risks wasted rework (the unified form is the clearest
+  example), ask directly via a real question rather than guessing — the requester has
+  consistently preferred being asked over having something built that then needs undoing.
+- `docs/CHANGELOG.md`, `docs/HANDOFF.md`, and `docs/9.1-review-and-open-questions.md` are treated
+  as first-class deliverables, updated in the same pass as the code change they describe, not
+  deferred to "later."
+- The requester previously told the classifier's git-push boundary was correct when it blocked an
+  unprompted `main` push — take that as a standing preference, not a one-time correction.
 
 ---
 
@@ -368,6 +457,84 @@ dependency needed, unlike SSO or virus scanning above).
    `user.created` event, no new audit code needed), and confirmed both verification and
    password-reset-link emails fired for each. Test accounts deleted after verification.
 
+**Part I — 18 outstanding open questions answered, DPO Approver + Student Teacher roles retired
+(2026-07-06):** the remaining 🔴 items from `9.1`/`stakeholder-package/05` that Part G's pass
+didn't cover were put to the requester directly. Full breakdown in `CHANGELOG.md`'s 2026-07-06
+entry; summary here:
+1. **DPO Approver retired.** DPO Staff is now the sole DPO-side role, owning the DPO track end
+   to end including final `approve()`/`reject()` (previously `dpo_approver`-exclusive). Touched
+   every DPREQ/DPNDA/Incident policy and controller that referenced the two-role split, the
+   DPO dashboard's per-role status mapping, and `Dpreq/Show.jsx`'s action gating. Verified
+   end-to-end: `php artisan migrate:fresh --seed` completes cleanly, and the seeded DPREQ
+   application (`ReportDemoSeeder`) screens → endorses → approves → issues clearance entirely
+   under `dpo_staff`, confirmed via tinker (`role.can('approve', ...)` → true,
+   `DpreqApplication::status` → `clearance_issued`).
+2. **Student Teacher retired as a distinct category.** Removed the `student_teacher` role, the
+   `student_teacher` value from `placements.trainee_type`, and the standalone "Student Teachers
+   by Grade Level" report. Those trainees are now ordinary internal/external OJT placements —
+   "Trainee Whereabouts" still shows them since it never filtered by type.
+3. **Everything else answered this pass required no code change** — DPREQ fields/file
+   sizes/checklist, NDA template fields, Compliance Monitoring Report staying separate,
+   Whereabouts staying a snapshot, audit-trail access list, Research Ethics Head = Chair
+   (already resolved, `9.1` just hadn't caught up), Form 2 for solo researchers, and SSO
+   provider (Microsoft 365 / `pccnet.edu.ph` → Entra ID, still IT-provisioning-blocked) all
+   confirmed the existing implementation or assumption was already correct.
+4. **Virus scanning** — requester deferred this explicitly until the rest of the project is
+   complete; no longer an open IT question to chase in the meantime.
+5. **Still genuinely unanswered, not just unbuilt:** full-REMIS-track applicability for every
+   submission vs. a risk-based fast track, exact risk-classification thresholds, incident-filing
+   scope/auto-hold rules, and the DPREQ/DPNDA retention schedule (years for issued vs. rejected
+   records) — these four remain 🔴 in `9.1` and need DPO/ORD/Legal input, not an implementation
+   decision.
+
+**Part J — Real fonts + header image applied to PDF templates (2026-07-06, same day):** closes
+out the last remaining item from the front-end redesign request — the requester had supplied
+`public/fonts/Microsoft Aptos Fonts/`, `times.ttf`, `cour.ttf`, and `public/images/DOCS
+HEADER.png` (the actual PCC letterhead) earlier in the session, but they hadn't been wired into
+the PDF templates yet. Full detail in `CHANGELOG.md`; summary:
+1. **New `App\Shared\Documents\Support\PdfAssets::dataUri()`** embeds each font/image as base64
+   — required because `PdfGenerationService` renders via `Browsershot::html()` (a temp file, not
+   the app's web server), so relative `/fonts`/`/images` URLs never resolve.
+2. **Deliberate 3-font hierarchy** across all three PDF templates (Form 2, 3, 5 — Form 1 has no
+   PDF, it's web-form-only): Aptos for structure (labels/headings/table headers), Times New
+   Roman for formal prose (purpose/scope narratives, certification, Form 3's remarks), Courier
+   New stays the body default for filled-in data (preserves the existing typewritten-form look).
+3. **Header image replaces the CSS-recreated text header**, and the form badge ("FORM 2/3/5") is
+   now colored `#891a1a` — the exact same hex as `primary-700` in the front-end's design tokens,
+   so the one maroon accent that exists on these forms matches the screen exactly.
+4. **Verified by actually generating a PDF from each of the three templates** (via tinker,
+   against real seeded records) and visually inspecting the rendered output — no missing-glyph
+   boxes, no doubled header rule, no layout breaks.
+
+**Part K — 5 more stakeholder answers, file-size limit raised, unified application form shared
+(2026-07-07):** full detail in `CHANGELOG.md`'s 2026-07-07 entry and `docs/9.1` §2b; summary:
+1. **File upload limit raised 10MB → 50MB.** Updated the three Laravel validation rules
+   (`DpndaRecordController::uploadEvaluationReport()`,
+   `RemisApplicationController::submitProgressReport()`/`submitCompletionReport()`, `max:10240` →
+   `max:51200`) *and*, necessarily, the local PHP install's `upload_max_filesize`
+   (40M→50M)/`post_max_size` (40M→60M) in `C:\xampp\php\php.ini` — the Laravel-side change alone
+   does nothing if PHP itself rejects anything over 40MB before Laravel's validation ever runs.
+   **Requires restarting `php artisan serve` to take effect** if a dev server is already running.
+2. **Risk classification, incident filing, and Whereabouts all confirmed to already match what's
+   built — no code change.** Risk classification is (and was already) manual decision-buttons +
+   required written rationale, no auto-computation, no consequence tied to the tier beyond the
+   label (`RiskClassification`/`RemisApplicationController::submitReview()`). Incident filing's
+   "who can file" list exactly matches `RemisApplicationPolicy::file()`. Whereabouts-as-snapshot
+   reconfirmed.
+3. **Superseded, not yet reflected in code:** the DPREQ/DPNDA form fields and NDA template fields
+   confirmed "fine as-is" one day earlier (Part I) were superseded: "Ignore all forms sent
+   before. We will update all forms and send the approved ones." Don't do further form-field
+   work against the old `reqs/DPO EFORM *.pdf` samples.
+4. **New, deliberately not built:** a "Unified Research Ethics and Data Privacy Clearance
+   Application Form" (`reqs/July-7-2026_...pdf`) was shared — see §0 above and `docs/9.1` §2b for
+   the full field-level delta from the current build (new checkbox-driven fields, an "Exempted"
+   decision outcome, a DPIA yes/no flag, Data Privacy Act–aligned data classification). Asked the
+   requester directly whether to start building against it now or wait; **requester chose wait**
+   — student/employee variants and a clearance/exemption certificate layout are still coming.
+5. **This same session, the entire uncommitted project history (everything through Part K) was
+   committed to `main` locally** (not pushed) as part of preparing this handoff for a new agent
+   — see §0's "Git state" note.
+
 ## 3. What's still NOT built, and why
 
 Nothing is deferred for lack of a decision anymore — Part G put every remaining open question to
@@ -481,36 +648,52 @@ a mixed valid/invalid CSV.
   indefinitely; not requested.
 - **SMS notification channel** — the project runs entirely free apart from deployment hosting;
   every real SMS gateway is a paid service. Email (the FRS-required channel) was built in Part E.
-- **Virus scanning on upload** — researched (ClamAV, see Part G addendum item 4), but skipped for
-  now: it needs to run on the production server, not just locally, and hosting isn't decided yet
-  (`docs/7.0`). Revisit once hosting is chosen.
-- Same handful of 🔴 open questions from `9.1` §1 (out-of-scope confirmation, DPO-side role list,
-  DPREQ field lists, risk-classification thresholds, incident-filing scope, etc.) and `0.4`
-  remain unanswered — these are the ones that don't map to a single buildable feature, so putting
-  them to the requester wasn't practical in the same pass as Part G's four. Also still open: the
-  ones flagged in §5 (auto-start monitoring; submission-as-acceptance) and the
-  inferred-vs-literal notification triggers noted in §2 Part C.
+- **Virus scanning on upload** — researched (ClamAV, see Part G addendum item 4); Part I
+  (2026-07-06) closed this as explicitly deferred by the requester until the rest of the project
+  is complete, superseding the earlier "blocked on hosting decision" framing.
+- Part I (2026-07-06) and Part K (2026-07-07) resolved most of the remaining `9.1` §1 items
+  directly with the requester (DPO-side role list, DPREQ field lists/checklist, NDA template
+  fields [later superseded, see Part K item 3], Compliance Monitoring Report, Whereabouts,
+  audit-trail access, Research Ethics Head, Form 2 solo-researcher applicability, SSO provider,
+  file-size limit, risk-classification *mechanism*, incident-filing who-can-file). **Still
+  genuinely open:** full-REMIS-track applicability, the exact numeric risk-classification
+  *thresholds* (not the mechanism — that's confirmed), incident-filing auto-hold-on-breach, and
+  the DPREQ/DPNDA retention schedule. Also still open: the ones flagged in §5 (auto-start
+  monitoring; submission-as-acceptance) and the inferred-vs-literal notification triggers noted
+  in §2 Part C.
 
 ## 7. Recommended next step
 
 Every confirmed-in-spec gap and every open question with a clear yes/no shape has now been either
-built, explicitly declined, or (bulk import, SSO groundwork) built where possible and otherwise
-queued on an external dependency (Parts E, F, G, H). What's left is genuinely just external
-dependencies:
-1. **The remaining 🔴 open questions in `9.1`/`0.4`** (see §6) — these need DPO/ORD/IT input on
-   specifics (exact form fields, risk thresholds, retention schedules) rather than a build/don't-
-   build call, so they don't fit the same "ask and implement" pattern Part G used.
-2. **SSO (Microsoft Entra ID)** — narrowed down (Part G addendum item 3) but blocked on IT
-   officially confirming the provider and registering an app for real credentials.
-3. **Virus scanning (ClamAV)** — feasibility confirmed, blocked on a hosting decision
-   (`docs/7.0`) since it needs to run on the production server itself.
+built, explicitly declined, or (bulk import, SSO groundwork, PDF fonts) built where possible and
+otherwise queued on an external dependency (Parts E through K). What's left is genuinely just
+external dependencies, a handful of unanswered policy specifics, and two things only the
+requester can move forward:
+1. **Four still-unanswered 🔴 questions in `9.1`** (see §6, Part I item 5, Part K item 4) —
+   full-REMIS-track applicability, the exact risk-classification thresholds, incident-filing
+   auto-hold rules, and the retention schedule. These need DPO/ORD/Legal input on specifics, not
+   a build/don't-build call.
+2. **The Unified Application Form** (`reqs/July-7-2026_...pdf`, Part K item 4, `docs/9.1` §2b) —
+   deliberately not started; wait for the confirmed student/employee variants and the clearance/
+   exemption certificate layout before touching schema or forms.
+3. **SSO (Microsoft Entra ID)** — provider confirmed (Part I: Microsoft 365 /
+   `pccnet.edu.ph`), still blocked on IT registering an app and issuing a client ID/secret/tenant
+   ID before any SSO code can be wired up and tested.
+4. **Virus scanning (ClamAV)** — feasibility confirmed, deliberately deferred by the requester
+   (Part I) until the rest of the project is complete.
+5. **The front-end redesign** — paused mid-flight in a genuinely mixed state (§0). Don't resume
+   or "fix" it without the requester explicitly asking; if asked, read §0's front-end section
+   first so you don't repeat the same restyle-without-asking mistake.
 
-None of these are engineering work Claude can pick up solo anymore — each needs either a
-stakeholder answer or an external party (IT) taking an action outside this codebase. The system
-covers every module (`docs/1.x`-`5.x`) end-to-end with both required notification channels, a
-legally-sound signing flow, a real admin surface (including bulk onboarding), and a REMIS review
-process that matches the FRS's panel-review language. The next session should start by asking the
-requester what came back from stakeholders, rather than picking a default.
+None of these are engineering work an agent can pick up solo — each needs either a stakeholder
+answer, an external party (IT) taking an action outside this codebase, or an explicit go-ahead
+from the requester on design direction. The system covers every module (`docs/1.x`-`5.x`)
+end-to-end with both required notification channels, a legally-sound signing flow, a real admin
+surface (including bulk onboarding), a REMIS review process matching the FRS's panel-review
+language, and PDF generation using the requester's own fonts/letterhead. **If you are a new agent
+picking this up for the first time: read §0 in full before doing anything else, then ask the
+requester what, if anything, has changed since 2026-07-07 rather than assuming this document is
+still 100% current.**
 
 ---
 

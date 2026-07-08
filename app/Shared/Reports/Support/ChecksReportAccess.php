@@ -10,14 +10,14 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 trait ChecksReportAccess
 {
     /** @var list<string> */
-    protected array $dpoReportRoles = ['dpo_staff', 'dpo_approver', 'system_administrator'];
+    protected array $dpoReportRoles = ['dpo_staff', 'system_administrator'];
 
     /** @var list<string> */
     protected array $ordReportRoles = ['ethics_secretariat', 'ethics_committee_chair', 'system_administrator'];
 
     /** @var list<string> */
     protected array $sharedReportRoles = [
-        'dpo_staff', 'dpo_approver', 'ethics_secretariat', 'ethics_committee_chair', 'system_administrator',
+        'dpo_staff', 'ethics_secretariat', 'ethics_committee_chair', 'system_administrator',
     ];
 
     /**

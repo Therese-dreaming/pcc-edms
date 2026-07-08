@@ -30,17 +30,40 @@ class RemisApplicationController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
+        $canSeeAll = $user->hasAnyRole(['ethics_secretariat', 'ethics_reviewer', 'ethics_committee_chair', 'system_administrator']);
+
+        $scope = function ($query) use ($user, $canSeeAll) {
+            if (! $canSeeAll) {
+                $query->where(function ($q) use ($user) {
+                    $q->where('applicant_id', $user->id)->orWhere('adviser_id', $user->id);
+                });
+            }
+        };
+
+        $search = trim((string) $request->string('search'));
+        $status = (string) $request->string('status');
 
         $query = RemisApplication::with('researchApplication')->latest();
+        $scope($query);
 
-        if (! $user->hasAnyRole(['ethics_secretariat', 'ethics_reviewer', 'ethics_committee_chair', 'system_administrator'])) {
-            $query->where(function ($q) use ($user) {
-                $q->where('applicant_id', $user->id)->orWhere('adviser_id', $user->id);
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('tracking_number', 'like', "%{$search}%")
+                    ->orWhereHas('researchApplication', fn ($rq) => $rq->where('research_title', 'like', "%{$search}%"));
             });
         }
 
+        if ($status !== '' && $status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        $countsQuery = RemisApplication::query();
+        $scope($countsQuery);
+
         return Inertia::render('Remis/Index', [
-            'applications' => $query->get(),
+            'applications' => $query->paginate(15)->withQueryString(),
+            'filters' => ['search' => $search, 'status' => $status ?: 'all'],
+            'statusCounts' => $countsQuery->selectRaw('status, count(*) as count')->groupBy('status')->pluck('count', 'status'),
         ]);
     }
 
@@ -200,7 +223,7 @@ class RemisApplicationController extends Controller
             'protocol_deviations' => ['nullable', 'string'],
             'corrective_actions' => ['nullable', 'string'],
             'documents' => ['nullable', 'array'],
-            'documents.*' => ['file', 'max:10240'],
+            'documents.*' => ['file', 'max:51200'],
         ]);
 
         try {
@@ -242,7 +265,7 @@ class RemisApplicationController extends Controller
             'publication_status' => ['required', 'string', 'max:255'],
             'data_storage_location' => ['required', 'string', 'max:255'],
             'documents' => ['nullable', 'array'],
-            'documents.*' => ['file', 'max:10240'],
+            'documents.*' => ['file', 'max:51200'],
         ]);
 
         try {

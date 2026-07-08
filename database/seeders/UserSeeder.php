@@ -15,7 +15,6 @@ class UserSeeder extends Seeder
         $accounts = [
             ['name' => 'Rosa Researcher', 'email' => 'researcher@pcc.test', 'role' => 'researcher_internal'],
             ['name' => 'Dan DPO Staff', 'email' => 'dpo.staff@pcc.test', 'role' => 'dpo_staff'],
-            ['name' => 'Ana DPO Approver', 'email' => 'dpo.approver@pcc.test', 'role' => 'dpo_approver'],
             ['name' => 'Sam Admin', 'email' => 'admin@pcc.test', 'role' => 'system_administrator'],
             ['name' => 'Cathy Coordinator', 'email' => 'coordinator@pcc.test', 'role' => 'department_coordinator'],
             ['name' => 'Toby Trainee', 'email' => 'trainee@pcc.test', 'role' => 'ojt_trainee_internal'],

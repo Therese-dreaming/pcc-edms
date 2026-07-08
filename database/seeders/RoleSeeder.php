@@ -16,12 +16,11 @@ class RoleSeeder extends Seeder
             ['name' => 'researcher_external', 'side' => 'dpo'],
             ['name' => 'ojt_trainee_internal', 'side' => 'dpo'],
             ['name' => 'ojt_trainee_external', 'side' => 'dpo'],
-            ['name' => 'student_teacher', 'side' => 'dpo'],
             ['name' => 'department_coordinator', 'side' => 'dpo'],
             ['name' => 'dpo_staff', 'side' => 'dpo'],
-            ['name' => 'dpo_approver', 'side' => 'dpo'],
-            // REMIS-side
-            ['name' => 'remis_researcher', 'side' => 'remis'],
+            // REMIS-side — no separate "remis_researcher" role: a researcher is either
+            // researcher_internal or researcher_external (above) on both the DPO and REMIS
+            // sides, since one DPREQ submission starts both tracks (docs/0.4).
             ['name' => 'adviser', 'side' => 'remis'],
             ['name' => 'program_head', 'side' => 'remis'],
             ['name' => 'dean', 'side' => 'remis'],

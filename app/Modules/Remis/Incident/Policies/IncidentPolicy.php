@@ -19,7 +19,7 @@ class IncidentPolicy
             || $incident->assigned_to === $user->id
             || $user->hasAnyRole([
                 'ethics_secretariat', 'ethics_reviewer', 'ethics_committee_chair',
-                'dpo_staff', 'dpo_approver', 'system_administrator',
+                'dpo_staff', 'system_administrator',
             ]);
     }
 

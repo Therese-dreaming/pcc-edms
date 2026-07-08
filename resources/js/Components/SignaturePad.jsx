@@ -46,12 +46,12 @@ export default function SignaturePad({ onChange, className = '' }) {
         <div className={className}>
             <canvas
                 ref={canvasRef}
-                className="h-32 w-full rounded-md border border-gray-300 bg-white"
+                className="h-32 w-full rounded-md border border-zinc-300 bg-white"
             />
             <button
                 type="button"
                 onClick={clear}
-                className="mt-1 text-xs text-gray-500 hover:text-gray-700 hover:underline"
+                className="mt-1 text-xs text-zinc-500 hover:text-zinc-700 hover:underline"
             >
                 Clear signature
             </button>

@@ -18,14 +18,14 @@ class DpreqApplicationPolicy
     public function view(User $user, DpreqApplication $application): bool
     {
         return $application->applicant_id === $user->id
-            || $user->hasAnyRole(['dpo_staff', 'dpo_approver', 'system_administrator']);
+            || $user->hasAnyRole(['dpo_staff', 'system_administrator']);
     }
 
     public function create(User $user): bool
     {
-        // docs/0.2: any "Requester" role may submit; DPO staff/approver act on applications,
-        // they don't submit their own.
-        return $user->isActive() && ! $user->hasAnyRole(['dpo_staff', 'dpo_approver']);
+        // docs/0.2: any "Requester" role may submit; DPO staff act on applications, they don't
+        // submit their own.
+        return $user->isActive() && ! $user->hasRole('dpo_staff');
     }
 
     public function screen(User $user, DpreqApplication $application): bool
@@ -50,11 +50,13 @@ class DpreqApplicationPolicy
 
     public function approve(User $user, DpreqApplication $application): bool
     {
-        return $user->hasRole('dpo_approver');
+        // docs/0.2: DPO Approver was retired as a separate role — dpo_staff owns the full
+        // track end to end, including final approval.
+        return $user->hasRole('dpo_staff');
     }
 
     public function reject(User $user, DpreqApplication $application): bool
     {
-        return $user->hasAnyRole(['dpo_staff', 'dpo_approver']);
+        return $user->hasRole('dpo_staff');
     }
 }

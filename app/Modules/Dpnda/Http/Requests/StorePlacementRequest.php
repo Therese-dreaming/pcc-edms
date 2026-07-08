@@ -23,7 +23,7 @@ class StorePlacementRequest extends FormRequest
             'age' => ['nullable', 'integer', 'min:1', 'max:120'],
             'enrolled_school' => ['required', 'string', 'max:255'],
             'hours_needed' => ['nullable', 'integer', 'min:1'],
-            'trainee_type' => ['required', 'in:internal_ojt,external_ojt,student_teacher,community_service'],
+            'trainee_type' => ['required', 'in:internal_ojt,external_ojt,community_service'],
             'department' => ['nullable', 'string', 'max:255'],
             'level' => ['nullable', 'string', 'max:255'],
             'course' => ['nullable', 'string', 'max:255'],

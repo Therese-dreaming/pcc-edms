@@ -28,7 +28,6 @@ class ReportController extends Controller
             ['name' => 'Archive Studies Report', 'route' => 'reports.archive-studies', 'roles' => $this->ordReportRoles],
             ['name' => 'NDAs by Department and Grade Level', 'route' => 'reports.nda-by-department-grade-level', 'roles' => $this->dpoReportRoles],
             ['name' => 'Pending DPO Approvals', 'route' => 'reports.pending-dpo-approvals', 'roles' => $this->dpoReportRoles],
-            ['name' => 'Student Teachers by Grade Level', 'route' => 'reports.student-teachers', 'roles' => $this->dpoReportRoles],
             ['name' => 'OJTs Accommodated', 'route' => 'reports.ojt-accommodated', 'roles' => $this->dpoReportRoles],
             ['name' => "Trainee Whereabouts", 'route' => 'reports.whereabouts', 'roles' => $this->dpoReportRoles],
             ['name' => 'OJT Evaluation Report Compliance', 'route' => 'reports.ojt-evaluation-compliance', 'roles' => $this->dpoReportRoles],

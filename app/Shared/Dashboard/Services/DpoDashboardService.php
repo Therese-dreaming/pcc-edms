@@ -41,15 +41,12 @@ class DpoDashboardService
     }
 
     // docs/4.3: "Pending My Action | Records assigned to the logged-in reviewer/approver" —
-    // DPREQ has no per-user assignment for screening/endorsement (docs/0.2's capability matrix
-    // gates those by role, not by a specific assignee), so "assigned to me" collapses to "in the
-    // status my role currently owns" per docs/1.2's workflow diagram.
+    // DPREQ has no per-user assignment for screening/endorsement/approval (docs/0.2's capability
+    // matrix gates those by role, not by a specific assignee), and dpo_staff owns every DPO-side
+    // status from screening through final approval (DPO Approver was retired as a separate role).
     private function pendingMyAction(User $user): array
     {
-        $statuses = match ($user->role?->name) {
-            'dpo_approver' => ['endorsed'],
-            default => ['screening', 'under_review'],
-        };
+        $statuses = ['screening', 'under_review', 'endorsed'];
 
         $query = DpreqApplication::with('researchApplication')
             ->whereIn('status', $statuses)

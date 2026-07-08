@@ -132,10 +132,10 @@
     {
       "id": "role.student_teacher",
       "type": "Role",
-      "label": "Student Teacher",
+      "label": "Student Teacher (RETIRED 2026-07-06 — not a distinct category; tracked as OJT)",
       "properties": {
         "side": "DPO",
-        "status": "ASSUMPTION",
+        "status": "RETIRED",
         "sourceFile": "0.2-stakeholders-and-roles.md"
       }
     },
@@ -152,20 +152,20 @@
     {
       "id": "role.dpo_staff",
       "type": "Role",
-      "label": "DPO Staff/Reviewer",
+      "label": "DPO Staff (sole DPO role since 2026-07-06 — owns screening through final approval)",
       "properties": {
         "side": "DPO",
-        "status": "ASSUMPTION",
+        "status": "CONFIRMED",
         "sourceFile": "0.2-stakeholders-and-roles.md"
       }
     },
     {
       "id": "role.dpo_approver",
       "type": "Role",
-      "label": "DPO Approver/Head",
+      "label": "DPO Approver/Head (RETIRED 2026-07-06 — merged into DPO Staff)",
       "properties": {
         "side": "DPO",
-        "status": "ASSUMPTION",
+        "status": "RETIRED",
         "sourceFile": "0.2-stakeholders-and-roles.md"
       }
     },
@@ -765,8 +765,9 @@
     {
       "id": "report.student_teachers_per_grade",
       "type": "Report",
-      "label": "Student Teachers per Grade/Dept/School",
+      "label": "Student Teachers per Grade/Dept/School (RETIRED 2026-07-06 — removed, not a distinct category)",
       "properties": {
+        "status": "RETIRED",
         "sourceFile": "5.3-reports-dpo.md"
       }
     },
@@ -781,7 +782,7 @@
     {
       "id": "report.ojt_whereabouts",
       "type": "Report",
-      "label": "OJT/Student Teacher Whereabouts",
+      "label": "OJT Whereabouts",
       "properties": {
         "sourceFile": "5.3-reports-dpo.md"
       }

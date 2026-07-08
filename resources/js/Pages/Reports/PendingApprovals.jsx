@@ -1,6 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import ReportToolbar from '@/Components/Reports/ReportToolbar';
 import { Head, Link, router } from '@inertiajs/react';
+import { IconClockHour4 } from '@tabler/icons-react';
 import { useState } from 'react';
 
 const STATUS_LABELS = {
@@ -25,7 +27,13 @@ export default function PendingApprovals({ filters, data }) {
 
     return (
         <AuthenticatedLayout
-            header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Pending DPO Approvals</h2>}
+            header={
+                <PageHeader
+                    icon={IconClockHour4}
+                    title="Pending DPO Approvals"
+                    description="DPREQ applications still awaiting a decision, with days pending per submission."
+                />
+            }
         >
             <Head title="Pending DPO Approvals" />
 
@@ -35,47 +43,47 @@ export default function PendingApprovals({ filters, data }) {
                         csvHref={route('reports.pending-dpo-approvals') + '?format=csv&' + new URLSearchParams(form).toString()}
                     />
 
-                    <form onSubmit={submit} className="mb-6 flex flex-wrap items-end gap-3 rounded-lg bg-white p-4 shadow-sm">
+                    <form onSubmit={submit} className="mb-6 flex flex-wrap items-end gap-3 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
                         <div>
-                            <label className="block text-xs font-medium text-gray-600">Submitted From</label>
-                            <input type="date" value={form.date_from} onChange={(e) => setForm({ ...form, date_from: e.target.value })} className="rounded-md border-gray-300 text-sm" />
+                            <label className="block text-xs font-medium text-zinc-600">Submitted From</label>
+                            <input type="date" value={form.date_from} onChange={(e) => setForm({ ...form, date_from: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600">Submitted To</label>
-                            <input type="date" value={form.date_to} onChange={(e) => setForm({ ...form, date_to: e.target.value })} className="rounded-md border-gray-300 text-sm" />
+                            <label className="block text-xs font-medium text-zinc-600">Submitted To</label>
+                            <input type="date" value={form.date_to} onChange={(e) => setForm({ ...form, date_to: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600">Department</label>
-                            <input type="text" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} className="rounded-md border-gray-300 text-sm" />
+                            <label className="block text-xs font-medium text-zinc-600">Department</label>
+                            <input type="text" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
                         </div>
-                        <button type="submit" className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
+                        <button type="submit" className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
                             Apply
                         </button>
                     </form>
 
-                    <p className="mb-4 text-sm text-gray-600">{data.total} applications pending.</p>
+                    <p className="mb-4 text-sm text-zinc-600">{data.total} applications pending.</p>
 
-                    <div className="overflow-x-auto rounded-lg bg-white shadow-sm">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+                    <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white shadow-sm">
+                        <table className="min-w-full divide-y divide-zinc-200">
+                            <thead className="bg-zinc-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Tracking #</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Applicant</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Department</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Submitted</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Comments</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Days Pending</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Tracking #</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Applicant</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Department</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Submitted</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Status</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Comments</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Days Pending</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200 bg-white">
+                            <tbody className="divide-y divide-zinc-200 bg-white">
                                 {data.rows.length === 0 && (
-                                    <tr><td colSpan={7} className="px-6 py-4 text-center text-gray-500">No pending approvals for the selected filters.</td></tr>
+                                    <tr><td colSpan={7} className="px-6 py-4 text-center text-zinc-500">No pending approvals for the selected filters.</td></tr>
                                 )}
                                 {data.rows.map((row) => (
                                     <tr key={row.id}>
                                         <td className="px-6 py-4">
-                                            <Link href={route('dpreq.show', row.id)} className="text-indigo-600 hover:underline">
+                                            <Link href={route('dpreq.show', row.id)} className="text-primary-700 hover:underline">
                                                 {row.tracking_number}
                                             </Link>
                                         </td>

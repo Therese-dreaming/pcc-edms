@@ -30,6 +30,10 @@ your module needs test coverage on.
 
 **...checking what changed and why:** read `CHANGELOG.md`.
 
+**...just want the story, not the spec:** read **`WORKFLOWS.md`** — a chronological, plain-English
+walkthrough of what happens when someone submits a DPREQ, a DPNDA, gets an incident filed, etc.,
+cross-checked against the actual code rather than just the spec files below.
+
 ## Document Index
 
 ### Implementation status (read this first if picking up dev work)
@@ -37,6 +41,7 @@ your module needs test coverage on.
 |---|---|
 | `HANDOFF.md` | Session-to-session status: what's built and verified, bugs found and fixed, what's deferred, recommended next step |
 | `../GETTING_STARTED.md` | How to run the app locally — setup, test accounts, golden-path walkthrough, troubleshooting |
+| `WORKFLOWS.md` | Chronological narrative of every workflow (account setup, DPREQ+REMIS, DPNDA, Incidents, verification), written against the actual code |
 
 ### 0.x — Foundations
 | File | Contents |

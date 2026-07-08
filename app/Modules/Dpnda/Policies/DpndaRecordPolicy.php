@@ -17,7 +17,7 @@ class DpndaRecordPolicy
     {
         return $record->placement->coordinator_id === $user->id
             || $record->placement->trainee_id === $user->id
-            || $user->hasAnyRole(['dpo_staff', 'dpo_approver', 'system_administrator']);
+            || $user->hasAnyRole(['dpo_staff', 'system_administrator']);
     }
 
     public function create(User $user): bool

@@ -28,17 +28,45 @@ class DpndaRecordController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
+        $canSeeAll = $user->hasAnyRole(['dpo_staff', 'system_administrator']);
+
+        $scope = function ($query) use ($user, $canSeeAll) {
+            if (! $canSeeAll) {
+                $query->whereHas('placement', function ($q) use ($user) {
+                    $q->where('coordinator_id', $user->id)->orWhere('trainee_id', $user->id);
+                });
+            }
+        };
+
+        $search = trim((string) $request->string('search'));
+        $status = (string) $request->string('status');
 
         $query = DpndaRecord::with('placement')->latest();
+        $scope($query);
 
-        if (! $user->hasAnyRole(['dpo_staff', 'dpo_approver', 'system_administrator'])) {
-            $query->whereHas('placement', function ($q) use ($user) {
-                $q->where('coordinator_id', $user->id)->orWhere('trainee_id', $user->id);
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('tracking_number', 'like', "%{$search}%")
+                    ->orWhereHas('placement', function ($pq) use ($search) {
+                        $pq->whereRaw(
+                            "concat(trainee_first_name, ' ', trainee_last_name) like ?",
+                            ["%{$search}%"],
+                        );
+                    });
             });
         }
 
+        if ($status !== '' && $status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        $countsQuery = DpndaRecord::query();
+        $scope($countsQuery);
+
         return Inertia::render('Dpnda/Index', [
-            'records' => $query->get(),
+            'records' => $query->paginate(15)->withQueryString(),
+            'filters' => ['search' => $search, 'status' => $status ?: 'all'],
+            'statusCounts' => $countsQuery->selectRaw('status, count(*) as count')->groupBy('status')->pluck('count', 'status'),
         ]);
     }
 
@@ -130,7 +158,7 @@ class DpndaRecordController extends Controller
         $this->authorize('uploadEvaluationReport', $placement);
 
         $validated = $request->validate([
-            'document' => ['required', 'file', 'max:10240'],
+            'document' => ['required', 'file', 'max:51200'],
             'notes' => ['nullable', 'string'],
         ]);
 
