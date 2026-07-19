@@ -114,6 +114,17 @@
         overflow-x: clip;
     }
 
+    /* Prevent sidebar FOUC by using CSS variable set before React hydrates */
+    html {
+        --sidebar-width: 296px;
+    }
+
+    @media (min-width: 1024px) {
+        .sidebar-layout {
+            padding-left: var(--sidebar-width);
+        }
+    }
+
     ::selection {
         background-color: hsl(var(--color-primary-100));
         color: hsl(var(--color-primary-900));

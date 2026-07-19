@@ -31,12 +31,39 @@ class RemisApplicationController extends Controller
     {
         $user = $request->user();
         $canSeeAll = $user->hasAnyRole(['ethics_secretariat', 'ethics_reviewer', 'ethics_committee_chair', 'system_administrator']);
+        
+        // Endorsers can see applications assigned to them or already pending their review
+        $isEndorser = $user->hasAnyRole(['adviser', 'program_head', 'dean']);
 
-        $scope = function ($query) use ($user, $canSeeAll) {
-            if (! $canSeeAll) {
+        $scope = function ($query) use ($user, $canSeeAll, $isEndorser) {
+            if ($canSeeAll) {
+                // Ethics staff/reviewers/chair see all
+                return;
+            }
+            
+            if ($isEndorser) {
+                // Endorsers see: their own applications + applications pending their endorsement
                 $query->where(function ($q) use ($user) {
-                    $q->where('applicant_id', $user->id)->orWhere('adviser_id', $user->id);
+                    $q->where('applicant_id', $user->id)
+                      ->orWhere('adviser_id', $user->id)
+                      ->orWhere(function ($subQ) use ($user) {
+                          // Show applications in endorsement stage where user is the current endorser
+                          $subQ->where('status', 'under_endorsement');
+                          
+                          if ($user->hasRole('program_head')) {
+                              // Program head sees applications where adviser has endorsed
+                              $subQ->where('current_endorsement_step', 'program_head');
+                          }
+                          
+                          if ($user->hasRole('dean')) {
+                              // Dean sees applications where program head has endorsed
+                              $subQ->where('current_endorsement_step', 'dean');
+                          }
+                      });
                 });
+            } else {
+                // Regular researchers only see their own
+                $query->where('applicant_id', $user->id);
             }
         };
 

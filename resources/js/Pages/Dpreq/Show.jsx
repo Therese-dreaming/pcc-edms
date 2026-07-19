@@ -462,7 +462,7 @@ export default function Show({ application, legalTransitions }) {
                                                     className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2 text-[0.8125rem] font-semibold text-white shadow-sm transition hover:bg-emerald-800 active:translate-y-px"
                                                 >
                                                     <IconCheck size={14} strokeWidth={2.5} />
-                                                    Pass Screening â†’ Under Review
+                                                    Pass Screening Under Review
                                                 </button>
                                             </div>
                                         </div>
@@ -621,9 +621,49 @@ export default function Show({ application, legalTransitions }) {
                             </div>
                         </div>
 
-                        {/* RIGHT COLUMN — Status History */}
+                        {/* RIGHT COLUMN */}
                         <div className="lg:col-span-1">
-                            <div className="sticky top-6">
+                            <div className="sticky top-6 space-y-6">
+                                {/* Info Card */}
+                                <div className={PANEL}>
+                                    <div className={PANEL_HEAD}>
+                                        <h3 className={PANEL_TITLE}>Overview</h3>
+                                    </div>
+                                    <div className="divide-y divide-stone-100 p-5">
+                                        <div className="pb-4">
+                                            <dt className={`mb-1.5 ${MICRO_LABEL}`}>Applicant Type</dt>
+                                            <dd className="text-[0.8125rem] font-medium text-stone-900">
+                                                {formatApplicantType(application.applicant_type)}
+                                            </dd>
+                                        </div>
+                                        <div className="py-4">
+                                            <dt className={`mb-1.5 ${MICRO_LABEL}`}>Purpose</dt>
+                                            <dd className="text-[0.8125rem] font-medium text-stone-900">
+                                                {formatFieldValue(application.purpose) || (
+                                                    <span className="font-normal italic text-stone-400">
+                                                        Not specified
+                                                    </span>
+                                                )}
+                                            </dd>
+                                        </div>
+
+                                        {/* Download Clearance Certificate */}
+                                        {application.research_application?.clearance_certificate?.status === 'issued' && (
+                                            <div className="pt-4">
+                                                <dt className={`mb-2 ${MICRO_LABEL}`}>Clearance Certificate</dt>
+                                                <a
+                                                    href={route('dpreq.clearance-pdf', application.id)}
+                                                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-[0.8125rem] font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-100 active:translate-y-px"
+                                                >
+                                                    <IconDownload size={16} strokeWidth={2} />
+                                                    Download Form 3
+                                                </a>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Status History */}
                                 <div className={PANEL}>
                                     <div className={PANEL_HEAD}>
                                         <h3 className={`flex items-center gap-2 ${PANEL_TITLE}`}>

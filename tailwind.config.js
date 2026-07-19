@@ -28,6 +28,7 @@ export default {
             colors: {
                 primary: scale('primary'),
                 paper: scale('paper'),
+                accent: scale('accent'),
                 success: {
                     DEFAULT: token('success'),
                     bg: token('success-bg'),

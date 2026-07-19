@@ -9,9 +9,6 @@ export default function ApplicationLogo({ className = '' }) {
                 alt="Pasig Catholic College seal"
                 className="h-[1.8em] w-[1.8em] shrink-0 object-contain"
             />
-            <span className="font-sans text-[0.85em] font-semibold tracking-wide text-zinc-800">
-                EDMS
-            </span>
         </span>
     );
 }

@@ -16,14 +16,13 @@ const STATUS_LABELS = {
     submitted: 'Submitted',
     screening: 'Screening',
     returned: 'Returned',
-    under_review: 'Under Review',
+    under_review: 'Under review',
     endorsed: 'Endorsed',
     rejected: 'Rejected',
     approved: 'Approved',
-    clearance_issued: 'Clearance Issued',
+    clearance_issued: 'Clearance issued',
 };
 
-// Workflow order, not alphabetical. This is how applications actually move.
 const STATUS_ORDER = [
     'submitted',
     'screening',
@@ -36,64 +35,120 @@ const STATUS_ORDER = [
     'rejected',
 ];
 
-// Pipeline segment color per status â€” all primary shades, with stone for
-// not-started / kicked-back / closed-negative states. No indigo hardcoding.
-const STATUS_SEGMENT = {
+const REVIEW_STATUSES = [
+    'screening',
+    'under_review',
+];
+
+const CLEARED_STATUSES = [
+    'approved',
+    'clearance_issued',
+];
+
+const SEGMENTS = {
     submitted: 'bg-primary-300',
     screening: 'bg-primary-400',
     under_review: 'bg-primary-500',
     endorsed: 'bg-primary-600',
     approved: 'bg-primary-700',
     clearance_issued: 'bg-primary-800',
-    draft: 'bg-stone-300',
-    returned: 'bg-stone-400',
-    rejected: 'bg-stone-500',
+    draft: 'bg-paper-300',
+    returned: 'bg-paper-400',
+    rejected: 'bg-paper-500',
 };
 
-const REVIEW_STATUSES = ['screening', 'under_review'];
-const CLEARED_STATUSES = ['approved', 'clearance_issued'];
+// Helper function to get status label
+const labelFor = (status) => STATUS_LABELS[status] || status;
 
-function formatDate(date) {
-    if (!date) return 'No date';
+// Helper function to get application title
+const titleFor = (application) => 
+    application.research_application?.research_title || 
+    `Application ${application.tracking_number}` || 
+    'Untitled Application';
 
-    return new Date(date).toLocaleDateString('en-US', {
+// Helper function to format date
+const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
-        year: 'numeric',
+        year: 'numeric'
     });
-}
+};
 
-function getResearchTitle(application) {
-    return application.research_application?.research_title || 'Untitled Application';
-}
+export default function Index({
+    applications,
+    filters,
+    statusCounts = {},
+}) {
+    const [searchQuery, setSearchQuery] = useState(
+        filters?.search ?? ''
+    );
 
-function getStatusLabel(status) {
-    return STATUS_LABELS[status] || status?.replaceAll('_', ' ') || 'Unknown';
-}
+    const [statusFilter, setStatusFilter] = useState(
+        filters?.status ?? 'all'
+    );
 
-export default function Index({ applications, filters, statusCounts = {} }) {
-    const [searchQuery, setSearchQuery] = useState(filters?.search ?? '');
-    const [statusFilter, setStatusFilter] = useState(filters?.status ?? 'all');
-    const isFirstRender = useRef(true);
+    const firstRender = useRef(true);
 
-    const pushFilters = (next) => {
+    const visibleStatuses = [
+        ...STATUS_ORDER.filter((status) => statusCounts[status]),
+        ...Object.keys(statusCounts).filter(
+            (status) => !STATUS_ORDER.includes(status)
+        ),
+    ];
+
+    const totalCount = Object.values(statusCounts).reduce(
+        (sum, count) => sum + count,
+        0
+    );
+
+    const sumOf = (keys) =>
+        keys.reduce(
+            (sum, key) => sum + (statusCounts[key] || 0),
+            0
+        );
+
+    const inReview = sumOf(REVIEW_STATUSES);
+    const cleared = sumOf(CLEARED_STATUSES);
+
+    const otherOpen = Math.max(
+        totalCount - inReview - cleared,
+        0
+    );
+
+    const hasFilters =
+        (filters?.search ?? '') !== '' ||
+        (filters?.status ?? 'all') !== 'all';
+
+    const pushFilters = (next) =>
         router.get(
             route('dpreq.index'),
-            { search: next.search ?? searchQuery, status: next.status ?? statusFilter },
-            { preserveState: true, preserveScroll: true, replace: true },
+            {
+                search: next.search ?? searchQuery,
+                status: next.status ?? statusFilter,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            }
         );
-    };
 
-    // Debounced server-side search â€” every keystroke would round-trip otherwise.
     useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false;
-            return;
+        if (firstRender.current) {
+            firstRender.current = false;
+            return undefined;
         }
 
-        const timeout = setTimeout(() => pushFilters({ search: searchQuery }), 350);
+        const timeout = setTimeout(() => {
+            pushFilters({
+                search: searchQuery,
+            });
+        }, 350);
+
         return () => clearTimeout(timeout);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchQuery]);
 
     const setStatus = (status) => {
@@ -101,183 +156,191 @@ export default function Index({ applications, filters, statusCounts = {} }) {
         pushFilters({ status });
     };
 
-    // Click a status to filter; click the active one again to clear it.
-    const toggleStatus = (status) => {
-        setStatus(statusFilter === status ? 'all' : status);
-    };
-
-    const hasFilters =
-        (filters?.search ?? '') !== '' || (filters?.status ?? 'all') !== 'all';
-
     const resetFilters = () => {
         setSearchQuery('');
         setStatusFilter('all');
-        router.get(route('dpreq.index'), {}, { preserveState: true, preserveScroll: true, replace: true });
+
+        router.get(
+            route('dpreq.index'),
+            {},
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            }
+        );
     };
-
-    const visibleStatuses = [
-        ...STATUS_ORDER.filter((status) => statusCounts[status]),
-        ...Object.keys(statusCounts).filter((status) => !STATUS_ORDER.includes(status)),
-    ];
-
-    const sumOf = (keys) => keys.reduce((sum, key) => sum + (statusCounts[key] || 0), 0);
-
-    const totalCount = Object.values(statusCounts).reduce((sum, count) => sum + count, 0);
-    const inReviewCount = sumOf(REVIEW_STATUSES);
-    const clearedCount = sumOf(CLEARED_STATUSES);
-    const otherOpenCount = Math.max(totalCount - inReviewCount - clearedCount, 0);
-
-    const pct = (value) => (totalCount > 0 ? (value / totalCount) * 100 : 0);
-
-    const metrics = [
-        { label: 'Total', value: totalCount },
-        { label: 'In review', value: inReviewCount },
-        { label: 'Cleared', value: clearedCount },
-        { label: 'Other open', value: otherOpenCount },
-    ];
-
-    const filterActive = statusFilter !== 'all';
 
     return (
         <AuthenticatedLayout>
-            <Head title="DPREQ Applications" />
+            <Head title="DPREQ applications" />
 
-            <div className="py-8 font-grotesk text-stone-900 [font-optical-sizing:auto]">
-                <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-                    {/* Console: header + interactive overview */}
-                    <section>
-                        {/* Header row */}
-                        <div className="flex flex-wrap items-start justify-between gap-6">
-                            <div className="flex items-start gap-3.5">
-                                <span className="flex size-11 flex-none items-center justify-center rounded-[13px] bg-primary-700 text-white shadow-lg shadow-primary-700/30">
-                                    <IconShieldLock size={22} strokeWidth={2} />
-                                </span>
-                                <div>
-                                    <h1 className="text-2xl font-bold leading-tight tracking-[-0.02em] text-stone-900">
-                                        DPREQ Applications
-                                    </h1>
-                                    <p className="mt-1 max-w-[46ch] text-[0.8125rem] leading-relaxed text-stone-500">
-                                        Track data privacy requests from submission to clearance.
-                                    </p>
-                                </div>
+            <div className="px-5 py-8 font-grotesk text-paper-900 sm:px-8 lg:px-12 lg:py-10">
+                <div className="mx-auto max-w-[90rem]">
+
+                    {/* Header */}
+                    <section className="flex flex-col items-start justify-between gap-6 sm:flex-row">
+                        <div className="flex items-start gap-3.5">
+                            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[13px] bg-primary-800 text-white shadow-lg shadow-primary-900/20">
+                                <IconShieldLock size={22} />
+                            </span>
+
+                            <div>
+                                <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.11em] text-primary-700">
+                                    Privacy operations
+                                </p>
+
+                                <h1 className="text-3xl font-extrabold leading-none tracking-[-0.045em] lg:text-5xl">
+                                    DPREQ applications
+                                </h1>
+
+                                <p className="mt-3 max-w-[52ch] text-sm leading-relaxed text-paper-600">
+                                    Track data privacy requests from
+                                    submission to clearance.
+                                </p>
                             </div>
-
-                            <Link
-                                href={route('dpreq.create')}
-                                className="inline-flex min-h-[42px] items-center gap-2 rounded-xl bg-primary-700 px-4 text-[0.8125rem] font-semibold text-white shadow-sm transition hover:bg-primary-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 active:translate-y-px"
-                            >
-                                <IconPlus size={18} strokeWidth={2.5} />
-                                New Application
-                            </Link>
                         </div>
 
-                        {/* Overview: inline metrics + interactive pipeline bar */}
-                        <div className="mt-5 flex flex-col gap-3.5 border-t border-stone-200 pt-5">
-                            <div className="flex flex-wrap items-baseline">
-                                {metrics.map((metric, index) => (
-                                    <div
-                                        key={metric.label}
-                                        className={`flex items-baseline gap-2 pr-6 ${
-                                            index > 0 ? 'border-l border-stone-200 pl-6' : ''
-                                        }`}
-                                    >
-                                        <span className="text-[1.375rem] font-bold tabular-nums tracking-[-0.02em]">
-                                            {metric.value.toLocaleString()}
-                                        </span>
-                                        <span className="text-xs font-medium text-stone-500">
-                                            {metric.label}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {totalCount > 0 && (
-                                <div
-                                    className={`group flex h-3 w-full gap-0.5 ${
-                                        filterActive ? 'is-filtered' : ''
-                                    }`}
-                                    role="group"
-                                    aria-label="Applications by status. Select a segment to filter."
-                                >
-                                    {visibleStatuses.map((status) => {
-                                        const isActive = statusFilter === status;
-                                        return (
-                                            <button
-                                                type="button"
-                                                key={status}
-                                                onClick={() => toggleStatus(status)}
-                                                title={`${getStatusLabel(status)} Â· ${statusCounts[status]}`}
-                                                aria-label={`${getStatusLabel(status)}: ${statusCounts[status]}. ${
-                                                    isActive ? 'Selected, click to clear.' : 'Click to filter.'
-                                                }`}
-                                                aria-pressed={isActive}
-                                                style={{ width: `${pct(statusCounts[status])}%` }}
-                                                className={`h-full origin-center cursor-pointer rounded-[2px] transition duration-150 ease-out first:rounded-l-full last:rounded-r-full hover:scale-y-[1.35] hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 ${
-                                                    STATUS_SEGMENT[status] || 'bg-stone-400'
-                                                } ${
-                                                    filterActive && !isActive ? 'opacity-30' : 'opacity-100'
-                                                }`}
-                                            />
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
+                        <Link
+                            href={route('dpreq.create')}
+                            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary-800 px-4 text-sm font-bold text-white shadow-lg shadow-primary-900/15 hover:bg-primary-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-700/20"
+                        >
+                            <IconPlus size={18} />
+                            New application
+                        </Link>
                     </section>
 
-                    {/* Controls */}
-                    <section className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="relative w-full lg:max-w-sm">
-                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                <IconSearch size={17} className="text-stone-400" />
+                    {/* Summary */}
+                    <section className="mt-8 border-t border-paper-200 pt-5">
+                        <div className="flex flex-wrap items-baseline">
+                            {[
+                                ['Total', totalCount],
+                                ['In review', inReview],
+                                ['Cleared', cleared],
+                                ['Other open', otherOpen],
+                            ].map(([label, value], index) => (
+                                <div
+                                    key={label}
+                                    className={`flex items-baseline gap-2 pr-6 ${
+                                        index
+                                            ? 'border-l border-paper-200 pl-6'
+                                            : ''
+                                    }`}
+                                >
+                                    <strong className="text-[1.4rem] font-extrabold tabular-nums tracking-[-0.03em]">
+                                        {value.toLocaleString()}
+                                    </strong>
+
+                                    <span className="text-xs font-semibold text-paper-500">
+                                        {label}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+
+                        {totalCount > 0 && (
+                            <div
+                                className="mt-5 flex h-3 gap-0.5"
+                                role="group"
+                                aria-label="Applications by status"
+                            >
+                                {visibleStatuses.map((status) => (
+                                    <button
+                                        key={status}
+                                        type="button"
+                                        title={`${labelFor(status)} · ${statusCounts[status]}`}
+                                        onClick={() =>
+                                            setStatus(
+                                                statusFilter === status
+                                                    ? 'all'
+                                                    : status
+                                            )
+                                        }
+                                        className={`
+                                            h-full
+                                            rounded-[2px]
+                                            transition-transform
+                                            hover:scale-y-125
+                                            ${
+                                                SEGMENTS[status] ||
+                                                'bg-paper-400'
+                                            }
+                                            ${
+                                                statusFilter !== 'all' &&
+                                                statusFilter !== status
+                                                    ? 'opacity-25'
+                                                    : ''
+                                            }
+                                        `}
+                                        style={{
+                                            width: `${
+                                                (statusCounts[status] /
+                                                    totalCount) *
+                                                100
+                                            }%`,
+                                        }}
+                                        aria-label={`${labelFor(status)}: ${statusCounts[status]}`}
+                                    />
+                                ))}
                             </div>
+                        )}
+                    </section>
+
+                                        {/* Search & Filters */}
+                    <section className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+
+                        <label className="relative block w-full lg:max-w-sm">
+                            <span className="sr-only">
+                                Search applications
+                            </span>
+
+                            <IconSearch
+                                size={17}
+                                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-paper-400"
+                            />
 
                             <input
                                 type="search"
-                                placeholder="Search tracking number or title"
                                 value={searchQuery}
-                                onChange={(event) => setSearchQuery(event.target.value)}
-                                className="block min-h-[42px] w-full rounded-xl border border-stone-200 bg-white py-2 pl-10 pr-3 text-[0.8125rem] text-stone-900 placeholder-stone-400 shadow-sm transition focus:border-primary-600 focus:outline-none focus:ring-[3px] focus:ring-primary-600/15"
+                                onChange={(event) =>
+                                    setSearchQuery(event.target.value)
+                                }
+                                placeholder="Search tracking number or title"
+                                className="min-h-11 w-full rounded-lg border border-paper-200 bg-white py-2 pl-10 pr-3 text-sm outline-none placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                             />
-                        </div>
+                        </label>
 
-                        <div className="flex flex-wrap items-center gap-1 rounded-xl bg-stone-100/70 p-1">
+                        <div className="flex flex-wrap gap-1 rounded-xl bg-paper-100 p-1">
+
                             <button
                                 type="button"
                                 onClick={() => setStatus('all')}
-                                className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg px-3 text-[0.8125rem] font-medium transition-colors duration-150 ${
+                                className={`min-h-9 rounded-lg px-3 text-xs font-bold ${
                                     statusFilter === 'all'
-                                        ? 'bg-primary-700 text-white shadow-sm'
-                                        : 'text-stone-500 hover:bg-white hover:text-stone-900 hover:shadow-sm'
+                                        ? 'bg-primary-800 text-white shadow-sm'
+                                        : 'text-paper-500 hover:bg-white'
                                 }`}
                             >
                                 All
-                                <span
-                                    className={`tabular-nums ${
-                                        statusFilter === 'all' ? 'text-white/70' : 'text-stone-400'
-                                    }`}
-                                >
+                                <span className="ml-1 opacity-60">
                                     {totalCount}
                                 </span>
                             </button>
 
                             {visibleStatuses.map((status) => (
                                 <button
-                                    type="button"
                                     key={status}
+                                    type="button"
                                     onClick={() => setStatus(status)}
-                                    className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg px-3 text-[0.8125rem] font-medium transition-colors duration-150 ${
+                                    className={`min-h-9 rounded-lg px-3 text-xs font-bold ${
                                         statusFilter === status
-                                            ? 'bg-primary-700 text-white shadow-sm'
-                                            : 'text-stone-500 hover:bg-white hover:text-stone-900 hover:shadow-sm'
+                                            ? 'bg-primary-800 text-white shadow-sm'
+                                            : 'text-paper-500 hover:bg-white'
                                     }`}
                                 >
-                                    {getStatusLabel(status)}
-                                    <span
-                                        className={`tabular-nums ${
-                                            statusFilter === status ? 'text-white/70' : 'text-stone-400'
-                                        }`}
-                                    >
+                                    {labelFor(status)}
+
+                                    <span className="ml-1 opacity-60">
                                         {statusCounts[status]}
                                     </span>
                                 </button>
@@ -287,135 +350,177 @@ export default function Index({ applications, filters, statusCounts = {} }) {
                                 <button
                                     type="button"
                                     onClick={resetFilters}
-                                    className="inline-flex min-h-8 items-center gap-1.5 rounded-lg px-3 text-[0.8125rem] font-medium text-stone-500 transition-colors duration-150 hover:bg-white hover:text-stone-900 hover:shadow-sm"
+                                    className="inline-flex min-h-9 items-center gap-1 rounded-lg px-3 text-xs font-bold text-paper-500 hover:bg-white"
                                 >
                                     <IconX size={14} />
                                     Clear
                                 </button>
                             )}
+
                         </div>
                     </section>
 
-                    {/* Desktop table */}
-                    <div className="hidden overflow-hidden rounded-[18px] border border-stone-200 bg-white shadow-[0_1px_2px_rgba(41,37,36,0.04),0_8px_24px_-12px_rgba(41,37,36,0.10)] md:block">
+                    {/* Desktop Table */}
+                    <div className="mt-5 hidden overflow-hidden rounded-xl border border-paper-200 bg-white md:block">
+
                         <table className="w-full border-collapse text-[0.8125rem]">
+
                             <thead>
                                 <tr>
-                                    <th className="border-b border-stone-200 px-5 py-3 text-left text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-stone-400">
-                                        Tracking #
-                                    </th>
-                                    <th className="border-b border-stone-200 px-5 py-3 text-left text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-stone-400">
-                                        Research Title
-                                    </th>
-                                    <th className="border-b border-stone-200 px-5 py-3 text-left text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-stone-400">
-                                        Status
-                                    </th>
-                                    <th className="border-b border-stone-200 px-5 py-3 text-left text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-stone-400">
-                                        Created
-                                    </th>
+                                    {[
+                                        'Tracking #',
+                                        'Research title',
+                                        'Status',
+                                        'Created',
+                                    ].map((heading) => (
+                                        <th
+                                            key={heading}
+                                            className="border-b border-paper-200 px-5 py-3 text-left text-[0.6875rem] font-extrabold uppercase tracking-[0.08em] text-paper-400"
+                                        >
+                                            {heading}
+                                        </th>
+                                    ))}
                                 </tr>
                             </thead>
 
                             <tbody>
-                                {applications.data.length === 0 && (
+
+                                {applications.data.length === 0 ? (
+
                                     <tr>
                                         <td
                                             colSpan={4}
-                                            className="px-5 py-10 text-center text-[0.8125rem] text-stone-400"
+                                            className="px-5 py-12 text-center text-sm text-paper-400"
                                         >
                                             {totalCount === 0
                                                 ? 'No applications yet. Create the first one to get moving.'
                                                 : 'No matching applications. Clear the filters and try again.'}
                                         </td>
                                     </tr>
+
+                                ) : (
+
+                                    applications.data.map((application) => (
+                                        <tr
+                                            key={application.id}
+                                            className="border-b border-paper-100 last:border-0 hover:bg-primary-50/40"
+                                        >
+
+                                            <td className="px-5 py-3">
+                                                <Link
+                                                    href={route(
+                                                        'dpreq.show',
+                                                        application.id
+                                                    )}
+                                                    className="group inline-flex items-center gap-2 font-bold tabular-nums hover:text-primary-700"
+                                                >
+                                                    <span className="grid h-8 w-8 place-items-center rounded-lg bg-paper-100 text-paper-400 group-hover:bg-primary-50 group-hover:text-primary-700">
+                                                        <IconShieldLock size={15} />
+                                                    </span>
+
+                                                    {application.tracking_number ||
+                                                        'No tracking #'}
+                                                </Link>
+                                            </td>
+
+                                            <td className="px-5 py-3">
+                                                <Link
+                                                    href={route(
+                                                        'dpreq.show',
+                                                        application.id
+                                                    )}
+                                                    className="line-clamp-2 max-w-2xl font-semibold text-paper-700 hover:text-primary-700"
+                                                >
+                                                    {titleFor(application)}
+                                                </Link>
+                                            </td>
+
+                                            <td className="px-5 py-3">
+                                                <StatusBadge
+                                                    status={application.status}
+                                                    label={labelFor(
+                                                        application.status
+                                                    )}
+                                                />
+                                            </td>
+
+                                            <td className="px-5 py-3">
+                                                <span className="flex items-center gap-1.5 tabular-nums text-paper-400">
+                                                    <IconClock size={14} />
+                                                    {formatDate(
+                                                        application.created_at
+                                                    )}
+                                                </span>
+                                            </td>
+
+                                        </tr>
+                                    ))
+
                                 )}
 
-                                {applications.data.map((application) => (
-                                    <tr
-                                        key={application.id}
-                                        className="border-b border-stone-100 transition-colors duration-150 last:border-b-0 hover:bg-stone-50/60"
-                                    >
-                                        <td className="px-5 py-3">
-                                            <Link
-                                                href={route('dpreq.show', application.id)}
-                                                className="group inline-flex items-center gap-2 font-semibold tabular-nums text-stone-900 transition-colors hover:text-primary-700"
-                                            >
-                                                <span className="flex size-7 items-center justify-center rounded-lg bg-stone-100 text-stone-400 transition-colors group-hover:bg-primary-50 group-hover:text-primary-700">
-                                                    <IconShieldLock size={15} strokeWidth={2} />
-                                                </span>
-                                                {application.tracking_number || 'No tracking #'}
-                                            </Link>
-                                        </td>
-
-                                        <td className="px-5 py-3">
-                                            <Link
-                                                href={route('dpreq.show', application.id)}
-                                                className="line-clamp-2 max-w-2xl font-medium text-stone-700 transition-colors hover:text-primary-700"
-                                            >
-                                                {getResearchTitle(application)}
-                                            </Link>
-                                        </td>
-
-                                        <td className="px-5 py-3">
-                                            <StatusBadge
-                                                status={application.status}
-                                                label={getStatusLabel(application.status)}
-                                            />
-                                        </td>
-
-                                        <td className="px-5 py-3">
-                                            <div className="flex items-center gap-1.5 tabular-nums text-stone-400">
-                                                <IconClock size={14} className="text-stone-300" />
-                                                {formatDate(application.created_at)}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
                             </tbody>
+
                         </table>
+
                     </div>
 
-                    {/* Mobile cards */}
+                                        {/* Mobile Cards */}
                     <div className="space-y-3 md:hidden">
+
                         {applications.data.length === 0 ? (
-                            <div className="rounded-[18px] border border-dashed border-stone-300 bg-white px-5 py-8 text-center text-[0.8125rem] text-stone-400">
+
+                            <div className="rounded-xl border border-dashed border-paper-300 bg-white px-5 py-9 text-center text-sm text-paper-400">
                                 {totalCount === 0
                                     ? 'No applications yet. Create the first one to get moving.'
                                     : 'No matching applications. Clear the filters and try again.'}
                             </div>
+
                         ) : (
+
                             applications.data.map((application) => (
                                 <Link
                                     key={application.id}
-                                    href={route('dpreq.show', application.id)}
-                                    className="block rounded-[18px] border border-stone-200 bg-white p-4 shadow-[0_1px_2px_rgba(41,37,36,0.04),0_8px_24px_-12px_rgba(41,37,36,0.10)] transition-colors hover:border-primary-200"
+                                    href={route(
+                                        'dpreq.show',
+                                        application.id
+                                    )}
+                                    className="block rounded-xl border border-paper-200 bg-white p-4 shadow-sm hover:border-primary-200"
                                 >
-                                    <div className="mb-3 flex items-start justify-between gap-3">
+                                    <div className="flex items-start justify-between gap-3">
+
                                         <div>
-                                            <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-stone-400 tabular-nums">
-                                                {application.tracking_number || 'No tracking #'}
+                                            <p className="text-[0.6875rem] font-extrabold uppercase tracking-[0.08em] text-paper-400">
+                                                {application.tracking_number ||
+                                                    'No tracking #'}
                                             </p>
-                                            <h3 className="mt-1 line-clamp-2 font-semibold leading-snug text-stone-900">
-                                                {getResearchTitle(application)}
-                                            </h3>
+
+                                            <h2 className="mt-1 line-clamp-2 font-bold leading-snug">
+                                                {titleFor(application)}
+                                            </h2>
                                         </div>
 
                                         <StatusBadge
                                             status={application.status}
-                                            label={getStatusLabel(application.status)}
+                                            label={labelFor(application.status)}
                                         />
+
                                     </div>
 
-                                    <div className="flex items-center gap-1.5 text-[0.8125rem] tabular-nums text-stone-400">
-                                        <IconClock size={14} className="text-stone-300" />
+                                    <p className="mt-3 flex items-center gap-1.5 text-xs tabular-nums text-paper-400">
+                                        <IconClock size={14} />
                                         {formatDate(application.created_at)}
-                                    </div>
+                                    </p>
+
                                 </Link>
                             ))
+
                         )}
+
                     </div>
 
+                    {/* Pagination */}
                     <Pagination paginator={applications} />
+
                 </div>
             </div>
         </AuthenticatedLayout>
