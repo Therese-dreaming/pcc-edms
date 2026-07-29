@@ -45,6 +45,7 @@ return new class extends Migration
                 'disapproved',
                 'clearance_issued',
                 'monitoring',
+                'monitoring_paused', // auto-pause on data-breach incident (docs/HANDOFF Part L)
                 'closed',
                 'archived',
             ])->default('draft_submitted');
@@ -52,7 +53,11 @@ return new class extends Migration
             $table->enum('returned_from_status', [
                 'under_endorsement', 'for_screening', 'for_review',
             ])->nullable();
+            // Register housekeeping (index bulk Actions) — distinct from the `archived` workflow
+            // status: `archived_at` just removes a record from the active register while keeping it.
+            $table->timestamp('archived_at')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

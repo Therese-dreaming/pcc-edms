@@ -8,6 +8,11 @@ Route::middleware(['auth', 'verified'])->prefix('dpnda')->name('dpnda.')->group(
     Route::get('/', [DpndaRecordController::class, 'index'])->name('index');
     Route::get('/create', [DpndaRecordController::class, 'create'])->name('create');
     Route::post('/', [DpndaRecordController::class, 'store'])->name('store');
+
+    // Register bulk actions (index Actions menu). Authorized per-record in the controller.
+    Route::post('/bulk-archive', [DpndaRecordController::class, 'bulkArchive'])->name('bulk-archive');
+    Route::delete('/bulk-destroy', [DpndaRecordController::class, 'bulkDestroy'])->name('bulk-destroy');
+
     Route::get('/{dpndaRecord}', [DpndaRecordController::class, 'show'])->name('show');
 
     Route::post('/{dpndaRecord}/send-for-signing', [DpndaRecordController::class, 'sendForSigning'])->name('send-for-signing');

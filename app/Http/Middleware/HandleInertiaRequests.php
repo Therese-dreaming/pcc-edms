@@ -45,6 +45,36 @@ class HandleInertiaRequests extends Middleware
                 'unread_count' => Notification::where('user_id', $user->id)->whereNull('read_at')->count(),
                 'recent' => Notification::where('user_id', $user->id)->latest()->limit(8)->get(),
             ] : null,
+            // Which workspace modules this user actually has business in — the nav gates on this so
+            // a trainee doesn't see REMIS, a researcher doesn't see DPNDA, etc. Computed once here
+            // so the sidebar can't drift from real access; the module controllers still enforce
+            // their own authorization (this is UX, not the security boundary).
+            'can' => $this->moduleAccess($user?->role?->name),
+        ];
+    }
+
+    /**
+     * @return array{dpreq: bool, dpnda: bool, remis: bool, incidents: bool}
+     */
+    private function moduleAccess(?string $roleName): array
+    {
+        $in = fn (array $roles) => in_array($roleName, $roles, true);
+
+        $applicants = ['researcher_internal', 'researcher_external'];
+        $ojt = ['ojt_trainee_internal', 'ojt_trainee_external'];
+        $endorsers = ['adviser', 'program_head', 'dean'];
+        $ethics = ['ethics_secretariat', 'ethics_reviewer', 'ethics_committee_chair'];
+        $admin = $roleName === 'system_administrator';
+
+        return [
+            // Data-privacy applications: researchers submit them, DPO staff act on them.
+            'dpreq' => $admin || $in($applicants) || $roleName === 'dpo_staff',
+            // OJT/trainee NDAs: coordinators create them, trainees sign them, DPO keeps records.
+            'dpnda' => $admin || $roleName === 'department_coordinator' || $in($ojt) || $roleName === 'dpo_staff',
+            // Ethics review: researchers submit, the academic chain endorses, ethics office reviews.
+            'remis' => $admin || $in($applicants) || $in($endorsers) || $in($ethics),
+            // Incidents: filed by a study's researcher or the ethics office.
+            'incidents' => $admin || $in($applicants) || $in($ethics),
         ];
     }
 }

@@ -51,7 +51,7 @@ const VARIANT = {
 // Linear-style: a colored dot + plain text, not a filled pill — status reads
 // as a state indicator, not another chip competing with tracking-number chips.
 const DOT = {
-    neutral: 'bg-zinc-400',
+    neutral: 'bg-border-medium',
     warning: 'bg-warning',
     danger: 'bg-danger',
     success: 'bg-success',
@@ -61,7 +61,7 @@ export default function StatusBadge({ status, label }) {
     const variant = VARIANT[status] ?? 'neutral';
 
     return (
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-700">
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium capitalize text-fg-secondary">
             <span className={`h-1.5 w-1.5 rounded-full ${DOT[variant]}`} aria-hidden="true" />
             {label ?? status?.replace(/_/g, ' ')}
         </span>

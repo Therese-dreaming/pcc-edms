@@ -102,6 +102,41 @@
     --color-danger: 0 68% 42%;
     --color-danger-bg: 0 60% 95%;
     --color-danger-text: 0 65% 33%;
+
+    /* ── Redesign system (.claude/skills/redesign) ──────────────────────────
+       Neutral surfaces + a single dark-red accent reserved for action/brand,
+       Inter-only type, pill controls, rounded soft-shadow cards, light mode
+       only. HSL triplets keep Tailwind opacity modifiers working. The crimson
+       `primary` ramp above is the accent; these add the neutral surface/text
+       layer the redesign spec calls for (cool neutrals, not the warm `paper`). */
+    --surface-primary: 0 0% 100%;          /* page canvas / topbar / sidebar */
+    --surface-secondary: 0 0% 100%;        /* card + panel surface */
+    --surface-tertiary: 0 0% 97%;          /* subtle fill: hover, table stripe, app bg */
+    --surface-tertiary-medium: 0 0% 88%;   /* stronger fill: disabled bg, toggle-off track */
+    --border-default: 0 0% 88%;            /* card borders, dividers */
+    --border-medium: 0 0% 82%;             /* input outlines, header rules */
+    --fg-primary: 0 0% 9%;                 /* headings, stat numbers, primary text */
+    --fg-secondary: 240 4% 34%;            /* default body/label text */
+    --fg-tertiary: 240 2% 55%;             /* muted/help text, placeholders, eyebrows */
+
+    /* Rounded soft-shadow card system — two elevation levels only, each paired
+       with a 1px border. Never a heavy glow or glass blur. */
+    --radius-lg: 16px;   /* standard cards, panels */
+    --radius-xl: 20px;   /* feature cards — stat + chart cards */
+    --shadow-resting: 0 1px 2px rgba(20, 20, 20, 0.04), 0 6px 16px rgba(20, 20, 20, 0.04);
+    --shadow-hover: 0 2px 4px rgba(20, 20, 20, 0.05), 0 12px 28px rgba(20, 20, 20, 0.07);
+
+    /* Accent hues — for UI highlights, badges, and secondary actions */
+    --color-accent-50: 45 80% 96%;
+    --color-accent-100: 45 75% 90%;
+    --color-accent-200: 45 70% 80%;
+    --color-accent-300: 45 65% 70%;
+    --color-accent-400: 45 60% 55%;
+    --color-accent-500: 45 55% 45%;
+    --color-accent-600: 45 50% 38%;
+    --color-accent-700: 45 45% 30%;
+    --color-accent-800: 45 40% 25%;
+    --color-accent-900: 45 35% 18%;
 }
 
 @tailwind base;
@@ -160,7 +195,7 @@
    `swal-variant-*` class via that file's customClass, not by hand-rolling a
    new popup theme per page. Flat, solid semantic colors — no gradients. */
 .swal2-popup {
-    font-family: 'Outfit', sans-serif !important;
+    font-family: 'Inter', sans-serif !important;
     border-radius: 1.25rem !important;
     padding: 2rem !important;
     box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.12), 0 8px 10px -6px rgb(0 0 0 / 0.08) !important;
@@ -168,7 +203,7 @@
 }
 
 .swal2-title {
-    font-family: 'Figtree', Georgia, serif !important;
+    font-family: 'Inter', sans-serif !important;
     font-size: 1.5rem !important;
     font-weight: 700 !important;
     color: hsl(var(--color-paper-900)) !important;
@@ -176,7 +211,7 @@
 }
 
 .swal2-html-container {
-    font-family: 'Outfit', sans-serif !important;
+    font-family: 'Inter', sans-serif !important;
     font-size: 0.9375rem !important;
     color: hsl(var(--color-paper-600)) !important;
     line-height: 1.6 !important;
@@ -208,6 +243,27 @@
     background-color: hsl(var(--color-danger)) !important;
 }
 
+/* Fields inside a confirm modal (confirmWithPassword) — a lead line plus labelled
+   textarea/password inputs, kept left-aligned and consistent with the app's form controls. */
+.swal2-lead {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9375rem;
+    color: hsl(var(--color-paper-600));
+    line-height: 1.6;
+    margin: 0 0 1rem;
+    text-align: left;
+}
+
+.swal2-field-label {
+    display: block;
+    text-align: left;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: hsl(var(--color-paper-700));
+    margin: 0.75rem 0 0.375rem;
+}
+
 .swal2-icon.swal2-warning {
     border-color: hsl(var(--color-warning)) !important;
     color: hsl(var(--color-warning)) !important;
@@ -224,7 +280,7 @@
 }
 
 .swal2-styled {
-    font-family: 'Outfit', sans-serif !important;
+    font-family: 'Inter', sans-serif !important;
     font-size: 0.875rem !important;
     font-weight: 600 !important;
     padding: 0.625rem 1.5rem !important;
@@ -329,7 +385,7 @@
 
 /* Input fields in alerts */
 .swal2-input {
-    font-family: 'Outfit', sans-serif !important;
+    font-family: 'Inter', sans-serif !important;
     font-size: 0.9375rem !important;
     border: 1px solid hsl(var(--color-paper-300)) !important;
     border-radius: 0.5rem !important;
@@ -345,6 +401,6 @@
     background: hsl(var(--color-danger-bg)) !important;
     color: hsl(var(--color-danger-text)) !important;
     border-radius: 0.5rem !important;
-    font-family: 'Outfit', sans-serif !important;
+    font-family: 'Inter', sans-serif !important;
 }
 

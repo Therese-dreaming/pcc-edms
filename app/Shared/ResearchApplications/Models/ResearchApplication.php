@@ -21,12 +21,17 @@ class ResearchApplication extends Model
     protected $fillable = [
         'applicant_id',
         'research_title',
+        'research_category',
+        'contact_number',
         'researcher_count',
+        'co_researchers',
         'adviser_name',
+        'applicant_category',
         'department',
         'level',
         'course',
         'section',
+        'position',
         'respondents',
         'target_respondent_count',
         'data_collection_method',
@@ -35,6 +40,8 @@ class ResearchApplication extends Model
         'target_end_date',
         'minors_involved',
         'respondent_head_letter_approved',
+        'review_checklist',
+        'researcher_signature',
         'overall_status',
     ];
 
@@ -45,6 +52,8 @@ class ResearchApplication extends Model
             'target_end_date' => 'date',
             'minors_involved' => 'boolean',
             'respondent_head_letter_approved' => 'boolean',
+            'co_researchers' => 'array',
+            'review_checklist' => 'array',
         ];
     }
 

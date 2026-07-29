@@ -133,6 +133,14 @@
             <div style="border-top: 1.5px solid #000; margin-top: 4px; margin-bottom: 3px;"></div>
             <div class="signer-name">{{ $record->trainee_signature_id }}</div>
             <div class="signer-title">TRAINEE</div>
+            @if ($record->trainee_signed_at)
+                <div style="font-size: 6.5pt; color: #444; margin-top: 3px; line-height: 1.3;">
+                    Electronically signed by {{ $record->trainee_signature_id }}<br>
+                    {{ $record->trainee_signed_at->format('F j, Y') }} · {{ $record->trainee_signed_at->format('g:i A') }}
+                    @if ($record->trainee_signature_ip)<br>IP: {{ $record->trainee_signature_ip }}@endif
+                    @if ($record->trainee_signature_user_agent)<br>Device: {{ \Illuminate\Support\Str::limit($record->trainee_signature_user_agent, 70) }}@endif
+                </div>
+            @endif
         </td>
         <td style="text-align: center;">
             @if ($record->coordinator_signature_image)
@@ -143,6 +151,14 @@
             <div style="border-top: 1.5px solid #000; margin-top: 4px; margin-bottom: 3px;"></div>
             <div class="signer-name">{{ $record->coordinator_signature_id }}</div>
             <div class="signer-title">DEPARTMENT HEAD</div>
+            @if ($record->coordinator_signed_at)
+                <div style="font-size: 6.5pt; color: #444; margin-top: 3px; line-height: 1.3;">
+                    Electronically signed by {{ $record->coordinator_signature_id }}<br>
+                    {{ $record->coordinator_signed_at->format('F j, Y') }} · {{ $record->coordinator_signed_at->format('g:i A') }}
+                    @if ($record->coordinator_signature_ip)<br>IP: {{ $record->coordinator_signature_ip }}@endif
+                    @if ($record->coordinator_signature_user_agent)<br>Device: {{ \Illuminate\Support\Str::limit($record->coordinator_signature_user_agent, 70) }}@endif
+                </div>
+            @endif
         </td>
     </tr>
 </table>

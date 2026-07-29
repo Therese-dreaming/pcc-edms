@@ -7,15 +7,16 @@ use App\Shared\AuditLog\Services\AuditLogService;
 use App\Shared\AuditLog\Services\StatusHistoryService;
 use App\Shared\Clearance\Services\ClearanceService;
 use App\Shared\Notifications\Services\NotificationService;
+use App\Shared\Revisions\Services\RevisionService;
 use RuntimeException;
 
 // docs/1.2-dpreq-workflow.md — enforces the DPO track's legal status transitions
 // (DpreqApplication::LEGAL_TRANSITIONS). Every transition writes a status_history row and an
 // audit_log row (docs/testing-strategy.md: "every legal transition succeeds and writes a
 // status_history row"; "every illegal transition is rejected with a clear error, not silently
-// allowed"). `Approved` additionally enforces docs/0.4's Research Team NDA gate and signs the
-// DPO half of the joint clearance (ClearanceService) — the actual `clearance_issued` transition
-// happens inside ClearanceService, not here, since it depends on the Ethics track too.
+// allowed"). `Approved` creates the Research Team NDA and opens signing to the team; the DPO
+// (DPREQ) clearance is issued later, by ResearchTeamNdaService, once every signatory has signed
+// (concern 7, 2026-07-26) — approval itself no longer issues the clearance.
 class DpreqWorkflowService
 {
     public function __construct(
@@ -23,6 +24,8 @@ class DpreqWorkflowService
         private readonly AuditLogService $auditLog,
         private readonly ClearanceService $clearance,
         private readonly NotificationService $notifications,
+        private readonly RevisionService $revisions,
+        private readonly ResearchTeamNdaService $researchTeamNda,
     ) {
     }
 
@@ -32,14 +35,15 @@ class DpreqWorkflowService
 
         // docs/1.2 "Notifications Triggered": Submission received -> Applicant + DPO Staff.
         $this->notifications->notifyUser($application->applicant, 'Application submitted', "Your DPREQ application {$application->tracking_number} was submitted.", $application);
-        $this->notifications->notifyRole('dpo_staff', 'New DPREQ submission', "DPREQ application {$application->tracking_number} was submitted for screening.", $application);
+        $this->notifications->notifyRole('dpo_staff', 'New DPREQ submission', "DPREQ application {$application->tracking_number} was submitted for review.", $application);
 
         return $application;
     }
 
-    public function startScreening(DpreqApplication $application): DpreqApplication
+    // DPO staff takes a submitted application under review (2026-07-25 collapse).
+    public function startReview(DpreqApplication $application): DpreqApplication
     {
-        return $this->transition($application, 'screening', 'dpreq_application.screening_started');
+        return $this->transition($application, 'under_review', 'dpreq_application.under_review');
     }
 
     public function returnForCorrection(DpreqApplication $application, string $comments): DpreqApplication
@@ -61,22 +65,6 @@ class DpreqWorkflowService
         return $application;
     }
 
-    public function passScreeningToReview(DpreqApplication $application): DpreqApplication
-    {
-        return $this->transition($application, 'under_review', 'dpreq_application.under_review');
-    }
-
-    public function endorse(DpreqApplication $application, ?string $comments = null): DpreqApplication
-    {
-        $application = $this->transition($application, 'endorsed', 'dpreq_application.endorsed', $comments);
-
-        // docs/1.2: Endorsed -> DPO Staff (DPO Approver was retired as a separate role; dpo_staff
-        // now owns final approval too).
-        $this->notifications->notifyRole('dpo_staff', 'DPREQ application ready for final approval', "DPREQ application {$application->tracking_number} was endorsed and is awaiting final approval.", $application);
-
-        return $application;
-    }
-
     public function reject(DpreqApplication $application, string $reason): DpreqApplication
     {
         $application = $this->transition($application, 'rejected', 'dpreq_application.rejected', $reason);
@@ -89,20 +77,34 @@ class DpreqWorkflowService
 
     public function approve(DpreqApplication $application, int $approverId): DpreqApplication
     {
-        $nda = $application->researchApplication->researchTeamNda;
-
-        if ($nda === null || ! $nda->isFullySigned()) {
-            throw new RuntimeException(
-                'Cannot approve: the Research Team NDA (Form 2) must be fully signed first (docs/0.4-dpo-ethics-integration.md).'
-            );
+        // Item 7 — the DPO can't approve while it is still waiting on a required document/revision
+        // it asked the applicant for (shared FRS §IX mechanism).
+        if ($this->revisions->hasOutstandingMandatory($application)) {
+            throw new RuntimeException('Cannot approve: there are outstanding required items the applicant must still provide.');
         }
 
+        // Approval no longer waits on a signed NDA (concern 7, 2026-07-26). Signing opens *after*
+        // approval: 'approved' is a real resting state where the team signs the Research Team NDA,
+        // and the DPO clearance issues only once everyone has signed (see below + ResearchTeamNdaService).
         $application = $this->transition($application, 'approved', 'dpreq_application.approved');
+        $application->update(['approved_by' => $approverId]);
 
-        // docs/1.2: Approved / Rejected -> Applicant.
-        $this->notifications->notifyUser($application->applicant, 'Application approved', "DPREQ application {$application->tracking_number} was approved.", $application);
+        // Materialise the Research Team NDA now: the lead applicant becomes the 'leader' signatory
+        // (signs while logged in) and every co-researcher captured at Form 1 is added as a member
+        // and emailed a single-use signing link.
+        $researchApplication = $application->researchApplication;
+        $nda = $this->researchTeamNda->createForApplication($researchApplication);
+        foreach ($researchApplication->co_researchers ?? [] as $member) {
+            $this->researchTeamNda->addMember($nda, $member['full_name'], $member['email']);
+        }
 
-        $this->clearance->signDpoTrack($application->researchApplication, $approverId, $application->tracking_number);
+        // docs/1.2: Approved / Rejected -> Applicant. Signing (not the clearance) is the next step.
+        $this->notifications->notifyUser(
+            $application->applicant,
+            'Application approved — sign the Team NDA',
+            "DPREQ application {$application->tracking_number} was approved. The clearance will be issued once you and all co-researchers have signed the Research Team NDA.",
+            $application,
+        );
 
         return $application->fresh();
     }

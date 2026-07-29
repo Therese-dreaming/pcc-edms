@@ -12,7 +12,9 @@ class Decision extends Model
 {
     use HasFactory;
 
-    public const POSITIVE_OUTCOMES = ['approved', 'approved_with_conditions'];
+    // Exemption is a positive terminal outcome: the study may proceed (it issues a Certificate of
+    // Exemption rather than a full clearance) — stakeholder 2026-07-28.
+    public const POSITIVE_OUTCOMES = ['approved', 'approved_with_conditions', 'exempted'];
 
     protected $fillable = [
         'remis_application_id',
@@ -23,6 +25,8 @@ class Decision extends Model
         'remarks',
         'signature_id',
         'signature_image',
+        'signature_ip',
+        'signature_user_agent',
     ];
 
     protected function casts(): array

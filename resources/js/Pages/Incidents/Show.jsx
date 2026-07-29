@@ -110,7 +110,7 @@ export default function Show({ incident, legalTransitions }) {
                                         )}
 
                                         {incident.corrective_action_required && (
-                                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm space-y-1">
+                                            <div className="p-4 bg-surface-tertiary border border-border rounded-lg text-sm space-y-1">
                                                 <p><span className="font-semibold text-zinc-900">Corrective Action:</span> {incident.corrective_action_required}</p>
                                                 <p><span className="font-semibold text-zinc-900">Due:</span> {incident.corrective_action_due_date}</p>
                                                 <p><span className="font-semibold text-zinc-900">Status:</span> {incident.corrective_action_status}</p>
@@ -178,10 +178,10 @@ export default function Show({ incident, legalTransitions }) {
                                         {!incident.corrective_action_required && (
                                             <form
                                                 onSubmit={(e) => { e.preventDefault(); correctiveActionForm.post(route('incidents.corrective-action', incident.id)); }}
-                                                className="p-5 bg-blue-50 border border-blue-200 rounded-lg space-y-3"
+                                                className="p-5 bg-surface-tertiary border border-border rounded-lg space-y-3"
                                             >
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <IconFileText size={18} className="text-blue-700" strokeWidth={2} />
+                                                    <IconFileText size={18} className="text-primary" strokeWidth={2} />
                                                     <h4 className="text-base font-semibold text-zinc-900">Set Corrective Action</h4>
                                                 </div>
                                                 <TextInput

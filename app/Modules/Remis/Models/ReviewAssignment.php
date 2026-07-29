@@ -38,4 +38,14 @@ class ReviewAssignment extends Model
     {
         return $this->belongsTo(User::class, 'reviewer_id');
     }
+
+    public function riskClassification(): BelongsTo
+    {
+        return $this->belongsTo(RiskClassification::class, 'risk_classification_id');
+    }
+
+    public function criteriaAssessments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ReviewCriterionAssessment::class);
+    }
 }

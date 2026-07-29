@@ -22,6 +22,8 @@ class EndorsementAction extends Model
         'remarks',
         'signature_id',
         'signature_image',
+        'signature_ip',
+        'signature_user_agent',
         'acted_at',
     ];
 

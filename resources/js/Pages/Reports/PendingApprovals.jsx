@@ -1,8 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageHeader from '@/Components/PageHeader';
 import ReportToolbar from '@/Components/Reports/ReportToolbar';
+import { ReportCard, StatCard } from '@/Components/Reports/Charts';
+import { DateField, FilterBar, ReportTable, TextField, TrackingPill } from '@/Components/Reports/ReportFilters';
 import { Head, Link, router } from '@inertiajs/react';
-import { IconClockHour4 } from '@tabler/icons-react';
+import { IconClockHour4, IconHourglass, IconListDetails } from '@tabler/icons-react';
 import { useState } from 'react';
 
 const STATUS_LABELS = {
@@ -12,6 +14,13 @@ const STATUS_LABELS = {
     under_review: 'Under Review',
     endorsed: 'Endorsed',
 };
+
+// Colour the days-pending value so a backlog stands out (green fresh → amber → red overdue).
+function daysTone(days) {
+    if (days >= 14) return 'bg-danger-bg text-danger-text';
+    if (days >= 7) return 'bg-warning-bg text-warning-text';
+    return 'bg-success-bg text-success-text';
+}
 
 export default function PendingApprovals({ filters, data }) {
     const [form, setForm] = useState({
@@ -25,6 +34,10 @@ export default function PendingApprovals({ filters, data }) {
         router.get(route('reports.pending-dpo-approvals'), form, { preserveState: true });
     };
 
+    const daysList = data.rows.map((r) => r.days_pending ?? 0);
+    const oldest = daysList.length ? Math.max(...daysList) : 0;
+    const avg = daysList.length ? Math.round(daysList.reduce((s, d) => s + d, 0) / daysList.length) : 0;
+
     return (
         <AuthenticatedLayout
             header={
@@ -37,68 +50,45 @@ export default function PendingApprovals({ filters, data }) {
         >
             <Head title="Pending DPO Approvals" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-6xl sm:px-6 lg:px-8">
-                    <ReportToolbar
-                        csvHref={route('reports.pending-dpo-approvals') + '?format=csv&' + new URLSearchParams(form).toString()}
-                    />
+            <div className="mx-auto max-w-6xl px-5 py-8 sm:px-7 lg:px-10">
+                <ReportToolbar
+                    csvHref={route('reports.pending-dpo-approvals') + '?format=csv&' + new URLSearchParams(form).toString()}
+                />
 
-                    <form onSubmit={submit} className="mb-6 flex flex-wrap items-end gap-3 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">Submitted From</label>
-                            <input type="date" value={form.date_from} onChange={(e) => setForm({ ...form, date_from: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">Submitted To</label>
-                            <input type="date" value={form.date_to} onChange={(e) => setForm({ ...form, date_to: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">Department</label>
-                            <input type="text" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
-                        </div>
-                        <button type="submit" className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
-                            Apply
-                        </button>
-                    </form>
+                <FilterBar onSubmit={submit}>
+                    <DateField label="Submitted from" value={form.date_from} onChange={(e) => setForm({ ...form, date_from: e.target.value })} />
+                    <DateField label="Submitted to" value={form.date_to} onChange={(e) => setForm({ ...form, date_to: e.target.value })} />
+                    <TextField label="Department" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} placeholder="All departments" />
+                </FilterBar>
 
-                    <p className="mb-4 text-sm text-zinc-600">{data.total} applications pending.</p>
-
-                    <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white shadow-sm">
-                        <table className="min-w-full divide-y divide-zinc-200">
-                            <thead className="bg-zinc-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Tracking #</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Applicant</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Department</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Submitted</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Comments</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Days Pending</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-zinc-200 bg-white">
-                                {data.rows.length === 0 && (
-                                    <tr><td colSpan={7} className="px-6 py-4 text-center text-zinc-500">No pending approvals for the selected filters.</td></tr>
-                                )}
-                                {data.rows.map((row) => (
-                                    <tr key={row.id}>
-                                        <td className="px-6 py-4">
-                                            <Link href={route('dpreq.show', row.id)} className="text-primary-700 hover:underline">
-                                                {row.tracking_number}
-                                            </Link>
-                                        </td>
-                                        <td className="px-6 py-4">{row.applicant}</td>
-                                        <td className="px-6 py-4">{row.department}</td>
-                                        <td className="px-6 py-4">{row.submitted_at}</td>
-                                        <td className="px-6 py-4">{STATUS_LABELS[row.status] ?? row.status}</td>
-                                        <td className="px-6 py-4 max-w-xs truncate" title={row.comments ?? ''}>{row.comments ?? '—'}</td>
-                                        <td className="px-6 py-4">{row.days_pending}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <StatCard label="Pending applications" value={data.total} icon={IconListDetails} helper="Awaiting a DPO decision" />
+                    <StatCard label="Avg. days pending" value={`${avg}d`} icon={IconHourglass} helper="Across the queue" trendDirection={avg <= 7 ? 'up' : 'down'} />
+                    <StatCard label="Oldest" value={`${oldest}d`} icon={IconClockHour4} helper="Longest wait in queue" trendDirection={oldest <= 14 ? 'up' : 'down'} />
                 </div>
+
+                <ReportCard icon={IconClockHour4} title="Pending queue" className="!p-0" right={<span className="text-xs text-fg-tertiary">{data.rows.length} rows</span>}>
+                    <ReportTable
+                        rowKey={(r) => r.id}
+                        rows={data.rows}
+                        empty="No pending approvals for the selected filters."
+                        columns={[
+                            { key: 'tracking_number', label: 'Tracking #', render: (r) => <Link href={route('dpreq.show', r.id)}><TrackingPill>{r.tracking_number}</TrackingPill></Link> },
+                            { key: 'applicant', label: 'Applicant', className: 'font-medium text-fg-primary' },
+                            { key: 'department', label: 'Department' },
+                            { key: 'submitted_at', label: 'Submitted', className: 'tabular-nums text-fg-tertiary' },
+                            { key: 'status', label: 'Status', render: (r) => <span className="capitalize">{STATUS_LABELS[r.status] ?? r.status}</span> },
+                            { key: 'comments', label: 'Comments', className: 'max-w-xs truncate', render: (r) => <span title={r.comments ?? ''}>{r.comments ?? '—'}</span> },
+                            {
+                                key: 'days_pending', label: 'Days pending', render: (r) => (
+                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ${daysTone(r.days_pending ?? 0)}`}>
+                                        {r.days_pending}d
+                                    </span>
+                                ),
+                            },
+                        ]}
+                    />
+                </ReportCard>
             </div>
         </AuthenticatedLayout>
     );

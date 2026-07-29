@@ -1,8 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageHeader from '@/Components/PageHeader';
 import ReportToolbar from '@/Components/Reports/ReportToolbar';
+import { ColumnChart, ReportCard, StatCard } from '@/Components/Reports/Charts';
+import { DateField, FilterBar, ReportTable, SelectField } from '@/Components/Reports/ReportFilters';
 import { Head, router } from '@inertiajs/react';
-import { IconAccessible } from '@tabler/icons-react';
+import { IconAccessible, IconBuildingCommunity, IconCalendarStats } from '@tabler/icons-react';
 import { useState } from 'react';
 
 export default function OjtAccommodated({ filters, data }) {
@@ -17,6 +19,14 @@ export default function OjtAccommodated({ filters, data }) {
         router.get(route('reports.ojt-accommodated'), form, { preserveState: true });
     };
 
+    // Aggregate placements per period for the trend column chart.
+    const byPeriod = {};
+    for (const row of data.rows) {
+        byPeriod[row.period] = (byPeriod[row.period] ?? 0) + row.count;
+    }
+    const internal = data.rows.filter((r) => r.trainee_type === 'internal_ojt').reduce((s, r) => s + r.count, 0);
+    const external = data.total - internal;
+
     return (
         <AuthenticatedLayout
             header={
@@ -29,63 +39,53 @@ export default function OjtAccommodated({ filters, data }) {
         >
             <Head title="OJTs Accommodated" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-5xl sm:px-6 lg:px-8">
-                    <ReportToolbar
-                        csvHref={route('reports.ojt-accommodated') + '?format=csv&' + new URLSearchParams(form).toString()}
-                    />
+            <div className="mx-auto max-w-5xl px-5 py-8 sm:px-7 lg:px-10">
+                <ReportToolbar
+                    csvHref={route('reports.ojt-accommodated') + '?format=csv&' + new URLSearchParams(form).toString()}
+                />
 
-                    <form onSubmit={submit} className="mb-6 flex flex-wrap items-end gap-3 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">Start From</label>
-                            <input type="date" value={form.date_from} onChange={(e) => setForm({ ...form, date_from: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">Start To</label>
-                            <input type="date" value={form.date_to} onChange={(e) => setForm({ ...form, date_to: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">Granularity</label>
-                            <select value={form.granularity} onChange={(e) => setForm({ ...form, granularity: e.target.value })} className="rounded-md border-zinc-300 text-sm">
-                                <option value="month">Month</option>
-                                <option value="year">Year</option>
-                            </select>
-                        </div>
-                        <button type="submit" className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
-                            Apply
-                        </button>
-                    </form>
+                <FilterBar onSubmit={submit}>
+                    <DateField label="Start from" value={form.date_from} onChange={(e) => setForm({ ...form, date_from: e.target.value })} />
+                    <DateField label="Start to" value={form.date_to} onChange={(e) => setForm({ ...form, date_to: e.target.value })} />
+                    <SelectField label="Granularity" value={form.granularity} onChange={(e) => setForm({ ...form, granularity: e.target.value })}>
+                        <option value="month">Month</option>
+                        <option value="year">Year</option>
+                    </SelectField>
+                </FilterBar>
 
-                    <p className="mb-4 text-sm text-zinc-600">{data.total} placements.</p>
-
-                    <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white shadow-sm">
-                        <table className="min-w-full divide-y divide-zinc-200">
-                            <thead className="bg-zinc-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Period</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">School</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Department/Office</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Type</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Count</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-zinc-200 bg-white">
-                                {data.rows.length === 0 && (
-                                    <tr><td colSpan={5} className="px-6 py-4 text-center text-zinc-500">No OJT placements for the selected filters.</td></tr>
-                                )}
-                                {data.rows.map((row, i) => (
-                                    <tr key={i}>
-                                        <td className="px-6 py-4">{row.period}</td>
-                                        <td className="px-6 py-4">{row.enrolled_school}</td>
-                                        <td className="px-6 py-4">{row.department_assigned}</td>
-                                        <td className="px-6 py-4">{row.trainee_type === 'internal_ojt' ? 'Internal' : 'External'}</td>
-                                        <td className="px-6 py-4">{row.count}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <StatCard label="Total placements" value={data.total} icon={IconAccessible} helper="Matching current filters" />
+                    <StatCard label="Internal OJTs" value={internal} icon={IconBuildingCommunity} helper="PCC-enrolled trainees" />
+                    <StatCard label="External OJTs" value={external} icon={IconBuildingCommunity} helper="From other schools" />
                 </div>
+
+                {Object.keys(byPeriod).length > 0 && (
+                    <div className="mb-6">
+                        <ReportCard icon={IconCalendarStats} title="Placements per period">
+                            <ColumnChart counts={byPeriod} />
+                        </ReportCard>
+                    </div>
+                )}
+
+                <ReportCard icon={IconAccessible} title="Placement detail" className="!p-0" right={<span className="text-xs text-fg-tertiary">{data.rows.length} rows</span>}>
+                    <ReportTable
+                        rows={data.rows}
+                        empty="No OJT placements for the selected filters."
+                        columns={[
+                            { key: 'period', label: 'Period', className: 'font-medium text-fg-primary tabular-nums' },
+                            { key: 'enrolled_school', label: 'School' },
+                            { key: 'department_assigned', label: 'Department/Office' },
+                            {
+                                key: 'trainee_type', label: 'Type', render: (r) => (
+                                    <span className="inline-flex items-center rounded-full bg-surface-tertiary px-2 py-0.5 text-[11px] font-semibold text-fg-secondary">
+                                        {r.trainee_type === 'internal_ojt' ? 'Internal' : 'External'}
+                                    </span>
+                                ),
+                            },
+                            { key: 'count', label: 'Count', className: 'font-semibold text-fg-primary tabular-nums' },
+                        ]}
+                    />
+                </ReportCard>
             </div>
         </AuthenticatedLayout>
     );

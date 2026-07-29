@@ -6,13 +6,13 @@ export default function PageHeader({ icon: Icon, title, description, actions }) 
         <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
                 <div className="flex items-center gap-2">
-                    {Icon && <Icon size={18} className="text-primary-700" strokeWidth={2} aria-hidden="true" />}
-                    <h2 className="font-display text-xl font-semibold leading-tight text-zinc-900">
+                    {Icon && <Icon size={18} className="text-primary" strokeWidth={2} aria-hidden="true" />}
+                    <h2 className="text-2xl font-bold leading-tight tracking-tight text-fg-primary">
                         {title}
                     </h2>
                 </div>
                 {description && (
-                    <p className="font-subtitle mt-1 text-sm text-zinc-500">{description}</p>
+                    <p className="mt-1 text-sm text-fg-tertiary">{description}</p>
                 )}
             </div>
 

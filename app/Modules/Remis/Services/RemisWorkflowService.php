@@ -9,7 +9,9 @@ use App\Modules\Remis\Models\ReviewAssignment;
 use App\Modules\Remis\Models\RiskClassification;
 use App\Shared\AuditLog\Services\AuditLogService;
 use App\Shared\AuditLog\Services\StatusHistoryService;
+use App\Shared\AuditLog\Support\SignatureIdentity;
 use App\Shared\Clearance\Services\ClearanceService;
+use App\Shared\Revisions\Services\RevisionService;
 use App\Shared\Notifications\Services\NotificationService;
 use RuntimeException;
 
@@ -37,6 +39,7 @@ class RemisWorkflowService
         private readonly AuditLogService $auditLog,
         private readonly ClearanceService $clearance,
         private readonly NotificationService $notifications,
+        private readonly RevisionService $revisions,
     ) {
     }
 
@@ -47,7 +50,7 @@ class RemisWorkflowService
 
         // docs/3.3 "Notifications": Submission received -> Researcher + Adviser.
         $this->notifications->notifyUser($application->applicant, 'REMIS application submitted', "Your REMIS application {$application->tracking_number} was submitted for endorsement.", $application);
-        $this->notifications->notifyRole('adviser', 'REMIS application awaiting endorsement', "REMIS application {$application->tracking_number} is awaiting your endorsement.", $application);
+        $this->notifyAdviser($application, 'REMIS application awaiting endorsement', "REMIS application {$application->tracking_number} is awaiting your endorsement.");
 
         return $application->fresh();
     }
@@ -65,6 +68,8 @@ class RemisWorkflowService
             throw new RuntimeException("It is not currently the {$step}'s turn to endorse this application.");
         }
 
+        $identity = SignatureIdentity::capture();
+
         EndorsementAction::create([
             'remis_application_id' => $application->id,
             'step' => $step,
@@ -73,6 +78,8 @@ class RemisWorkflowService
             'remarks' => $remarks,
             'signature_id' => $signature,
             'signature_image' => $signatureImage,
+            'signature_ip' => $identity['ip'],
+            'signature_user_agent' => $identity['user_agent'],
             'acted_at' => now(),
         ]);
 
@@ -124,6 +131,8 @@ class RemisWorkflowService
 
         // docs/3.3: Endorsement step advanced -> Researcher + next endorser.
         $this->notifications->notifyUser($application->applicant, 'REMIS endorsement advanced', "REMIS application {$application->tracking_number} advanced to the {$nextStep} endorsement step.", $application);
+        // Still a role broadcast: unlike the adviser (whose ownership comes from the applicant's
+        // cohort), the schema has no per-application program head or dean to target.
         $this->notifications->notifyRole($nextStep, 'REMIS application awaiting endorsement', "REMIS application {$application->tracking_number} is awaiting your endorsement.", $application);
 
         return $application->fresh();
@@ -131,6 +140,12 @@ class RemisWorkflowService
 
     public function resubmitFromRevision(RemisApplication $application): RemisApplication
     {
+        // FRS §IX gate: an application can't be pushed back into the workflow while a mandatory
+        // revision request is still outstanding.
+        if ($this->revisions->hasOutstandingMandatory($application)) {
+            throw new RuntimeException('Please resolve all required revision items before resubmitting.');
+        }
+
         $target = $application->returned_from_status ?? 'under_endorsement';
 
         if ($target === 'under_endorsement') {
@@ -144,7 +159,7 @@ class RemisWorkflowService
         // Whoever's turn it is next needs to know a revision came back in, mirroring docs/3.3's
         // "Routed to X -> X" pattern for the same target statuses reached via the forward path.
         match ($target) {
-            'under_endorsement' => $this->notifications->notifyRole('adviser', 'REMIS application resubmitted', "REMIS application {$application->tracking_number} was resubmitted and is awaiting endorsement.", $application),
+            'under_endorsement' => $this->notifyAdviser($application, 'REMIS application resubmitted', "REMIS application {$application->tracking_number} was resubmitted and is awaiting endorsement."),
             'for_screening' => $this->notifications->notifyRole('ethics_secretariat', 'REMIS application resubmitted', "REMIS application {$application->tracking_number} was resubmitted and is ready for screening.", $application),
             'for_review' => $this->notifications->notifyRole('ethics_reviewer', 'REMIS application resubmitted', "REMIS application {$application->tracking_number} was resubmitted and is ready for review.", $application),
             default => null,
@@ -153,8 +168,31 @@ class RemisWorkflowService
         return $application;
     }
 
-    public function screen(RemisApplication $application, string $decision, ?string $comments = null): RemisApplication
+    /**
+     * FRS §VI Administrative Screening. `$checklist` holds the five completeness booleans; it is
+     * recorded per screening, and on a deficient outcome a deficiency notice PDF is auto-generated.
+     *
+     * @param  array<string, bool>  $checklist
+     */
+    public function screen(RemisApplication $application, string $decision, ?string $comments = null, array $checklist = [], ?int $screenedBy = null): RemisApplication
     {
+        $record = \App\Modules\Remis\Models\ScreeningChecklist::create([
+            'remis_application_id' => $application->id,
+            'proposal_attached' => $checklist['proposal_attached'] ?? false,
+            'consent_form_attached' => $checklist['consent_form_attached'] ?? false,
+            'instrument_attached' => $checklist['instrument_attached'] ?? false,
+            'signatures_complete' => $checklist['signatures_complete'] ?? false,
+            'required_templates_used' => $checklist['required_templates_used'] ?? false,
+            'decision' => $decision,
+            'comments' => $comments,
+            'screened_by' => $screenedBy ?? $application->applicant_id,
+            'screened_at' => now(),
+        ]);
+
+        $this->auditLog->record('remis_application.screened', $application, null, [
+            'decision' => $decision, 'screening_checklist_id' => $record->id,
+        ]);
+
         return match ($decision) {
             'complete' => (function () use ($application) {
                 $application = $this->transition($application, 'for_review', 'remis_application.screening_complete');
@@ -166,13 +204,16 @@ class RemisWorkflowService
 
                 return $application;
             })(),
-            'incomplete', 'returned_for_compliance' => (function () use ($application, $comments) {
+            'incomplete', 'returned_for_compliance' => (function () use ($application, $comments, $record) {
                 $application->update(['returned_from_status' => 'for_screening']);
 
                 $application = $this->transition($application, 'for_revision', 'remis_application.screening_deficient', $comments);
 
+                // FRS §VI: auto-generate a deficiency notice on a deficient outcome.
+                \App\Modules\Remis\Jobs\GenerateDeficiencyNoticeJob::dispatch($record->id);
+
                 // docs/3.3: For Revision (from any stage) -> Researcher.
-                $this->notifications->notifyUser($application->applicant, 'REMIS application returned for revision', "REMIS application {$application->tracking_number} was returned during screening: \"{$comments}\"", $application);
+                $this->notifications->notifyUser($application->applicant, 'REMIS application returned for revision', "REMIS application {$application->tracking_number} was returned during screening — a deficiency notice has been issued.", $application);
 
                 return $application;
             })(),
@@ -202,12 +243,17 @@ class RemisWorkflowService
         return $assignment;
     }
 
+    /**
+     * @param  array<string, array{verdict: string, comment?: ?string}>  $criteria  FRS §VIII —
+     *         the reviewer's verdict on each of the seven named criteria (keyed by criterion).
+     */
     public function classifyRiskAndRecommend(
         ReviewAssignment $assignment,
         string $riskLevel,
         string $rationale,
         string $recommendation,
         string $comments,
+        array $criteria = [],
     ): void {
         $application = $assignment->remisApplication;
 
@@ -219,6 +265,19 @@ class RemisWorkflowService
             'classification_date' => now()->toDateString(),
             'rationale' => $rationale,
         ]);
+
+        // FRS §VIII — record the per-criterion assessment. Replace any prior set for idempotency.
+        $assignment->criteriaAssessments()->delete();
+        foreach (\App\Modules\Remis\Models\ReviewCriterionAssessment::CRITERIA as $key => $label) {
+            if (! isset($criteria[$key])) {
+                continue;
+            }
+            $assignment->criteriaAssessments()->create([
+                'criterion' => $key,
+                'verdict' => $criteria[$key]['verdict'],
+                'comment' => $criteria[$key]['comment'] ?? null,
+            ]);
+        }
 
         $assignment->update([
             'recommendation' => $recommendation,
@@ -250,6 +309,8 @@ class RemisWorkflowService
             throw new RuntimeException('All assigned reviewers must submit their recommendation before a decision can be issued.');
         }
 
+        $decisionIdentity = SignatureIdentity::capture();
+
         Decision::create([
             'remis_application_id' => $application->id,
             'outcome' => $outcome,
@@ -259,6 +320,8 @@ class RemisWorkflowService
             'remarks' => $remarks,
             'signature_id' => $signature,
             'signature_image' => $signatureImage,
+            'signature_ip' => $decisionIdentity['ip'],
+            'signature_user_agent' => $decisionIdentity['user_agent'],
         ]);
 
         $application = $this->transition($application, $outcome, "remis_application.decision_{$outcome}", $remarks);
@@ -266,11 +329,33 @@ class RemisWorkflowService
         // docs/3.3: Decision issued (any of the four outcomes) -> Researcher.
         $this->notifications->notifyUser($application->applicant, 'REMIS decision issued', "REMIS application {$application->tracking_number} decision: {$outcome}.", $application);
 
-        if (in_array($outcome, ['approved', 'approved_with_conditions'], true)) {
-            $this->clearance->signEthicsTrack($application->researchApplication, $chairId, $application->tracking_number);
+        if (in_array($outcome, ['approved', 'approved_with_conditions', 'exempted'], true)) {
+            // An "exempted" decision issues the Certificate of Exemption; the others issue the
+            // Research Ethics Clearance (stakeholder 2026-07-28).
+            $this->clearance->signEthicsTrack($application->researchApplication, $chairId, exempted: $outcome === 'exempted');
         }
 
         return $application->fresh();
+    }
+
+    /**
+     * Notify the ONE adviser who owns this application, when known.
+     *
+     * `adviser_id` is set at submission from the applicant's class cohort
+     * (ResearchApplicationService::submitForm1). Before that existed this was a `notifyRole('adviser')`
+     * broadcast, which meant every adviser in the institution got an in-app notification and a queued
+     * email for every submission. The broadcast is kept only as the fallback for applicants who
+     * belong to no cohort — otherwise nobody would be told at all.
+     */
+    private function notifyAdviser(RemisApplication $application, string $subject, string $body): void
+    {
+        if ($application->adviser) {
+            $this->notifications->notifyUser($application->adviser, $subject, $body, $application);
+
+            return;
+        }
+
+        $this->notifications->notifyRole('adviser', $subject, $body, $application);
     }
 
     private function transition(RemisApplication $application, string $toStatus, string $eventType, ?string $comments = null): RemisApplication
@@ -284,6 +369,19 @@ class RemisWorkflowService
 
         $this->statusHistory->record($application, $fromStatus, $toStatus, $comments);
         $this->auditLog->record($eventType, $application, ['status' => $fromStatus], ['status' => $toStatus]);
+
+        return $application->fresh();
+    }
+
+    /**
+     * Resume monitoring after an incident has been resolved.
+     * Only allowed from 'monitoring_paused' status.
+     */
+    public function resumeMonitoring(RemisApplication $application, int $actorId): RemisApplication
+    {
+        $application = $this->transition($application, 'monitoring', 'remis_application.monitoring_resumed');
+
+        $this->notifications->notifyUser($application->applicant, 'REMIS monitoring resumed', "Monitoring for your REMIS study {$application->tracking_number} has resumed after corrective actions were completed.", $application);
 
         return $application->fresh();
     }

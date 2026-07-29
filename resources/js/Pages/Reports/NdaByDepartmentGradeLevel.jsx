@@ -1,8 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageHeader from '@/Components/PageHeader';
 import ReportToolbar from '@/Components/Reports/ReportToolbar';
+import { ColumnChart, ReportCard, StatCard } from '@/Components/Reports/Charts';
+import { DateField, FilterBar } from '@/Components/Reports/ReportFilters';
 import { Head, router } from '@inertiajs/react';
-import { IconFileCertificate } from '@tabler/icons-react';
+import { IconBuildingBank, IconFileCertificate } from '@tabler/icons-react';
 import { useState } from 'react';
 
 export default function NdaByDepartmentGradeLevel({ filters, data }) {
@@ -16,6 +18,8 @@ export default function NdaByDepartmentGradeLevel({ filters, data }) {
         router.get(route('reports.nda-by-department-grade-level'), form, { preserveState: true });
     };
 
+    const byDept = Object.fromEntries(data.rows.map((r) => [r.department, r.total]));
+
     return (
         <AuthenticatedLayout
             header={
@@ -28,63 +32,70 @@ export default function NdaByDepartmentGradeLevel({ filters, data }) {
         >
             <Head title="NDAs by Department and Grade Level" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-5xl sm:px-6 lg:px-8">
-                    <ReportToolbar
-                        csvHref={route('reports.nda-by-department-grade-level') + '?format=csv&' + new URLSearchParams(form).toString()}
-                    />
+            <div className="mx-auto max-w-5xl px-5 py-8 sm:px-7 lg:px-10">
+                <ReportToolbar
+                    csvHref={route('reports.nda-by-department-grade-level') + '?format=csv&' + new URLSearchParams(form).toString()}
+                />
 
-                    <form onSubmit={submit} className="mb-6 flex flex-wrap items-end gap-3 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">Signed From</label>
-                            <input type="date" value={form.date_from} onChange={(e) => setForm({ ...form, date_from: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">Signed To</label>
-                            <input type="date" value={form.date_to} onChange={(e) => setForm({ ...form, date_to: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
-                        </div>
-                        <button type="submit" className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
-                            Apply
-                        </button>
-                    </form>
+                <FilterBar onSubmit={submit}>
+                    <DateField label="Signed from" value={form.date_from} onChange={(e) => setForm({ ...form, date_from: e.target.value })} />
+                    <DateField label="Signed to" value={form.date_to} onChange={(e) => setForm({ ...form, date_to: e.target.value })} />
+                </FilterBar>
 
-                    <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white shadow-sm">
-                        <table className="min-w-full divide-y divide-zinc-200">
-                            <thead className="bg-zinc-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Host Department</th>
+                <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <StatCard label="Completed NDAs" value={data.grand_total} icon={IconFileCertificate} helper="Matching current filters" />
+                    <StatCard label="Departments" value={data.rows.length} icon={IconBuildingBank} helper={`Across ${data.levels.length} grade levels`} />
+                </div>
+
+                {data.rows.length > 0 && (
+                    <div className="mb-6">
+                        <ReportCard icon={IconBuildingBank} title="NDAs per department">
+                            <ColumnChart counts={byDept} />
+                        </ReportCard>
+                    </div>
+                )}
+
+                <ReportCard icon={IconFileCertificate} title="Cross-tabulation" className="!p-0" right={<span className="text-xs text-fg-tertiary">{data.rows.length} departments</span>}>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full">
+                            <thead>
+                                <tr className="border-b border-border">
+                                    <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-tertiary">Host department</th>
                                     {data.levels.map((level) => (
-                                        <th key={level} className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">{level}</th>
+                                        <th key={level} className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-tertiary">{level}</th>
                                     ))}
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Total</th>
+                                    <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-tertiary">Total</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-zinc-200 bg-white">
-                                {data.rows.length === 0 && (
-                                    <tr><td colSpan={data.levels.length + 2} className="px-6 py-4 text-center text-zinc-500">No completed NDAs for the selected filters.</td></tr>
-                                )}
-                                {data.rows.map((row) => (
-                                    <tr key={row.department}>
-                                        <td className="px-6 py-4 font-medium text-zinc-800">{row.department}</td>
-                                        {data.levels.map((level) => (
-                                            <td key={level} className="px-6 py-4">{row.counts[level] ?? 0}</td>
-                                        ))}
-                                        <td className="px-6 py-4 font-semibold text-zinc-800">{row.total}</td>
+                            <tbody>
+                                {data.rows.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={data.levels.length + 2} className="px-5 py-10 text-center text-sm text-fg-tertiary">No completed NDAs for the selected filters.</td>
                                     </tr>
-                                ))}
+                                ) : (
+                                    data.rows.map((row) => (
+                                        <tr key={row.department} className="border-b border-border last:border-0 hover:bg-surface-tertiary/50">
+                                            <td className="px-5 py-3.5 text-sm font-medium text-fg-primary">{row.department}</td>
+                                            {data.levels.map((level) => (
+                                                <td key={level} className="px-5 py-3.5 text-sm tabular-nums text-fg-secondary">{row.counts[level] ?? 0}</td>
+                                            ))}
+                                            <td className="px-5 py-3.5 text-sm font-semibold tabular-nums text-fg-primary">{row.total}</td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                             {data.rows.length > 0 && (
-                                <tfoot className="bg-zinc-50">
-                                    <tr>
-                                        <td className="px-6 py-3 font-semibold text-zinc-800">Grand Total</td>
+                                <tfoot>
+                                    <tr className="border-t border-border bg-surface-tertiary/60">
+                                        <td className="px-5 py-3 text-sm font-semibold text-fg-primary">Grand total</td>
                                         <td colSpan={data.levels.length} />
-                                        <td className="px-6 py-3 font-semibold text-zinc-800">{data.grand_total}</td>
+                                        <td className="px-5 py-3 text-sm font-semibold tabular-nums text-primary">{data.grand_total}</td>
                                     </tr>
                                 </tfoot>
                             )}
                         </table>
                     </div>
-                </div>
+                </ReportCard>
             </div>
         </AuthenticatedLayout>
     );

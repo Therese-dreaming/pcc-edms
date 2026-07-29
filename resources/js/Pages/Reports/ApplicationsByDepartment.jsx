@@ -1,9 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageHeader from '@/Components/PageHeader';
-import BarList from '@/Components/Reports/BarList';
 import ReportToolbar from '@/Components/Reports/ReportToolbar';
+import { ColumnChart, ReportCard, StatCard } from '@/Components/Reports/Charts';
+import { DateField, FilterBar, ReportTable, TextField } from '@/Components/Reports/ReportFilters';
 import { Head, router } from '@inertiajs/react';
-import { IconBuildingBank } from '@tabler/icons-react';
+import { IconBuildingBank, IconChartBar, IconFileDescription, IconStack2 } from '@tabler/icons-react';
 import { useState } from 'react';
 
 export default function ApplicationsByDepartment({ filters, data }) {
@@ -19,6 +20,8 @@ export default function ApplicationsByDepartment({ filters, data }) {
     };
 
     const totals = Object.fromEntries(data.departments.map((d) => [d.department, d.total]));
+    const dpreqTotal = data.departments.reduce((s, d) => s + d.dpreq_total, 0);
+    const remisTotal = data.departments.reduce((s, d) => s + d.remis_total, 0);
 
     return (
         <AuthenticatedLayout
@@ -32,71 +35,60 @@ export default function ApplicationsByDepartment({ filters, data }) {
         >
             <Head title="Applications by Department" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-6xl sm:px-6 lg:px-8">
-                    <ReportToolbar
-                        csvHref={route('reports.applications-by-department') + '?format=csv&' + new URLSearchParams(form).toString()}
-                    />
+            <div className="mx-auto max-w-6xl px-5 py-8 sm:px-7 lg:px-10">
+                <ReportToolbar
+                    csvHref={route('reports.applications-by-department') + '?format=csv&' + new URLSearchParams(form).toString()}
+                />
 
-                    <form onSubmit={submit} className="mb-6 flex flex-wrap items-end gap-3 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">From</label>
-                            <input type="date" value={form.date_from} onChange={(e) => setForm({ ...form, date_from: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">To</label>
-                            <input type="date" value={form.date_to} onChange={(e) => setForm({ ...form, date_to: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">Department</label>
-                            <input type="text" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
-                        </div>
-                        <button type="submit" className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
-                            Apply
-                        </button>
-                    </form>
+                <FilterBar onSubmit={submit}>
+                    <DateField label="From" value={form.date_from} onChange={(e) => setForm({ ...form, date_from: e.target.value })} />
+                    <DateField label="To" value={form.date_to} onChange={(e) => setForm({ ...form, date_to: e.target.value })} />
+                    <TextField label="Department" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} placeholder="All departments" />
+                </FilterBar>
 
-                    <div className="mb-6 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-                        <h3 className="mb-3 text-sm font-semibold text-zinc-700">Total applications by department ({data.grand_total} overall)</h3>
-                        <BarList counts={totals} />
-                    </div>
-
-                    <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white shadow-sm">
-                        <table className="min-w-full divide-y divide-zinc-200">
-                            <thead className="bg-zinc-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Department</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">DPREQ</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">REMIS</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-zinc-200 bg-white">
-                                {data.departments.length === 0 && (
-                                    <tr><td colSpan={4} className="px-6 py-4 text-center text-zinc-500">No applications for the selected filters.</td></tr>
-                                )}
-                                {data.departments.map((row) => (
-                                    <tr key={row.department}>
-                                        <td className="px-6 py-4 font-medium text-zinc-800">{row.department}</td>
-                                        <td className="px-6 py-4 text-sm text-zinc-600">
-                                            {row.dpreq_total}
-                                            {Object.entries(row.dpreq_by_status).map(([status, count]) => (
-                                                <span key={status} className="ml-2 text-xs text-zinc-400">{status}: {count}</span>
-                                            ))}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-zinc-600">
-                                            {row.remis_total}
-                                            {Object.entries(row.remis_by_status).map(([status, count]) => (
-                                                <span key={status} className="ml-2 text-xs text-zinc-400">{status}: {count}</span>
-                                            ))}
-                                        </td>
-                                        <td className="px-6 py-4 font-semibold text-zinc-800">{row.total}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <StatCard label="Total applications" value={data.grand_total} icon={IconStack2} helper={`${data.departments.length} departments`} />
+                    <StatCard label="DPREQ (Data Privacy)" value={dpreqTotal} icon={IconFileDescription} helper="Data privacy track" />
+                    <StatCard label="REMIS (Ethics)" value={remisTotal} icon={IconFileDescription} helper="Ethics review track" />
                 </div>
+
+                <div className="mb-6">
+                    <ReportCard icon={IconChartBar} title={`Applications per department (${data.grand_total} overall)`}>
+                        <ColumnChart counts={totals} />
+                    </ReportCard>
+                </div>
+
+                <ReportCard icon={IconBuildingBank} title="Department detail" className="!p-0" right={<span className="text-xs text-fg-tertiary">{data.departments.length} rows</span>}>
+                    <ReportTable
+                        rowKey={(r) => r.department}
+                        rows={data.departments}
+                        empty="No applications for the selected filters."
+                        columns={[
+                            { key: 'department', label: 'Department', className: 'font-medium text-fg-primary' },
+                            {
+                                key: 'dpreq', label: 'DPREQ', render: (r) => (
+                                    <span className="flex flex-wrap items-center gap-1.5">
+                                        <span className="font-semibold text-fg-primary tabular-nums">{r.dpreq_total}</span>
+                                        {Object.entries(r.dpreq_by_status).map(([s, c]) => (
+                                            <span key={s} className="rounded-full bg-surface-tertiary px-1.5 py-0.5 text-[10px] capitalize text-fg-tertiary">{s.replace(/_/g, ' ')}: {c}</span>
+                                        ))}
+                                    </span>
+                                ),
+                            },
+                            {
+                                key: 'remis', label: 'REMIS', render: (r) => (
+                                    <span className="flex flex-wrap items-center gap-1.5">
+                                        <span className="font-semibold text-fg-primary tabular-nums">{r.remis_total}</span>
+                                        {Object.entries(r.remis_by_status).map(([s, c]) => (
+                                            <span key={s} className="rounded-full bg-surface-tertiary px-1.5 py-0.5 text-[10px] capitalize text-fg-tertiary">{s.replace(/_/g, ' ')}: {c}</span>
+                                        ))}
+                                    </span>
+                                ),
+                            },
+                            { key: 'total', label: 'Total', className: 'font-semibold text-fg-primary tabular-nums' },
+                        ]}
+                    />
+                </ReportCard>
             </div>
         </AuthenticatedLayout>
     );

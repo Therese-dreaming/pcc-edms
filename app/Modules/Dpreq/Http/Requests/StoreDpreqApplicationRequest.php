@@ -2,6 +2,8 @@
 
 namespace App\Modules\Dpreq\Http\Requests;
 
+use App\Shared\Documents\Support\UploadRules;
+use App\Shared\ResearchApplications\Support\ApplicationDocuments;
 use Illuminate\Foundation\Http\FormRequest;
 
 // docs/1.1-dpreq-application-form.md — Form 1 fields (🟢, confirmed) plus the proposed
@@ -16,25 +18,89 @@ class StoreDpreqApplicationRequest extends FormRequest
         return $this->user()->can('create', \App\Modules\Dpreq\Models\DpreqApplication::class);
     }
 
+    // B4 (concern 4) — Applicant Type is not trusted from the client; it is derived from the
+    // authenticated user's role before validation, so the posted value can never override it.
+    protected function prepareForValidation(): void
+    {
+        // Drop co-researcher rows left completely blank (or whitespace only) — an added-then-abandoned
+        // row is an accident, not missing data, so it's treated as "none" rather than a hard error.
+        // A row with *some* content (e.g. a name but no email) is kept so it still validates.
+        $coResearchers = collect($this->input('co_researchers', []))
+            ->filter(fn ($member) => is_array($member)
+                && (trim((string) ($member['full_name'] ?? '')) !== '' || trim((string) ($member['email'] ?? '')) !== ''))
+            ->values()
+            ->all();
+
+        $this->merge([
+            'applicant_type' => $this->user()->dpreqApplicantType(),
+            'co_researchers' => $coResearchers,
+            // Keep the total researcher count consistent with the real roster (lead + co-researchers)
+            // once the empty rows are removed, so the B2 count check can't fail on a dropped row.
+            'researcher_count' => count($coResearchers) + 1,
+        ]);
+    }
+
+    // B2 (concern 3.1) — the co-researcher roster must be exactly one fewer than the total
+    // researcher count (the lead applicant makes up the difference).
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $count = (int) $this->input('researcher_count');
+            $co = $this->input('co_researchers', []);
+            if (is_array($co) && count($co) !== max(0, $count - 1)) {
+                $validator->errors()->add(
+                    'co_researchers',
+                    'The number of co-researchers must be one fewer than the total number of researchers (you are the remaining one).',
+                );
+            }
+        });
+    }
+
     public function rules(): array
     {
+        $minors = $this->boolean('minors_involved');
+
         return [
             // Form 1, Section A/B (🟢)
             'research_title' => ['required', 'string', 'max:255'],
             'researcher_count' => ['required', 'integer', 'min:1', 'max:20'],
             'adviser_name' => ['required', 'string', 'max:255'],
+            // FRS §III.A/B additions (2026-07-25). The closed dropdowns now allow an "other" choice
+            // with a companion free-text field (stakeholder 2026-07-28), collapsed to a single stored
+            // value by ResearchApplicationService.
+            'research_category' => ['required', 'in:academic,institutional,sponsored,student_thesis,faculty,other'],
+            'research_category_other' => ['nullable', 'string', 'max:255', 'required_if:research_category,other'],
+            'contact_number' => ['nullable', 'string', 'max:30'],
+            // The intake now serves employees too (stakeholder 2026-07-28): students give
+            // level/course/section, employees give a position — both optional, category is required.
+            'applicant_category' => ['required', 'in:student,employee'],
             'department' => ['nullable', 'string', 'max:255'],
             'level' => ['nullable', 'string', 'max:255'],
             'course' => ['nullable', 'string', 'max:255'],
             'section' => ['nullable', 'string', 'max:255'],
+            'position' => ['nullable', 'string', 'max:255'],
             'respondents' => ['required', 'string', 'max:255'],
             'target_respondent_count' => ['required', 'integer', 'min:1'],
-            'data_collection_method' => ['required', 'in:survey_form,interview,mixed,observation'],
-            'data_capturing_tool' => ['required', 'in:electronic_form,paper_based,voice_recording,video_recording'],
+            'data_collection_method' => ['required', 'in:survey_form,interview,mixed,observation,other'],
+            'data_collection_method_other' => ['nullable', 'string', 'max:255', 'required_if:data_collection_method,other'],
+            'data_capturing_tool' => ['required', 'in:electronic_form,paper_based,voice_recording,video_recording,other'],
+            'data_capturing_tool_other' => ['nullable', 'string', 'max:255', 'required_if:data_capturing_tool,other'],
             'target_start_date' => ['required', 'date'],
             'target_end_date' => ['required', 'date', 'after_or_equal:target_start_date'],
             'minors_involved' => ['boolean'],
             'respondent_head_letter_approved' => ['boolean'],
+
+            // Researcher's drawn signature on Form 1 (stakeholder 2026-07-28) — a PNG data URI.
+            'researcher_signature' => ['required', 'string', 'starts_with:data:image/png;base64,', 'max:400000'],
+
+            // Form 1 review checklist (items 3–7) — answered on the intake, stored as JSON. Each is a
+            // yes/no/not-applicable declaration (docs/1.1, dpreq-form1.blade).
+            'review_checklist' => ['required', 'array'],
+            'review_checklist.voluntary_participation' => ['required', 'in:yes,no,not_applicable'],
+            'review_checklist.confidentiality' => ['required', 'in:yes,no,not_applicable'],
+            'review_checklist.free_withdrawal' => ['required', 'in:yes,no,not_applicable'],
+            'review_checklist.avoid_harm' => ['required', 'in:yes,no,not_applicable'],
+            'review_checklist.academic_use_only' => ['required', 'in:yes,no,not_applicable'],
 
             // Proposed DPO-internal fields (🔴, docs/1.1)
             'applicant_type' => ['required', 'in:internal_researcher,external_researcher,student'],
@@ -48,8 +114,10 @@ class StoreDpreqApplicationRequest extends FormRequest
             'third_party_detail' => ['required_if:third_party_sharing,true', 'nullable', 'string'],
 
             // docs/3.1 Sections C/D (FRS-sourced, Ethics track)
-            'study_type' => ['required', 'in:thesis_dissertation,faculty_research,institutional,sponsored'],
-            'study_design' => ['required', 'in:quantitative,qualitative,mixed_methods'],
+            'study_type' => ['required', 'in:thesis_dissertation,faculty_research,institutional,sponsored,other'],
+            'study_type_other' => ['nullable', 'string', 'max:255', 'required_if:study_type,other'],
+            'study_design' => ['required', 'in:quantitative,qualitative,mixed_methods,other'],
+            'study_design_other' => ['nullable', 'string', 'max:255', 'required_if:study_design,other'],
             'study_sites' => ['required', 'string', 'max:255'],
             'funding_source' => ['nullable', 'string', 'max:255'],
             'target_population' => ['required', 'string'],
@@ -62,6 +130,33 @@ class StoreDpreqApplicationRequest extends FormRequest
             'confidentiality_measures' => ['required', 'string'],
             'consent_process' => ['required', 'string'],
             'data_storage_plan' => ['required', 'string'],
+
+            // FRS §III.B — co-researcher identities (name + email + optional role). Each becomes a
+            // Research Team NDA signatory with an emailed signing link. Optional: a solo researcher
+            // has none.
+            'co_researchers' => ['nullable', 'array', 'max:19'],
+            'co_researchers.*.full_name' => ['required_with:co_researchers', 'string', 'max:255'],
+            'co_researchers.*.email' => ['required_with:co_researchers', 'email', 'max:255'],
+
+            // FRS §III.E — mandatory + conditional document uploads (see ApplicationDocuments).
+            ...ApplicationDocuments::rules($minors),
+
+            // Item 6 — additional supporting documents, each with a standard label. Attached to the
+            // DPO (DPREQ) track so DPO sees them alongside the data-privacy review.
+            'additional_documents' => ['nullable', 'array', 'max:20'],
+            'additional_documents.*.label' => ['required_with:additional_documents', 'string', 'max:100'],
+            'additional_documents.*.file' => UploadRules::rules(required: true),
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'documents.research_proposal.required' => 'The Research Proposal is a mandatory document.',
+            'documents.consent_form.required' => 'The Consent Form is a mandatory document.',
+            'documents.research_instrument.required' => 'The Research Instrument is a mandatory document.',
+            'documents.parent_consent.required' => 'Parent Consent is required when minors are involved.',
+            'documents.assent_form.required' => 'An Assent Form is required when minors are involved.',
         ];
     }
 }

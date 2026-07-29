@@ -7,16 +7,16 @@ use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
+// Open public self-registration was removed 2026-07-25 (stakeholder-additional-features.md,
+// "Adviser-Managed Account Creation"): the `register` routes and RegisteredUserController were
+// retired. Every account now traces back to a staff-issued credential — an admin creating it
+// (routes/admin.php), or a class cohort join code / invitation the adviser issued
+// (routes/join.php). Activation still rides on the email-verification + password-reset-link flow
+// below.
 Route::middleware('guest')->group(function () {
-    Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register');
-
-    Route::post('register', [RegisteredUserController::class, 'store']);
-
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
@@ -46,6 +46,12 @@ Route::middleware('auth')->group(function () {
     Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
         ->middleware('throttle:6,1')
         ->name('verification.send');
+
+    // C1 (concern 2) — lightweight poll target so a tab left on the verify-email page can detect
+    // that the user verified on another device and redirect itself to the dashboard.
+    Route::get('email/verification-status', function (\Illuminate\Http\Request $request) {
+        return response()->json(['verified' => $request->user()->hasVerifiedEmail()]);
+    })->name('verification.status');
 
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
         ->name('password.confirm');

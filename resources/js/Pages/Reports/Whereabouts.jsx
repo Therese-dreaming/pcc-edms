@@ -1,8 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageHeader from '@/Components/PageHeader';
 import ReportToolbar from '@/Components/Reports/ReportToolbar';
+import { ReportCard, StatCard } from '@/Components/Reports/Charts';
+import { DateField, FilterBar, ReportTable, TextField } from '@/Components/Reports/ReportFilters';
 import { Head, router } from '@inertiajs/react';
-import { IconMapPin } from '@tabler/icons-react';
+import { IconAlertTriangle, IconBuildingCommunity, IconMapPin } from '@tabler/icons-react';
 import { useState } from 'react';
 
 export default function Whereabouts({ filters, data }) {
@@ -16,6 +18,8 @@ export default function Whereabouts({ filters, data }) {
         router.get(route('reports.whereabouts'), form, { preserveState: true });
     };
 
+    const departments = new Set(data.rows.map((r) => r.department_assigned)).size;
+
     return (
         <AuthenticatedLayout
             header={
@@ -28,61 +32,39 @@ export default function Whereabouts({ filters, data }) {
         >
             <Head title="Trainee Whereabouts" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-5xl sm:px-6 lg:px-8">
-                    <ReportToolbar
-                        csvHref={route('reports.whereabouts') + '?format=csv&' + new URLSearchParams(form).toString()}
-                    />
+            <div className="mx-auto max-w-5xl px-5 py-8 sm:px-7 lg:px-10">
+                <ReportToolbar
+                    csvHref={route('reports.whereabouts') + '?format=csv&' + new URLSearchParams(form).toString()}
+                />
 
-                    <p className="mb-4 rounded-lg bg-warning-bg p-3 text-sm text-warning-text">
-                        This is a placement-schedule snapshot ("on-site expected" as of the selected date),
-                        not a real-time location/attendance check-in.
-                    </p>
-
-                    <form onSubmit={submit} className="mb-6 flex flex-wrap items-end gap-3 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">As of</label>
-                            <input type="date" value={form.as_of} onChange={(e) => setForm({ ...form, as_of: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">Department</label>
-                            <input type="text" value={form.department_assigned} onChange={(e) => setForm({ ...form, department_assigned: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
-                        </div>
-                        <button type="submit" className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
-                            Apply
-                        </button>
-                    </form>
-
-                    <p className="mb-4 text-sm text-zinc-600">{data.total} trainees on-site expected as of {data.as_of}.</p>
-
-                    <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white shadow-sm">
-                        <table className="min-w-full divide-y divide-zinc-200">
-                            <thead className="bg-zinc-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Trainee</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Type</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Department</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">School</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Placement Period</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-zinc-200 bg-white">
-                                {data.rows.length === 0 && (
-                                    <tr><td colSpan={5} className="px-6 py-4 text-center text-zinc-500">No trainees on-site as of the selected date.</td></tr>
-                                )}
-                                {data.rows.map((row, i) => (
-                                    <tr key={i}>
-                                        <td className="px-6 py-4">{row.trainee}</td>
-                                        <td className="px-6 py-4">{row.trainee_type}</td>
-                                        <td className="px-6 py-4">{row.department_assigned}</td>
-                                        <td className="px-6 py-4">{row.enrolled_school}</td>
-                                        <td className="px-6 py-4">{row.start_date} – {row.end_date}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                <div className="mb-6 flex items-start gap-2 rounded-xl border border-warning bg-warning-bg p-3.5 text-sm text-warning-text">
+                    <IconAlertTriangle size={17} className="mt-0.5 shrink-0" />
+                    <p>This is a placement-schedule snapshot ("on-site expected" as of the selected date), not a real-time location/attendance check-in.</p>
                 </div>
+
+                <FilterBar onSubmit={submit}>
+                    <DateField label="As of" value={form.as_of} onChange={(e) => setForm({ ...form, as_of: e.target.value })} />
+                    <TextField label="Department" value={form.department_assigned} onChange={(e) => setForm({ ...form, department_assigned: e.target.value })} placeholder="All departments" />
+                </FilterBar>
+
+                <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <StatCard label="On-site expected" value={data.total} icon={IconMapPin} helper={`As of ${data.as_of}`} />
+                    <StatCard label="Departments" value={departments} icon={IconBuildingCommunity} helper="Hosting trainees" />
+                </div>
+
+                <ReportCard icon={IconMapPin} title="On-site trainees" className="!p-0" right={<span className="text-xs text-fg-tertiary">{data.rows.length} rows</span>}>
+                    <ReportTable
+                        rows={data.rows}
+                        empty="No trainees on-site as of the selected date."
+                        columns={[
+                            { key: 'trainee', label: 'Trainee', className: 'font-medium text-fg-primary' },
+                            { key: 'trainee_type', label: 'Type', render: (r) => <span className="capitalize">{String(r.trainee_type).replace(/_/g, ' ')}</span> },
+                            { key: 'department_assigned', label: 'Department' },
+                            { key: 'enrolled_school', label: 'School' },
+                            { key: 'period', label: 'Placement period', className: 'tabular-nums text-fg-tertiary', render: (r) => `${r.start_date} – ${r.end_date}` },
+                        ]}
+                    />
+                </ReportCard>
             </div>
         </AuthenticatedLayout>
     );

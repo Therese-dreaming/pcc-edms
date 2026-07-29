@@ -32,6 +32,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'role_id',
+        'student_number',
         'department',
         'account_status',
         'self_registered',
@@ -85,5 +86,14 @@ class User extends Authenticatable implements MustVerifyEmail
     public function hasAnyRole(array $roleNames): bool
     {
         return in_array($this->role?->name, $roleNames, true);
+    }
+
+    // B4 (concern 4) — the DPREQ Applicant Type is derived from the account's role, never entered
+    // by the applicant. Only internal/external researcher roles can file, so it maps to those two.
+    public function dpreqApplicantType(): string
+    {
+        return $this->role?->name === 'researcher_external'
+            ? 'external_researcher'
+            : 'internal_researcher';
     }
 }

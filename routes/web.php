@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Shared\Auth\Http\Controllers\RoleSelectionController;
 use App\Shared\Dashboard\Http\Controllers\DashboardController;
+use App\Shared\Onboarding\Http\Controllers\AdviserAccountRequestController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -14,6 +15,13 @@ Route::get('/', function () {
 Route::get('/about', function () {
     return Inertia::render('About');
 })->name('about');
+
+// Public, unauthenticated — external advisers request an account (stakeholder 2026-07-28). The DPO
+// approves it from /admin/adviser-requests. Throttled since it's an open, guest-facing form.
+Route::middleware('throttle:6,1')->group(function () {
+    Route::get('/request-adviser-account', [AdviserAccountRequestController::class, 'create'])->name('adviser-request.create');
+    Route::post('/request-adviser-account', [AdviserAccountRequestController::class, 'store'])->name('adviser-request.store');
+});
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
@@ -33,12 +41,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/select-role', [RoleSelectionController::class, 'store'])->name('role.select.store');
 });
 
-require __DIR__.'/dpreq.php';
-require __DIR__.'/dpnda.php';
-require __DIR__.'/remis.php';
-require __DIR__.'/incidents.php';
-require __DIR__.'/reports.php';
-require __DIR__.'/notifications.php';
-require __DIR__.'/admin.php';
-require __DIR__.'/verify.php';
-require __DIR__.'/auth.php';
+require __DIR__ . '/dpreq.php';
+require __DIR__ . '/dpnda.php';
+require __DIR__ . '/remis.php';
+require __DIR__ . '/incidents.php';
+require __DIR__ . '/reports.php';
+require __DIR__ . '/notifications.php';
+require __DIR__ . '/admin.php';
+require __DIR__ . '/documents.php';
+require __DIR__ . '/files.php';
+require __DIR__ . '/revisions.php';
+require __DIR__ . '/join.php';
+require __DIR__ . '/verify.php';
+require __DIR__ . '/auth.php';

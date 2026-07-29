@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Remis\Incident\Models\Incident;
 use App\Modules\Remis\Incident\Services\IncidentService;
 use App\Modules\Remis\Models\RemisApplication;
+use App\Shared\AuditLog\Services\AuditLogService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -15,8 +16,10 @@ use RuntimeException;
 // docs/3.5-remis-incident-reporting.md
 class IncidentController extends Controller
 {
-    public function __construct(private readonly IncidentService $incidents)
-    {
+    public function __construct(
+        private readonly IncidentService $incidents,
+        private readonly AuditLogService $auditLog,
+    ) {
     }
 
     public function index(Request $request): Response
@@ -37,7 +40,7 @@ class IncidentController extends Controller
         $search = trim((string) $request->string('search'));
         $status = (string) $request->string('status');
 
-        $query = Incident::with('remisApplication')->latest();
+        $query = Incident::with('remisApplication')->whereNull('archived_at')->latest();
         $scope($query);
 
         if ($search !== '') {
@@ -51,7 +54,7 @@ class IncidentController extends Controller
             $query->where('status', $status);
         }
 
-        $countsQuery = Incident::query();
+        $countsQuery = Incident::query()->whereNull('archived_at');
         $scope($countsQuery);
 
         return Inertia::render('Incidents/Index', [
@@ -59,6 +62,39 @@ class IncidentController extends Controller
             'filters' => ['search' => $search, 'status' => $status ?: 'all'],
             'statusCounts' => $countsQuery->selectRaw('status, count(*) as count')->groupBy('status')->pluck('count', 'status'),
         ]);
+    }
+
+    // Register bulk actions (Incidents index Actions menu). Authorized per-record.
+    public function bulkArchive(Request $request): RedirectResponse
+    {
+        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+
+        $count = 0;
+        foreach (Incident::whereIn('id', $ids)->get() as $incident) {
+            if ($request->user()->can('manage', $incident) && $incident->archived_at === null) {
+                $incident->update(['archived_at' => now()]);
+                $this->auditLog->record('incident.archived', $incident, null, ['archived_at' => now()->toDateTimeString()]);
+                $count++;
+            }
+        }
+
+        return back()->with('success', $count === 1 ? '1 incident archived.' : "{$count} incidents archived.");
+    }
+
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+
+        $count = 0;
+        foreach (Incident::whereIn('id', $ids)->get() as $incident) {
+            if ($request->user()->hasRole('system_administrator')) {
+                $this->auditLog->record('incident.deleted', $incident, $incident->toArray(), null);
+                $incident->delete(); // soft delete — recoverable
+                $count++;
+            }
+        }
+
+        return back()->with('success', $count === 1 ? '1 incident deleted.' : "{$count} incidents deleted.");
     }
 
     public function create(Request $request, RemisApplication $remisApplication): Response

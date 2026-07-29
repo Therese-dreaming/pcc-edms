@@ -108,9 +108,16 @@ $signatories = $nda->signatories;
                 <td>{{ ucfirst($s->role) }}</td>
                 <td>
                     @if ($s->signature_image)
-                        <img src="{{ $s->signature_image }}" style="height: 32px;" alt="signature">
+                        <img src="{{ $s->signature_image }}" style="height: 32px;" alt="signature"><br>
                     @endif
                     {{ $s->signature_id ?? '' }}
+                    @if ($s->signed_at)
+                        <div style="font-size: 6.5pt; color: #444; margin-top: 2px; line-height: 1.3;">
+                            Electronically signed {{ $s->signed_at->format('F j, Y') }} · {{ $s->signed_at->format('g:i A') }}
+                            @if ($s->signature_ip)<br>IP: {{ $s->signature_ip }}@endif
+                            @if ($s->signature_user_agent)<br>Device: {{ \Illuminate\Support\Str::limit($s->signature_user_agent, 60) }}@endif
+                        </div>
+                    @endif
                 </td>
             </tr>
         @endforeach

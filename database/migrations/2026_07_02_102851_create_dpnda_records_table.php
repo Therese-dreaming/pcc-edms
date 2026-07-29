@@ -28,7 +28,11 @@ return new class extends Migration
             $table->string('coordinator_signature_id')->nullable();
             $table->timestamp('coordinator_signed_at')->nullable();
             $table->text('decline_reason')->nullable();
+            // Register housekeeping (index bulk Actions): archived_at removes a record from the
+            // active register while keeping it; soft-delete hides it (recoverable).
+            $table->timestamp('archived_at')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

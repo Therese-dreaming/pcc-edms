@@ -1,29 +1,55 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import InputError from '@/Components/InputError';
+import SignaturePad from '@/Components/SignaturePad';
+import SelectWithOther from '@/Components/SelectWithOther';
 import { Head, useForm } from '@inertiajs/react';
 import { IconArrowLeft, IconSend, IconShieldLock } from '@tabler/icons-react';
 import { Link } from '@inertiajs/react';
 
 // docs/1.1-dpreq-application-form.md — Form 1, the single intake shared by the DPO and Ethics
 // tracks (docs/0.4-dpo-ethics-integration.md).
-export default function Create() {
+const APPLICANT_TYPE_LABELS = {
+    internal_researcher: 'Internal Researcher',
+    external_researcher: 'External Researcher',
+    student: 'Student',
+};
+
+export default function Create({ documentSlots = [], fileLabels = [], uploadHint = '', applicantType = 'internal_researcher' }) {
     const { data, setData, post, transform, processing, errors } = useForm({
         research_title: '',
+        research_category: 'academic',
+        research_category_other: '',
+        contact_number: '',
         researcher_count: 1,
         adviser_name: '',
+        co_researchers: [],
+        documents: {},
+        additional_documents: [],
+        applicant_category: 'student',
         department: '',
         level: '',
         course: '',
         section: '',
+        position: '',
         respondents: '',
         target_respondent_count: '',
         data_collection_method: 'survey_form',
+        data_collection_method_other: '',
         data_capturing_tool: 'electronic_form',
+        data_capturing_tool_other: '',
         target_start_date: '',
         target_end_date: '',
         minors_involved: false,
         respondent_head_letter_approved: false,
-        applicant_type: 'internal_researcher',
+        researcher_signature: null,
+        review_checklist: {
+            voluntary_participation: 'yes',
+            confidentiality: 'yes',
+            free_withdrawal: 'yes',
+            avoid_harm: 'yes',
+            academic_use_only: 'yes',
+        },
+        applicant_type: applicantType,
         purpose: '',
         data_types: '',
         data_subjects: '',
@@ -33,7 +59,9 @@ export default function Create() {
 
         // docs/3.1 Sections C/D (Ethics track — docs/0.4)
         study_type: 'thesis_dissertation',
+        study_type_other: '',
         study_design: 'quantitative',
+        study_design_other: '',
         study_sites: '',
         funding_source: '',
         target_population: '',
@@ -48,25 +76,95 @@ export default function Create() {
         data_storage_plan: '',
     });
 
+    // Document slots split by requirement, for the upload section below.
+    const mandatorySlots = documentSlots.filter((s) => s.requirement === 'mandatory');
+    const conditionalSlots = documentSlots.filter((s) => s.requirement === 'minors');
+    const optionalSlots = documentSlots.filter((s) => s.requirement === 'optional');
+
+    // Each slot accepts one or more files (stakeholder 2026-07-28). Files are ADDED to the slot's
+    // list (never overwritten) so choosing files again appends; each file can be removed
+    // individually. The payload posts documents[key][] and the server validates each as a file.
+    const addDocumentFiles = (key, fileList) =>
+        setData('documents', {
+            ...data.documents,
+            [key]: [...(data.documents[key] ?? []), ...Array.from(fileList ?? [])],
+        });
+    const removeDocumentFile = (key, index) =>
+        setData('documents', {
+            ...data.documents,
+            [key]: (data.documents[key] ?? []).filter((_, i) => i !== index),
+        });
+
+    const setChecklist = (key, value) =>
+        setData('review_checklist', { ...data.review_checklist, [key]: value });
+
+    // B2 (concern 3.1) — the researcher count and the co-researcher roster stay in sync: the count
+    // is the whole team (lead + co-researchers), so there are always count − 1 co-researcher rows.
+    const syncResearcherCount = (raw) => {
+        const n = Math.max(1, parseInt(raw, 10) || 1);
+        setData((prev) => {
+            const target = n - 1;
+            const rows = prev.co_researchers.slice(0, target);
+            while (rows.length < target) rows.push({ full_name: '', email: '' });
+            return { ...prev, researcher_count: n, co_researchers: rows };
+        });
+    };
+    const addCoResearcher = () => setData((prev) => ({
+        ...prev,
+        co_researchers: [...prev.co_researchers, { full_name: '', email: '' }],
+        researcher_count: prev.co_researchers.length + 2, // new member + the lead applicant
+    }));
+    const updateCoResearcher = (i, field, value) => setData((prev) => ({
+        ...prev,
+        co_researchers: prev.co_researchers.map((m, idx) => (idx === i ? { ...m, [field]: value } : m)),
+    }));
+    const removeCoResearcher = (i) => setData((prev) => {
+        const co = prev.co_researchers.filter((_, idx) => idx !== i);
+        return { ...prev, co_researchers: co, researcher_count: co.length + 1 };
+    });
+
+    const addAdditional = () => setData('additional_documents', [...data.additional_documents, { label: fileLabels[0] ?? 'OTHERDOCUMENT', file: null }]);
+    const updateAdditional = (i, field, value) => setData('additional_documents', data.additional_documents.map((d, idx) => (idx === i ? { ...d, [field]: value } : d)));
+    const removeAdditional = (i) => setData('additional_documents', data.additional_documents.filter((_, idx) => idx !== i));
+
     const submit = (e) => {
         e.preventDefault();
-        transform((formData) => ({
-            ...formData,
-            data_types: formData.data_types
-                ? formData.data_types.split(',').map((s) => s.trim()).filter(Boolean)
-                : [],
-            data_subjects: formData.data_subjects
-                ? formData.data_subjects.split(',').map((s) => s.trim()).filter(Boolean)
-                : [],
-        }));
-        post(route('dpreq.store'));
+        transform((formData) => {
+            // Drop co-researcher rows the user added but left blank/whitespace — treat them as
+            // accidental empty rows, and keep the researcher count in step (lead + real members).
+            const coResearchers = (formData.co_researchers ?? []).filter(
+                (m) => (m.full_name ?? '').trim() !== '' || (m.email ?? '').trim() !== '',
+            );
+            return {
+                ...formData,
+                co_researchers: coResearchers,
+                researcher_count: coResearchers.length + 1,
+                data_types: formData.data_types
+                    ? formData.data_types.split(',').map((s) => s.trim()).filter(Boolean)
+                    : [],
+                data_subjects: formData.data_subjects
+                    ? formData.data_subjects.split(',').map((s) => s.trim()).filter(Boolean)
+                    : [],
+            };
+        });
+        // forceFormData: the payload carries uploaded files (documents + additional_documents).
+        post(route('dpreq.store'), {
+            forceFormData: true,
+            // The form is long and spans several sections — on a validation failure, bring the
+            // summary of what's missing into view so the submit never looks like it "did nothing".
+            onError: () => {
+                requestAnimationFrame(() =>
+                    document.getElementById('dpreq-error-summary')?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+                );
+            },
+        });
     };
 
     return (
         <AuthenticatedLayout>
             <Head title="New DPREQ Application" />
 
-            <div className="px-5 py-8 font-grotesk text-paper-900 sm:px-8 lg:px-12 lg:py-10">
+            <div className="px-5 py-8 font-grotesk text-fg-primary sm:px-8 lg:px-12 lg:py-10">
                 <div className="mx-auto max-w-[90rem]">
 
                     {/* Header */}
@@ -85,7 +183,7 @@ export default function Create() {
                                     New application
                                 </h1>
 
-                                <p className="mt-3 max-w-[52ch] text-sm leading-relaxed text-paper-600">
+                                <p className="mt-3 max-w-[52ch] text-sm leading-relaxed text-fg-secondary">
                                     Form 1 — Shared intake for the DPO and Ethics review tracks.
                                 </p>
                             </div>
@@ -93,7 +191,7 @@ export default function Create() {
 
                         <Link
                             href={route('dpreq.index')}
-                            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-paper-200 bg-white px-4 text-sm font-bold text-paper-700 shadow-sm hover:bg-paper-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-700/20"
+                            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-surface-secondary px-4 text-sm font-bold text-fg-secondary shadow-sm hover:bg-surface-tertiary focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-700/20"
                         >
                             <IconArrowLeft size={18} />
                             Back to list
@@ -103,9 +201,24 @@ export default function Create() {
                     {/* Form */}
                     <form onSubmit={submit} className="space-y-8">
 
+                        {/* Validation summary — this form is long; surface every problem up front
+                            so a failed submit is never silent. */}
+                        {Object.keys(errors).length > 0 && (
+                            <div id="dpreq-error-summary" className="rounded-xl border border-danger/40 bg-danger-bg px-5 py-4">
+                                <p className="text-sm font-bold text-danger-text">
+                                    Please fix {Object.keys(errors).length} {Object.keys(errors).length === 1 ? 'problem' : 'problems'} before submitting:
+                                </p>
+                                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-danger-text/90">
+                                    {Object.entries(errors).map(([key, message]) => (
+                                        <li key={key}>{message}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
                         {/* Section A - Applicant Information */}
-                        <section className="overflow-hidden rounded-xl border border-paper-200 bg-white">
-                            <div className="border-b border-paper-200 bg-paper-50 px-6 py-4">
+                        <section className="overflow-hidden rounded-xl border border-border bg-surface-secondary">
+                            <div className="border-b border-border bg-surface-tertiary px-6 py-4">
                                 <h2 className="text-xs font-extrabold uppercase tracking-[0.08em] text-primary-700">
                                     Section A — Applicant Information
                                 </h2>
@@ -113,13 +226,13 @@ export default function Create() {
 
                             <div className="space-y-5 p-6">
                                 <div>
-                                    <label htmlFor="research_title" className="block text-xs font-bold text-paper-700">
+                                    <label htmlFor="research_title" className="block text-xs font-bold text-fg-secondary">
                                         Research Title <span className="text-red-600">*</span>
                                     </label>
                                     <input
                                         id="research_title"
                                         type="text"
-                                        className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                        className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                         value={data.research_title}
                                         onChange={(e) => setData('research_title', e.target.value)}
                                         required
@@ -129,28 +242,29 @@ export default function Create() {
 
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div>
-                                        <label htmlFor="researcher_count" className="block text-xs font-bold text-paper-700">
+                                        <label htmlFor="researcher_count" className="block text-xs font-bold text-fg-secondary">
                                             How many are doing the research? <span className="text-red-600">*</span>
                                         </label>
                                         <input
                                             id="researcher_count"
                                             type="number"
                                             min="1"
-                                            className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                             value={data.researcher_count}
-                                            onChange={(e) => setData('researcher_count', e.target.value)}
+                                            onChange={(e) => syncResearcherCount(e.target.value)}
                                             required
                                         />
+                                        <p className="mt-1 text-xs text-fg-tertiary">Includes you. We'll add {Math.max(0, data.researcher_count - 1)} co-researcher {data.researcher_count - 1 === 1 ? 'row' : 'rows'} below.</p>
                                         <InputError message={errors.researcher_count} className="mt-1.5" />
                                     </div>
                                     <div>
-                                        <label htmlFor="adviser_name" className="block text-xs font-bold text-paper-700">
+                                        <label htmlFor="adviser_name" className="block text-xs font-bold text-fg-secondary">
                                             Adviser's Name <span className="text-red-600">*</span>
                                         </label>
                                         <input
                                             id="adviser_name"
                                             type="text"
-                                            className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                             value={data.adviser_name}
                                             onChange={(e) => setData('adviser_name', e.target.value)}
                                             required
@@ -159,46 +273,99 @@ export default function Create() {
                                     </div>
                                 </div>
 
-                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                    {['department', 'level', 'course', 'section'].map((field) => (
-                                        <div key={field}>
-                                            <label htmlFor={field} className="block text-xs font-bold text-paper-700">
-                                                {field[0].toUpperCase() + field.slice(1)}
-                                            </label>
-                                            <input
-                                                id={field}
-                                                type="text"
-                                                className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
-                                                value={data[field]}
-                                                onChange={(e) => setData(field, e.target.value)}
-                                            />
-                                            <InputError message={errors[field]} className="mt-1.5" />
-                                        </div>
-                                    ))}
+                                {/* Are you filing as a student or an employee? The form adapts:
+                                    students give level/course/section, employees give a position. */}
+                                <div>
+                                    <span className="block text-xs font-bold text-fg-secondary">
+                                        Are you filing as a… <span className="text-red-600">*</span>
+                                    </span>
+                                    <div className="mt-1.5 inline-flex rounded-lg border border-border-medium p-0.5">
+                                        {[
+                                            { value: 'student', label: 'Student' },
+                                            { value: 'employee', label: 'Employee' },
+                                        ].map((opt) => (
+                                            <button
+                                                key={opt.value}
+                                                type="button"
+                                                onClick={() => setData('applicant_category', opt.value)}
+                                                className={`rounded-md px-4 py-1.5 text-sm font-bold transition-colors ${
+                                                    data.applicant_category === opt.value
+                                                        ? 'bg-primary-800 text-white'
+                                                        : 'text-fg-secondary hover:bg-surface-tertiary'
+                                                }`}
+                                            >
+                                                {opt.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <InputError message={errors.applicant_category} className="mt-1.5" />
                                 </div>
 
+                                {data.applicant_category === 'student' ? (
+                                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                        {['department', 'level', 'course', 'section'].map((field) => (
+                                            <div key={field}>
+                                                <label htmlFor={field} className="block text-xs font-bold text-fg-secondary">
+                                                    {field[0].toUpperCase() + field.slice(1)}
+                                                </label>
+                                                <input
+                                                    id={field}
+                                                    type="text"
+                                                    className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                                    value={data[field]}
+                                                    onChange={(e) => setData(field, e.target.value)}
+                                                />
+                                                <InputError message={errors[field]} className="mt-1.5" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <div>
+                                            <label htmlFor="department" className="block text-xs font-bold text-fg-secondary">
+                                                Department / Office
+                                            </label>
+                                            <input
+                                                id="department"
+                                                type="text"
+                                                className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                                value={data.department}
+                                                onChange={(e) => setData('department', e.target.value)}
+                                            />
+                                            <InputError message={errors.department} className="mt-1.5" />
+                                        </div>
+                                        <div>
+                                            <label htmlFor="position" className="block text-xs font-bold text-fg-secondary">
+                                                Position
+                                            </label>
+                                            <input
+                                                id="position"
+                                                type="text"
+                                                className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                                value={data.position}
+                                                onChange={(e) => setData('position', e.target.value)}
+                                            />
+                                            <InputError message={errors.position} className="mt-1.5" />
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div>
-                                    <label htmlFor="applicant_type" className="block text-xs font-bold text-paper-700">
+                                    <label className="block text-xs font-bold text-fg-secondary">
                                         Applicant Type
                                     </label>
-                                    <select
-                                        id="applicant_type"
-                                        className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
-                                        value={data.applicant_type}
-                                        onChange={(e) => setData('applicant_type', e.target.value)}
-                                    >
-                                        <option value="internal_researcher">Internal Researcher</option>
-                                        <option value="external_researcher">External Researcher</option>
-                                        <option value="student">Student</option>
-                                    </select>
-                                    <InputError message={errors.applicant_type} className="mt-1.5" />
+                                    {/* B4 — derived from your account role, not editable. */}
+                                    <div className="mt-1.5 flex items-center justify-between rounded-lg border border-border bg-surface-tertiary px-3 py-2 text-sm text-fg-secondary">
+                                        <span className="font-medium">{APPLICANT_TYPE_LABELS[applicantType] ?? applicantType}</span>
+                                        <span className="text-xs text-fg-tertiary">From your account role</span>
+                                    </div>
                                 </div>
                             </div>
                         </section>
 
                         {/* Section B - Study Information */}
-                        <section className="overflow-hidden rounded-xl border border-paper-200 bg-white">
-                            <div className="border-b border-paper-200 bg-paper-50 px-6 py-4">
+                        <section className="overflow-hidden rounded-xl border border-border bg-surface-secondary">
+                            <div className="border-b border-border bg-surface-tertiary px-6 py-4">
                                 <h2 className="text-xs font-extrabold uppercase tracking-[0.08em] text-primary-700">
                                     Section B — Study Information
                                 </h2>
@@ -208,13 +375,13 @@ export default function Create() {
 
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div>
-                                        <label htmlFor="respondents" className="block text-xs font-bold text-paper-700">
+                                        <label htmlFor="respondents" className="block text-xs font-bold text-fg-secondary">
                                             Respondents <span className="text-red-600">*</span>
                                         </label>
                                         <input
                                             id="respondents"
                                             type="text"
-                                            className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                             value={data.respondents}
                                             onChange={(e) => setData('respondents', e.target.value)}
                                             required
@@ -222,14 +389,14 @@ export default function Create() {
                                         <InputError message={errors.respondents} className="mt-1.5" />
                                     </div>
                                     <div>
-                                        <label htmlFor="target_respondent_count" className="block text-xs font-bold text-paper-700">
+                                        <label htmlFor="target_respondent_count" className="block text-xs font-bold text-fg-secondary">
                                             Target Number of Respondents <span className="text-red-600">*</span>
                                         </label>
                                         <input
                                             id="target_respondent_count"
                                             type="number"
                                             min="1"
-                                            className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                             value={data.target_respondent_count}
                                             onChange={(e) => setData('target_respondent_count', e.target.value)}
                                             required
@@ -239,51 +406,49 @@ export default function Create() {
                                 </div>
 
                                 <div className="grid gap-4 sm:grid-cols-2">
-                                    <div>
-                                        <label htmlFor="data_collection_method" className="block text-xs font-bold text-paper-700">
-                                            Data Collection Method
-                                        </label>
-                                        <select
-                                            id="data_collection_method"
-                                            className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
-                                            value={data.data_collection_method}
-                                            onChange={(e) => setData('data_collection_method', e.target.value)}
-                                        >
-                                            <option value="survey_form">Survey form</option>
-                                            <option value="interview">Interview</option>
-                                            <option value="mixed">Mixed</option>
-                                            <option value="observation">Observation</option>
-                                        </select>
-                                        <InputError message={errors.data_collection_method} className="mt-1.5" />
-                                    </div>
-                                    <div>
-                                        <label htmlFor="data_capturing_tool" className="block text-xs font-bold text-paper-700">
-                                            Data Capturing Tool
-                                        </label>
-                                        <select
-                                            id="data_capturing_tool"
-                                            className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
-                                            value={data.data_capturing_tool}
-                                            onChange={(e) => setData('data_capturing_tool', e.target.value)}
-                                        >
-                                            <option value="electronic_form">Electronic form</option>
-                                            <option value="paper_based">Paper-based</option>
-                                            <option value="voice_recording">Voice recording</option>
-                                            <option value="video_recording">Video recording</option>
-                                        </select>
-                                        <InputError message={errors.data_capturing_tool} className="mt-1.5" />
-                                    </div>
+                                    <SelectWithOther
+                                        id="data_collection_method"
+                                        label="Data Collection Method"
+                                        value={data.data_collection_method}
+                                        otherValue={data.data_collection_method_other}
+                                        onValueChange={(v) => setData('data_collection_method', v)}
+                                        onOtherChange={(v) => setData('data_collection_method_other', v)}
+                                        options={[
+                                            { value: 'survey_form', label: 'Survey form' },
+                                            { value: 'interview', label: 'Interview' },
+                                            { value: 'mixed', label: 'Mixed' },
+                                            { value: 'observation', label: 'Observation' },
+                                        ]}
+                                        error={errors.data_collection_method}
+                                        otherError={errors.data_collection_method_other}
+                                    />
+                                    <SelectWithOther
+                                        id="data_capturing_tool"
+                                        label="Data Capturing Tool"
+                                        value={data.data_capturing_tool}
+                                        otherValue={data.data_capturing_tool_other}
+                                        onValueChange={(v) => setData('data_capturing_tool', v)}
+                                        onOtherChange={(v) => setData('data_capturing_tool_other', v)}
+                                        options={[
+                                            { value: 'electronic_form', label: 'Electronic form' },
+                                            { value: 'paper_based', label: 'Paper-based' },
+                                            { value: 'voice_recording', label: 'Voice recording' },
+                                            { value: 'video_recording', label: 'Video recording' },
+                                        ]}
+                                        error={errors.data_capturing_tool}
+                                        otherError={errors.data_capturing_tool_other}
+                                    />
                                 </div>
 
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div>
-                                        <label htmlFor="target_start_date" className="block text-xs font-bold text-paper-700">
+                                        <label htmlFor="target_start_date" className="block text-xs font-bold text-fg-secondary">
                                             Duration — Start <span className="text-red-600">*</span>
                                         </label>
                                         <input
                                             id="target_start_date"
                                             type="date"
-                                            className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                             value={data.target_start_date}
                                             onChange={(e) => setData('target_start_date', e.target.value)}
                                             required
@@ -291,13 +456,13 @@ export default function Create() {
                                         <InputError message={errors.target_start_date} className="mt-1.5" />
                                     </div>
                                     <div>
-                                        <label htmlFor="target_end_date" className="block text-xs font-bold text-paper-700">
+                                        <label htmlFor="target_end_date" className="block text-xs font-bold text-fg-secondary">
                                             Duration — End <span className="text-red-600">*</span>
                                         </label>
                                         <input
                                             id="target_end_date"
                                             type="date"
-                                            className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                             value={data.target_end_date}
                                             onChange={(e) => setData('target_end_date', e.target.value)}
                                             required
@@ -313,9 +478,9 @@ export default function Create() {
                                             type="checkbox"
                                             checked={data.minors_involved}
                                             onChange={(e) => setData('minors_involved', e.target.checked)}
-                                            className="mt-0.5 h-4 w-4 rounded border-paper-300 text-primary-700 focus:ring-4 focus:ring-primary-700/20"
+                                            className="mt-0.5 h-4 w-4 rounded border-border-medium text-primary-700 focus:ring-4 focus:ring-primary-700/20"
                                         />
-                                        <span className="text-sm font-semibold text-paper-700">
+                                        <span className="text-sm font-semibold text-fg-secondary">
                                             Will you have minors as participants?
                                         </span>
                                     </label>
@@ -326,9 +491,9 @@ export default function Create() {
                                             type="checkbox"
                                             checked={data.respondent_head_letter_approved}
                                             onChange={(e) => setData('respondent_head_letter_approved', e.target.checked)}
-                                            className="mt-0.5 h-4 w-4 rounded border-paper-300 text-primary-700 focus:ring-4 focus:ring-primary-700/20"
+                                            className="mt-0.5 h-4 w-4 rounded border-border-medium text-primary-700 focus:ring-4 focus:ring-primary-700/20"
                                         />
-                                        <span className="text-sm font-semibold text-paper-700">
+                                        <span className="text-sm font-semibold text-fg-secondary">
                                             Approved letter from head of target respondents on file?
                                         </span>
                                     </label>
@@ -336,9 +501,57 @@ export default function Create() {
                             </div>
                         </section>
 
+                        {/* Review Checklist — Form 1 items 3–7 (docs/1.1). Answered here so they no
+                            longer print blank on the generated Form 1. */}
+                        <section className="overflow-hidden rounded-xl border border-border bg-surface-secondary">
+                            <div className="border-b border-border bg-surface-tertiary px-6 py-4">
+                                <h2 className="text-xs font-extrabold uppercase tracking-[0.08em] text-primary-700">
+                                    Review Checklist
+                                </h2>
+                                <p className="mt-1.5 text-xs leading-relaxed text-fg-tertiary">
+                                    Please answer each item about how your study treats its participants.
+                                </p>
+                            </div>
+
+                            <div className="divide-y divide-border">
+                                {[
+                                    { key: 'voluntary_participation', text: 'Will the study involve voluntary participation of all respondents?' },
+                                    { key: 'confidentiality', text: "Will the participants' identities and responses remain confidential?" },
+                                    { key: 'free_withdrawal', text: 'Will the participants be free to withdraw anytime without penalty?' },
+                                    { key: 'avoid_harm', text: 'Will the study avoid exposing participants to harm or risk?' },
+                                    { key: 'academic_use_only', text: 'Will the collected data be used strictly for academic purposes?' },
+                                ].map((item) => (
+                                    <div key={item.key} className="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                        <p className="text-sm font-semibold text-fg-secondary">{item.text}</p>
+                                        <div className="flex shrink-0 gap-1.5">
+                                            {[
+                                                { value: 'yes', label: 'Yes' },
+                                                { value: 'no', label: 'No' },
+                                                { value: 'not_applicable', label: 'N/A' },
+                                            ].map((opt) => (
+                                                <button
+                                                    key={opt.value}
+                                                    type="button"
+                                                    onClick={() => setChecklist(item.key, opt.value)}
+                                                    className={`rounded-lg border px-3.5 py-1.5 text-xs font-bold transition-colors ${
+                                                        data.review_checklist[item.key] === opt.value
+                                                            ? 'border-primary-800 bg-primary-800 text-white'
+                                                            : 'border-border-medium text-fg-secondary hover:bg-surface-tertiary'
+                                                    }`}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <InputError message={errors.review_checklist} className="px-6 pb-4" />
+                        </section>
+
                         {/* DPO Review Information */}
-                        <section className="overflow-hidden rounded-xl border border-paper-200 bg-white">
-                            <div className="border-b border-paper-200 bg-paper-50 px-6 py-4">
+                        <section className="overflow-hidden rounded-xl border border-border bg-surface-secondary">
+                            <div className="border-b border-border bg-surface-tertiary px-6 py-4">
                                 <h2 className="text-xs font-extrabold uppercase tracking-[0.08em] text-primary-700">
                                     DPO Review Information
                                 </h2>
@@ -346,13 +559,13 @@ export default function Create() {
 
                             <div className="space-y-5 p-6">
                                 <div>
-                                    <label htmlFor="purpose" className="block text-xs font-bold text-paper-700">
+                                    <label htmlFor="purpose" className="block text-xs font-bold text-fg-secondary">
                                         Purpose of Data Collection <span className="text-red-600">*</span>
                                     </label>
                                     <textarea
                                         id="purpose"
                                         rows="3"
-                                        className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                        className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                         value={data.purpose}
                                         onChange={(e) => setData('purpose', e.target.value)}
                                         required
@@ -362,47 +575,47 @@ export default function Create() {
 
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div>
-                                        <label htmlFor="data_types" className="block text-xs font-bold text-paper-700">
+                                        <label htmlFor="data_types" className="block text-xs font-bold text-fg-secondary">
                                             Type of Personal Data Involved <span className="text-red-600">*</span>
                                         </label>
                                         <input
                                             id="data_types"
                                             type="text"
                                             placeholder="Name, Contact Info, Academic Records"
-                                            className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                             value={data.data_types}
                                             onChange={(e) => setData('data_types', e.target.value)}
                                             required
                                         />
-                                        <p className="mt-1 text-xs text-paper-500">Comma-separated</p>
+                                        <p className="mt-1 text-xs text-fg-tertiary">Comma-separated</p>
                                         <InputError message={errors.data_types} className="mt-1.5" />
                                     </div>
                                     <div>
-                                        <label htmlFor="data_subjects" className="block text-xs font-bold text-paper-700">
+                                        <label htmlFor="data_subjects" className="block text-xs font-bold text-fg-secondary">
                                             Data Subjects <span className="text-red-600">*</span>
                                         </label>
                                         <input
                                             id="data_subjects"
                                             type="text"
                                             placeholder="Students, Employees"
-                                            className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                             value={data.data_subjects}
                                             onChange={(e) => setData('data_subjects', e.target.value)}
                                             required
                                         />
-                                        <p className="mt-1 text-xs text-paper-500">Comma-separated</p>
+                                        <p className="mt-1 text-xs text-fg-tertiary">Comma-separated</p>
                                         <InputError message={errors.data_subjects} className="mt-1.5" />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label htmlFor="retention_plan" className="block text-xs font-bold text-paper-700">
+                                    <label htmlFor="retention_plan" className="block text-xs font-bold text-fg-secondary">
                                         Data Storage/Retention Plan <span className="text-red-600">*</span>
                                     </label>
                                     <textarea
                                         id="retention_plan"
                                         rows="3"
-                                        className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                        className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                         value={data.retention_plan}
                                         onChange={(e) => setData('retention_plan', e.target.value)}
                                         required
@@ -417,9 +630,9 @@ export default function Create() {
                                             type="checkbox"
                                             checked={data.third_party_sharing}
                                             onChange={(e) => setData('third_party_sharing', e.target.checked)}
-                                            className="mt-0.5 h-4 w-4 rounded border-paper-300 text-primary-700 focus:ring-4 focus:ring-primary-700/20"
+                                            className="mt-0.5 h-4 w-4 rounded border-border-medium text-primary-700 focus:ring-4 focus:ring-primary-700/20"
                                         />
-                                        <span className="text-sm font-semibold text-paper-700">
+                                        <span className="text-sm font-semibold text-fg-secondary">
                                             Will data be shared with 3rd parties?
                                         </span>
                                     </label>
@@ -427,13 +640,13 @@ export default function Create() {
 
                                 {data.third_party_sharing && (
                                     <div>
-                                        <label htmlFor="third_party_detail" className="block text-xs font-bold text-paper-700">
+                                        <label htmlFor="third_party_detail" className="block text-xs font-bold text-fg-secondary">
                                             Third-Party Sharing Detail
                                         </label>
                                         <textarea
                                             id="third_party_detail"
                                             rows="3"
-                                            className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                             value={data.third_party_detail}
                                             onChange={(e) => setData('third_party_detail', e.target.value)}
                                         />
@@ -444,60 +657,60 @@ export default function Create() {
                         </section>
 
                         {/* Ethics Review Information */}
-                        <section className="overflow-hidden rounded-xl border border-paper-200 bg-white">
-                            <div className="border-b border-paper-200 bg-paper-50 px-6 py-4">
+                        <section className="overflow-hidden rounded-xl border border-border bg-surface-secondary">
+                            <div className="border-b border-border bg-surface-tertiary px-6 py-4">
                                 <h2 className="text-xs font-extrabold uppercase tracking-[0.08em] text-primary-700">
                                     Ethics Review Information
                                 </h2>
-                                <p className="mt-1.5 text-xs leading-relaxed text-paper-500">
+                                <p className="mt-1.5 text-xs leading-relaxed text-fg-tertiary">
                                     Required for the Ethics/REMIS track — not shown on Form 1 itself, but collected here since one submission starts both tracks.
                                 </p>
                             </div>
 
                             <div className="space-y-5 p-6">
                                 <div className="grid gap-4 sm:grid-cols-2">
-                                    <div>
-                                        <label htmlFor="study_type" className="block text-xs font-bold text-paper-700">
-                                            Study Type
-                                        </label>
-                                        <select
-                                            id="study_type"
-                                            className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
-                                            value={data.study_type}
-                                            onChange={(e) => setData('study_type', e.target.value)}
-                                        >
-                                            <option value="thesis_dissertation">Thesis/Dissertation</option>
-                                            <option value="faculty_research">Faculty Research</option>
-                                            <option value="institutional">Institutional</option>
-                                            <option value="sponsored">Sponsored</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label htmlFor="study_design" className="block text-xs font-bold text-paper-700">
-                                            Study Design
-                                        </label>
-                                        <select
-                                            id="study_design"
-                                            className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
-                                            value={data.study_design}
-                                            onChange={(e) => setData('study_design', e.target.value)}
-                                        >
-                                            <option value="quantitative">Quantitative</option>
-                                            <option value="qualitative">Qualitative</option>
-                                            <option value="mixed_methods">Mixed Methods</option>
-                                        </select>
-                                    </div>
+                                    <SelectWithOther
+                                        id="study_type"
+                                        label="Study Type"
+                                        value={data.study_type}
+                                        otherValue={data.study_type_other}
+                                        onValueChange={(v) => setData('study_type', v)}
+                                        onOtherChange={(v) => setData('study_type_other', v)}
+                                        options={[
+                                            { value: 'thesis_dissertation', label: 'Thesis/Dissertation' },
+                                            { value: 'faculty_research', label: 'Faculty Research' },
+                                            { value: 'institutional', label: 'Institutional' },
+                                            { value: 'sponsored', label: 'Sponsored' },
+                                        ]}
+                                        error={errors.study_type}
+                                        otherError={errors.study_type_other}
+                                    />
+                                    <SelectWithOther
+                                        id="study_design"
+                                        label="Study Design"
+                                        value={data.study_design}
+                                        otherValue={data.study_design_other}
+                                        onValueChange={(v) => setData('study_design', v)}
+                                        onOtherChange={(v) => setData('study_design_other', v)}
+                                        options={[
+                                            { value: 'quantitative', label: 'Quantitative' },
+                                            { value: 'qualitative', label: 'Qualitative' },
+                                            { value: 'mixed_methods', label: 'Mixed Methods' },
+                                        ]}
+                                        error={errors.study_design}
+                                        otherError={errors.study_design_other}
+                                    />
                                 </div>
 
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div>
-                                        <label htmlFor="study_sites" className="block text-xs font-bold text-paper-700">
+                                        <label htmlFor="study_sites" className="block text-xs font-bold text-fg-secondary">
                                             Study Site(s) <span className="text-red-600">*</span>
                                         </label>
                                         <input
                                             id="study_sites"
                                             type="text"
-                                            className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                             value={data.study_sites}
                                             onChange={(e) => setData('study_sites', e.target.value)}
                                             required
@@ -505,13 +718,13 @@ export default function Create() {
                                         <InputError message={errors.study_sites} className="mt-1.5" />
                                     </div>
                                     <div>
-                                        <label htmlFor="funding_source" className="block text-xs font-bold text-paper-700">
+                                        <label htmlFor="funding_source" className="block text-xs font-bold text-fg-secondary">
                                             Funding Source
                                         </label>
                                         <input
                                             id="funding_source"
                                             type="text"
-                                            className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                             value={data.funding_source}
                                             onChange={(e) => setData('funding_source', e.target.value)}
                                         />
@@ -519,13 +732,13 @@ export default function Create() {
                                 </div>
 
                                 <div>
-                                    <label htmlFor="target_population" className="block text-xs font-bold text-paper-700">
+                                    <label htmlFor="target_population" className="block text-xs font-bold text-fg-secondary">
                                         Target Population <span className="text-red-600">*</span>
                                     </label>
                                     <textarea
                                         id="target_population"
                                         rows="3"
-                                        className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                        className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                         value={data.target_population}
                                         onChange={(e) => setData('target_population', e.target.value)}
                                         required
@@ -534,14 +747,14 @@ export default function Create() {
                                 </div>
 
                                 <div>
-                                    <label htmlFor="participant_count" className="block text-xs font-bold text-paper-700">
+                                    <label htmlFor="participant_count" className="block text-xs font-bold text-fg-secondary">
                                         Number of Participants <span className="text-red-600">*</span>
                                     </label>
                                     <input
                                         id="participant_count"
                                         type="number"
                                         min="1"
-                                        className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                        className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                         value={data.participant_count}
                                         onChange={(e) => setData('participant_count', e.target.value)}
                                         required
@@ -551,13 +764,13 @@ export default function Create() {
 
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div>
-                                        <label htmlFor="inclusion_criteria" className="block text-xs font-bold text-paper-700">
+                                        <label htmlFor="inclusion_criteria" className="block text-xs font-bold text-fg-secondary">
                                             Inclusion Criteria <span className="text-red-600">*</span>
                                         </label>
                                         <textarea
                                             id="inclusion_criteria"
                                             rows="3"
-                                            className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                             value={data.inclusion_criteria}
                                             onChange={(e) => setData('inclusion_criteria', e.target.value)}
                                             required
@@ -565,13 +778,13 @@ export default function Create() {
                                         <InputError message={errors.inclusion_criteria} className="mt-1.5" />
                                     </div>
                                     <div>
-                                        <label htmlFor="exclusion_criteria" className="block text-xs font-bold text-paper-700">
+                                        <label htmlFor="exclusion_criteria" className="block text-xs font-bold text-fg-secondary">
                                             Exclusion Criteria <span className="text-red-600">*</span>
                                         </label>
                                         <textarea
                                             id="exclusion_criteria"
                                             rows="3"
-                                            className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                             value={data.exclusion_criteria}
                                             onChange={(e) => setData('exclusion_criteria', e.target.value)}
                                             required
@@ -587,22 +800,22 @@ export default function Create() {
                                             type="checkbox"
                                             checked={data.vulnerable_population}
                                             onChange={(e) => setData('vulnerable_population', e.target.checked)}
-                                            className="mt-0.5 h-4 w-4 rounded border-paper-300 text-primary-700 focus:ring-4 focus:ring-primary-700/20"
+                                            className="mt-0.5 h-4 w-4 rounded border-border-medium text-primary-700 focus:ring-4 focus:ring-primary-700/20"
                                         />
-                                        <span className="text-sm font-semibold text-paper-700">
+                                        <span className="text-sm font-semibold text-fg-secondary">
                                             Does the study involve a vulnerable population?
                                         </span>
                                     </label>
                                 </div>
 
                                 <div>
-                                    <label htmlFor="risks_to_participants" className="block text-xs font-bold text-paper-700">
+                                    <label htmlFor="risks_to_participants" className="block text-xs font-bold text-fg-secondary">
                                         Risks to Participants <span className="text-red-600">*</span>
                                     </label>
                                     <textarea
                                         id="risks_to_participants"
                                         rows="3"
-                                        className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                        className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                         value={data.risks_to_participants}
                                         onChange={(e) => setData('risks_to_participants', e.target.value)}
                                         required
@@ -611,13 +824,13 @@ export default function Create() {
                                 </div>
 
                                 <div>
-                                    <label htmlFor="benefits" className="block text-xs font-bold text-paper-700">
+                                    <label htmlFor="benefits" className="block text-xs font-bold text-fg-secondary">
                                         Benefits <span className="text-red-600">*</span>
                                     </label>
                                     <textarea
                                         id="benefits"
                                         rows="3"
-                                        className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                        className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                         value={data.benefits}
                                         onChange={(e) => setData('benefits', e.target.value)}
                                         required
@@ -626,13 +839,13 @@ export default function Create() {
                                 </div>
 
                                 <div>
-                                    <label htmlFor="confidentiality_measures" className="block text-xs font-bold text-paper-700">
+                                    <label htmlFor="confidentiality_measures" className="block text-xs font-bold text-fg-secondary">
                                         Confidentiality Measures <span className="text-red-600">*</span>
                                     </label>
                                     <textarea
                                         id="confidentiality_measures"
                                         rows="3"
-                                        className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                        className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                         value={data.confidentiality_measures}
                                         onChange={(e) => setData('confidentiality_measures', e.target.value)}
                                         required
@@ -641,13 +854,13 @@ export default function Create() {
                                 </div>
 
                                 <div>
-                                    <label htmlFor="consent_process" className="block text-xs font-bold text-paper-700">
+                                    <label htmlFor="consent_process" className="block text-xs font-bold text-fg-secondary">
                                         Consent Process <span className="text-red-600">*</span>
                                     </label>
                                     <textarea
                                         id="consent_process"
                                         rows="3"
-                                        className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                        className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                         value={data.consent_process}
                                         onChange={(e) => setData('consent_process', e.target.value)}
                                         required
@@ -656,13 +869,13 @@ export default function Create() {
                                 </div>
 
                                 <div>
-                                    <label htmlFor="data_storage_plan" className="block text-xs font-bold text-paper-700">
+                                    <label htmlFor="data_storage_plan" className="block text-xs font-bold text-fg-secondary">
                                         Data Storage Plan (Ethics) <span className="text-red-600">*</span>
                                     </label>
                                     <textarea
                                         id="data_storage_plan"
                                         rows="3"
-                                        className="mt-1.5 block w-full rounded-lg border border-paper-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-paper-400 focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                        className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
                                         value={data.data_storage_plan}
                                         onChange={(e) => setData('data_storage_plan', e.target.value)}
                                         required
@@ -672,11 +885,166 @@ export default function Create() {
                             </div>
                         </section>
 
+                        {/* Section C - Research Team & Category */}
+                        <section className="overflow-hidden rounded-xl border border-border bg-surface-secondary">
+                            <div className="border-b border-border bg-surface-tertiary px-6 py-4">
+                                <h2 className="text-xs font-extrabold uppercase tracking-[0.08em] text-primary-700">
+                                    Section C — Research Team &amp; Category
+                                </h2>
+                            </div>
+                            <div className="grid gap-5 p-6 sm:grid-cols-2">
+                                <SelectWithOther
+                                    id="research_category"
+                                    label="Research Category"
+                                    value={data.research_category}
+                                    otherValue={data.research_category_other}
+                                    onValueChange={(v) => setData('research_category', v)}
+                                    onOtherChange={(v) => setData('research_category_other', v)}
+                                    options={[
+                                        { value: 'academic', label: 'Academic' },
+                                        { value: 'student_thesis', label: 'Student Thesis / Dissertation' },
+                                        { value: 'faculty', label: 'Faculty Research' },
+                                        { value: 'institutional', label: 'Institutional' },
+                                        { value: 'sponsored', label: 'Sponsored' },
+                                    ]}
+                                    error={errors.research_category}
+                                    otherError={errors.research_category_other}
+                                />
+                                <div>
+                                    <label htmlFor="contact_number" className="mb-1.5 block text-sm font-bold text-fg-primary">Contact Number <span className="font-normal text-fg-tertiary">(optional)</span></label>
+                                    <input
+                                        id="contact_number"
+                                        type="text"
+                                        value={data.contact_number}
+                                        onChange={(e) => setData('contact_number', e.target.value)}
+                                        className="block w-full rounded-lg border border-border px-3.5 py-2.5 text-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20"
+                                    />
+                                    <InputError message={errors.contact_number} className="mt-1.5" />
+                                </div>
+
+                                <div className="sm:col-span-2">
+                                    <div className="mb-2 flex items-center justify-between">
+                                        <label className="text-sm font-bold text-fg-primary">Co-Researchers</label>
+                                        <button type="button" onClick={addCoResearcher} className="text-xs font-bold text-primary-700 hover:underline">+ Add member</button>
+                                    </div>
+                                    <p className="mb-3 text-xs text-fg-tertiary">
+                                        Each co-researcher is emailed a personal link to sign the team Non-Disclosure Agreement. Leave empty if you're the sole researcher.
+                                    </p>
+                                    {data.co_researchers.length === 0 && (
+                                        <p className="rounded-lg bg-surface-tertiary px-3 py-3 text-xs text-fg-tertiary ring-1 ring-inset ring-border">No co-researchers added.</p>
+                                    )}
+                                    <div className="space-y-2">
+                                        {data.co_researchers.map((m, i) => (
+                                            <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                                                <input
+                                                    type="text" placeholder="Full name" value={m.full_name}
+                                                    onChange={(e) => updateCoResearcher(i, 'full_name', e.target.value)}
+                                                    className="rounded-lg border border-border px-3 py-2 text-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20"
+                                                />
+                                                <input
+                                                    type="email" placeholder="Email" value={m.email}
+                                                    onChange={(e) => updateCoResearcher(i, 'email', e.target.value)}
+                                                    className="rounded-lg border border-border px-3 py-2 text-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20"
+                                                />
+                                                <button type="button" onClick={() => removeCoResearcher(i)} className="rounded-lg border border-border px-3 text-xs font-bold text-red-600 hover:bg-red-50">Remove</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <InputError message={errors.co_researchers} className="mt-1.5" />
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Section D - Supporting Documents */}
+                        <section className="overflow-hidden rounded-xl border border-border bg-surface-secondary">
+                            <div className="border-b border-border bg-surface-tertiary px-6 py-4">
+                                <h2 className="text-xs font-extrabold uppercase tracking-[0.08em] text-primary-700">
+                                    Section D — Supporting Documents
+                                </h2>
+                                <p className="mt-1 text-xs text-fg-tertiary">{uploadHint}</p>
+                            </div>
+                            <div className="space-y-5 p-6">
+                                <div>
+                                    <p className="mb-3 text-sm font-bold text-fg-primary">Required <span className="text-red-600">*</span></p>
+                                    <div className="space-y-3">
+                                        {mandatorySlots.map((slot) => (
+                                            <DocRow key={slot.key} slot={slot} files={data.documents[slot.key] ?? []} onAdd={(fl) => addDocumentFiles(slot.key, fl)} onRemove={(i) => removeDocumentFile(slot.key, i)} error={errors[`documents.${slot.key}`]} />
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {data.minors_involved && (
+                                    <div>
+                                        <p className="mb-3 text-sm font-bold text-fg-primary">Required (minors involved) <span className="text-red-600">*</span></p>
+                                        <div className="space-y-3">
+                                            {conditionalSlots.map((slot) => (
+                                                <DocRow key={slot.key} slot={slot} files={data.documents[slot.key] ?? []} onAdd={(fl) => addDocumentFiles(slot.key, fl)} onRemove={(i) => removeDocumentFile(slot.key, i)} error={errors[`documents.${slot.key}`]} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <p className="mb-3 text-sm font-bold text-fg-primary">As applicable <span className="font-normal text-fg-tertiary">(optional)</span></p>
+                                    <div className="space-y-3">
+                                        {optionalSlots.map((slot) => (
+                                            <DocRow key={slot.key} slot={slot} files={data.documents[slot.key] ?? []} onAdd={(fl) => addDocumentFiles(slot.key, fl)} onRemove={(i) => removeDocumentFile(slot.key, i)} error={errors[`documents.${slot.key}`]} />
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-border pt-5">
+                                    <div className="mb-2 flex items-center justify-between">
+                                        <p className="text-sm font-bold text-fg-primary">Additional documents</p>
+                                        <button type="button" onClick={addAdditional} className="text-xs font-bold text-primary-700 hover:underline">+ Add document</button>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {data.additional_documents.map((d, i) => (
+                                            <div key={i} className="grid gap-2 sm:grid-cols-[minmax(0,14rem)_1fr_auto]">
+                                                <select
+                                                    value={d.label}
+                                                    onChange={(e) => updateAdditional(i, 'label', e.target.value)}
+                                                    className="rounded-lg border border-border px-3 py-2 text-sm focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20"
+                                                >
+                                                    {fileLabels.map((label) => (
+                                                        <option key={label} value={label}>{label}</option>
+                                                    ))}
+                                                </select>
+                                                <input
+                                                    type="file"
+                                                    onChange={(e) => updateAdditional(i, 'file', e.target.files[0])}
+                                                    className="text-sm text-fg-secondary file:mr-3 file:rounded-md file:border-0 file:bg-primary-50 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-primary-700"
+                                                />
+                                                <button type="button" onClick={() => removeAdditional(i)} className="rounded-lg border border-border px-3 text-xs font-bold text-red-600 hover:bg-red-50">Remove</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Certification & Signature */}
+                        <section className="overflow-hidden rounded-xl border border-border bg-surface-secondary">
+                            <div className="border-b border-border bg-surface-tertiary px-6 py-4">
+                                <h2 className="text-xs font-extrabold uppercase tracking-[0.08em] text-primary-700">
+                                    Certification &amp; Signature
+                                </h2>
+                                <p className="mt-1.5 text-xs leading-relaxed text-fg-tertiary">
+                                    I certify that the information provided is accurate and complete. Sign below to
+                                    submit. Your adviser signs the printed Form 1 separately.
+                                </p>
+                            </div>
+                            <div className="p-6">
+                                <SignaturePad onChange={(image) => setData('researcher_signature', image)} />
+                                <InputError message={errors.researcher_signature} className="mt-2" />
+                            </div>
+                        </section>
+
                         {/* Submit Button */}
                         <div className="flex items-center justify-end gap-4">
                             <Link
                                 href={route('dpreq.index')}
-                                className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-paper-200 bg-white px-5 text-sm font-bold text-paper-700 shadow-sm hover:bg-paper-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-700/20"
+                                className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-surface-secondary px-5 text-sm font-bold text-fg-secondary shadow-sm hover:bg-surface-tertiary focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-700/20"
                             >
                                 Cancel
                             </Link>
@@ -696,3 +1064,48 @@ export default function Create() {
         </AuthenticatedLayout>
     );
 }
+
+// A single labelled document slot. Accepts multiple files — the applicant may attach, e.g., two or
+// three research instruments (stakeholder 2026-07-28). Choosing files ADDS them to the list (never
+// overwrites); each file has its own Remove button. Uncontrolled input value reset so re-picking the
+// same file still fires onChange.
+function DocRow({ slot, files = [], onAdd, onRemove, error }) {
+    return (
+        <div className="grid gap-2 sm:grid-cols-[minmax(0,16rem)_1fr] sm:items-start">
+            <label className="pt-1.5 text-sm font-medium text-fg-secondary">{slot.title}</label>
+            <div>
+                {files.length > 0 && (
+                    <ul className="mb-2 space-y-1.5">
+                        {files.map((f, i) => (
+                            <li key={i} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface-tertiary px-3 py-1.5">
+                                <span className="truncate text-xs text-fg-secondary">{f.name}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => onRemove(i)}
+                                    className="shrink-0 text-xs font-bold text-red-600 hover:underline"
+                                >
+                                    Remove
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border-medium bg-surface-secondary px-3 py-1.5 text-xs font-bold text-primary-700 hover:bg-surface-tertiary">
+                    + Add file{files.length > 0 ? ' (adds another)' : ''}
+                    <input
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                            onAdd(e.target.files);
+                            e.target.value = '';
+                        }}
+                    />
+                </label>
+                <p className="mt-1 text-xs text-fg-tertiary">You can add more than one file, one or several at a time.</p>
+                <InputError message={error} className="mt-1" />
+            </div>
+        </div>
+    );
+}
+

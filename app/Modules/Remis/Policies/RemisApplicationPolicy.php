@@ -24,6 +24,20 @@ class RemisApplicationPolicy
             ]);
     }
 
+    // Downloading a submitted document. The intake uploads are shared research artifacts surfaced on
+    // BOTH the DPREQ and REMIS sides, so any legitimate reviewer of either track — plus the owner —
+    // may download them. Without this method Laravel denies `authorize('download', ...)` (403).
+    public function download(User $user, RemisApplication $application): bool
+    {
+        return $application->applicant_id === $user->id
+            || $application->reviewAssignments->contains('reviewer_id', $user->id)
+            || $user->hasAnyRole([
+                'dpo_staff', 'system_administrator',
+                'adviser', 'program_head', 'dean',
+                'ethics_secretariat', 'ethics_reviewer', 'ethics_committee_chair',
+            ]);
+    }
+
     public function endorse(User $user, RemisApplication $application): bool
     {
         return match ($application->current_endorsement_step) {
@@ -77,5 +91,19 @@ class RemisApplicationPolicy
     {
         return $application->applicant_id === $user->id
             || $user->hasAnyRole(['ethics_secretariat', 'ethics_reviewer', 'ethics_committee_chair']);
+    }
+
+    // Register housekeeping (index bulk Actions). Ethics staff/chair curate the register; an
+    // applicant may act only on their own not-yet-submitted draft.
+    public function archive(User $user, RemisApplication $application): bool
+    {
+        return $user->hasAnyRole(['ethics_secretariat', 'ethics_committee_chair', 'system_administrator'])
+            || ($application->applicant_id === $user->id && $application->status === 'draft_submitted');
+    }
+
+    public function delete(User $user, RemisApplication $application): bool
+    {
+        return $user->hasRole('system_administrator')
+            || ($application->applicant_id === $user->id && $application->status === 'draft_submitted');
     }
 }

@@ -10,12 +10,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 // docs/3.5-remis-incident-reporting.md — independent of RemisApplication::LEGAL_TRANSITIONS;
 // an incident can be filed and tracked at any point during monitoring without pausing the study.
 class Incident extends Model
 {
     use HasFactory;
+    // Register bulk actions: archived_at removes from the active register; soft-delete hides
+    // (recoverable).
+    use SoftDeletes;
 
     public const NOTIFY_DPO_TYPES = ['data_breach', 'confidentiality_breach'];
 
@@ -43,6 +47,7 @@ class Incident extends Model
         'corrective_action_status',
         'verified_by',
         'verified_at',
+        'archived_at',
     ];
 
     protected function casts(): array
@@ -51,6 +56,7 @@ class Incident extends Model
             'incident_date' => 'date',
             'corrective_action_due_date' => 'date',
             'verified_at' => 'datetime',
+            'archived_at' => 'datetime',
         ];
     }
 

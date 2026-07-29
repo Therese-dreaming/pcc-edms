@@ -50,21 +50,18 @@ class ReportDemoSeeder extends Seeder
 
         Auth::onceUsingId($this->userIds['dpo_staff']);
 
-        // DPREQ track: spread across the pending statuses the "Pending DPO Approvals" report reads.
-        $dpreqWorkflow->startScreening($apps[1]);
+        // DPREQ track (collapsed Review -> Approve, 2026-07-25): spread across the pending statuses
+        // the "Pending DPO Approvals" report reads.
+        $dpreqWorkflow->startReview($apps[1]);
 
-        $dpreqWorkflow->startScreening($apps[2]);
+        $dpreqWorkflow->startReview($apps[2]);
         $dpreqWorkflow->returnForCorrection($apps[2], 'Data retention plan does not specify a disposal date.');
 
-        $dpreqWorkflow->startScreening($apps[3]);
-        $dpreqWorkflow->passScreeningToReview($apps[3]);
+        $dpreqWorkflow->startReview($apps[3]);
 
-        $dpreqWorkflow->startScreening($apps[4]);
-        $dpreqWorkflow->passScreeningToReview($apps[4]);
-        $dpreqWorkflow->endorse($apps[4], 'Compliant with DPO-POL-005, ready for approver sign-off.');
+        $dpreqWorkflow->startReview($apps[4]);
 
-        $dpreqWorkflow->startScreening($apps[5]);
-        $dpreqWorkflow->passScreeningToReview($apps[5]);
+        $dpreqWorkflow->startReview($apps[5]);
         $dpreqWorkflow->reject($apps[5], 'Respondent head letter not approved.');
         // $apps[0] left at 'submitted'.
 
@@ -185,17 +182,15 @@ class ReportDemoSeeder extends Seeder
         // "archived_count"/monitoring figures on the Annual Ethics Report real data to show.
         $app6 = $this->submitApplication($researchApplications, 'College of Education', 'Digital Literacy Intervention Study');
 
+        // Concern 7 flow (2026-07-26): the DPO approves first — which creates the Research Team NDA
+        // — and only then does the lead sign it, which issues the DPREQ clearance.
+        Auth::onceUsingId($this->userIds['dpo_staff']);
+        $dpreqWorkflow->startReview($app6);
+        $dpreqWorkflow->approve($app6->fresh(), $this->userIds['dpo_staff']);
+
         Auth::onceUsingId($this->userIds['researcher']);
         $leaderSignatory = $app6->researchApplication->researchTeamNda->signatories()->first();
         $researchTeamNda->sign($leaderSignatory, 'Rosa Researcher');
-
-        Auth::onceUsingId($this->userIds['dpo_staff']);
-        $dpreqWorkflow->startScreening($app6);
-        $dpreqWorkflow->passScreeningToReview($app6);
-        $dpreqWorkflow->endorse($app6, 'Fully compliant, NDA signed.');
-
-        Auth::onceUsingId($this->userIds['dpo_staff']);
-        $dpreqWorkflow->approve($app6->fresh(), $this->userIds['dpo_staff']);
 
         $this->endorseThroughToScreening($remisWorkflow, $app6->researchApplication->remisApplication);
 

@@ -42,6 +42,7 @@ class GenerateDpndaPdfJob implements ShouldQueue
             recordId: $record->tracking_number,
             repositoryPath: "DPO/DPNDA/{$year}/{$record->placement->department_assigned}/{$record->tracking_number}",
             generatedByUserId: $this->generatedByUserId,
+            department: $record->placement->department_assigned,
         );
     }
 }

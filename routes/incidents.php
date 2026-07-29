@@ -6,6 +6,10 @@ use Illuminate\Support\Facades\Route;
 // docs/3.5-remis-incident-reporting.md
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/incidents', [IncidentController::class, 'index'])->name('incidents.index');
+
+    // Register bulk actions (index Actions menu). Authorized per-record in the controller.
+    Route::post('/incidents/bulk-archive', [IncidentController::class, 'bulkArchive'])->name('incidents.bulk-archive');
+    Route::delete('/incidents/bulk-destroy', [IncidentController::class, 'bulkDestroy'])->name('incidents.bulk-destroy');
     Route::get('/remis/{remisApplication}/incidents/create', [IncidentController::class, 'create'])->name('incidents.create');
     Route::post('/remis/{remisApplication}/incidents', [IncidentController::class, 'store'])->name('incidents.store');
     Route::get('/incidents/{incident}', [IncidentController::class, 'show'])->name('incidents.show');

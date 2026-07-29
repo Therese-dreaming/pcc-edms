@@ -4,7 +4,7 @@ import { Link } from '@inertiajs/react';
 // pass `label` — it becomes both the accessible name (screen readers) and the
 // visible tooltip (native title), since the icon alone carries no text.
 const BASE =
-    'inline-flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-800 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-500';
+    'inline-flex h-8 w-8 items-center justify-center rounded-full text-fg-tertiary transition-colors hover:bg-surface-tertiary hover:text-fg-primary focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary';
 
 const VARIANT = {
     default: '',

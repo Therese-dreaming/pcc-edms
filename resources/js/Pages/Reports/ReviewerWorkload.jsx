@@ -1,8 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageHeader from '@/Components/PageHeader';
 import ReportToolbar from '@/Components/Reports/ReportToolbar';
+import { ColumnChart, ReportCard, StatCard } from '@/Components/Reports/Charts';
+import { DateField, FilterBar, ReportTable, SelectField } from '@/Components/Reports/ReportFilters';
 import { Head, router } from '@inertiajs/react';
-import { IconUsers } from '@tabler/icons-react';
+import { IconChartBar, IconClockHour4, IconUsers } from '@tabler/icons-react';
 import { useState } from 'react';
 
 export default function ReviewerWorkload({ filters, data }) {
@@ -18,6 +20,9 @@ export default function ReviewerWorkload({ filters, data }) {
     };
 
     const sorted = [...data.rows].sort((a, b) => (b.active + b.completed) - (a.active + a.completed));
+    const activeTotal = sorted.reduce((s, r) => s + r.active, 0);
+    const completedTotal = sorted.reduce((s, r) => s + r.completed, 0);
+    const activeChart = Object.fromEntries(sorted.slice(0, 8).map((r) => [r.reviewer, r.active]));
 
     return (
         <AuthenticatedLayout
@@ -31,61 +36,49 @@ export default function ReviewerWorkload({ filters, data }) {
         >
             <Head title="Reviewer Workload" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-5xl sm:px-6 lg:px-8">
-                    <ReportToolbar
-                        csvHref={route('reports.reviewer-workload') + '?format=csv&' + new URLSearchParams(form).toString()}
-                    />
+            <div className="mx-auto max-w-5xl px-5 py-8 sm:px-7 lg:px-10">
+                <ReportToolbar
+                    csvHref={route('reports.reviewer-workload') + '?format=csv&' + new URLSearchParams(form).toString()}
+                />
 
-                    <form onSubmit={submit} className="mb-6 flex flex-wrap items-end gap-3 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">Assigned From</label>
-                            <input type="date" value={form.date_from} onChange={(e) => setForm({ ...form, date_from: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">Assigned To</label>
-                            <input type="date" value={form.date_to} onChange={(e) => setForm({ ...form, date_to: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">Risk Track</label>
-                            <select value={form.risk_track} onChange={(e) => setForm({ ...form, risk_track: e.target.value })} className="rounded-md border-zinc-300 text-sm">
-                                <option value="">Any</option>
-                                <option value="expedited">Expedited</option>
-                                <option value="committee">Committee</option>
-                                <option value="full_board">Full Board</option>
-                            </select>
-                        </div>
-                        <button type="submit" className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
-                            Apply
-                        </button>
-                    </form>
+                <FilterBar onSubmit={submit}>
+                    <DateField label="Assigned from" value={form.date_from} onChange={(e) => setForm({ ...form, date_from: e.target.value })} />
+                    <DateField label="Assigned to" value={form.date_to} onChange={(e) => setForm({ ...form, date_to: e.target.value })} />
+                    <SelectField label="Risk track" value={form.risk_track} onChange={(e) => setForm({ ...form, risk_track: e.target.value })}>
+                        <option value="">Any</option>
+                        <option value="expedited">Expedited</option>
+                        <option value="committee">Committee</option>
+                        <option value="full_board">Full Board</option>
+                    </SelectField>
+                </FilterBar>
 
-                    <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white shadow-sm">
-                        <table className="min-w-full divide-y divide-zinc-200">
-                            <thead className="bg-zinc-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Reviewer</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Active</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Completed</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Avg Turnaround</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-zinc-200 bg-white">
-                                {sorted.length === 0 && (
-                                    <tr><td colSpan={4} className="px-6 py-4 text-center text-zinc-500">No review assignments for the selected filters.</td></tr>
-                                )}
-                                {sorted.map((row) => (
-                                    <tr key={row.reviewer}>
-                                        <td className="px-6 py-4 font-medium text-zinc-800">{row.reviewer}</td>
-                                        <td className="px-6 py-4">{row.active}</td>
-                                        <td className="px-6 py-4">{row.completed}</td>
-                                        <td className="px-6 py-4">{row.avg_turnaround_days !== null ? `${row.avg_turnaround_days} days` : 'n/a'}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <StatCard label="Reviewers" value={sorted.length} icon={IconUsers} helper="With assignments in range" />
+                    <StatCard label="Active assignments" value={activeTotal} icon={IconClockHour4} helper="Currently in progress" />
+                    <StatCard label="Completed" value={completedTotal} icon={IconChartBar} helper="Finished reviews" />
                 </div>
+
+                {sorted.length > 0 && (
+                    <div className="mb-6">
+                        <ReportCard icon={IconChartBar} title="Active assignments per reviewer">
+                            <ColumnChart counts={activeChart} />
+                        </ReportCard>
+                    </div>
+                )}
+
+                <ReportCard icon={IconUsers} title="Workload detail" className="!p-0" right={<span className="text-xs text-fg-tertiary">{sorted.length} reviewers</span>}>
+                    <ReportTable
+                        rowKey={(r) => r.reviewer}
+                        rows={sorted}
+                        empty="No review assignments for the selected filters."
+                        columns={[
+                            { key: 'reviewer', label: 'Reviewer', className: 'font-medium text-fg-primary' },
+                            { key: 'active', label: 'Active', className: 'tabular-nums' },
+                            { key: 'completed', label: 'Completed', className: 'tabular-nums' },
+                            { key: 'avg_turnaround_days', label: 'Avg turnaround', className: 'tabular-nums text-fg-tertiary', render: (r) => r.avg_turnaround_days !== null ? `${r.avg_turnaround_days} days` : '—' },
+                        ]}
+                    />
+                </ReportCard>
             </div>
         </AuthenticatedLayout>
     );

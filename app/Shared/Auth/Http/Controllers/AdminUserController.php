@@ -32,6 +32,33 @@ class AdminUserController extends Controller
         ]);
     }
 
+    // Bulk account-status change from the Users index Actions menu (Activate / Deactivate /
+    // Suspend). Accounts are never deleted here — status is the lever the system already models.
+    public function bulkStatus(Request $request): RedirectResponse
+    {
+        $this->authorize('viewAny', User::class);
+
+        $validated = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer'],
+            'account_status' => ['required', 'in:active,suspended,deactivated'],
+        ]);
+
+        $count = 0;
+        foreach (User::whereIn('id', $validated['ids'])->get() as $user) {
+            // An admin can't change their own status here (guards against self-lockout).
+            if ($user->id === $request->user()->id || ! $request->user()->can('update', $user)) {
+                continue;
+            }
+            $this->users->updateUser($user, ['account_status' => $validated['account_status']]);
+            $count++;
+        }
+
+        $label = ['active' => 'activated', 'suspended' => 'suspended', 'deactivated' => 'deactivated'][$validated['account_status']];
+
+        return back()->with('status', $count === 1 ? "1 account {$label}." : "{$count} accounts {$label}.");
+    }
+
     public function create(): Response
     {
         $this->authorize('create', User::class);

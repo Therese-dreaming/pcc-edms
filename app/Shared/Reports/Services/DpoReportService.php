@@ -45,7 +45,7 @@ class DpoReportService
      */
     public function pendingApprovals(array $filters): array
     {
-        $pendingStatuses = ['submitted', 'screening', 'returned', 'under_review', 'endorsed'];
+        $pendingStatuses = ['submitted', 'returned', 'under_review'];
 
         $applications = DpreqApplication::query()
             ->with(['applicant', 'researchApplication', 'statusHistory.changedBy'])

@@ -3,21 +3,29 @@
 namespace App\Shared\Documents\Services;
 
 use App\Shared\Documents\Models\Document;
+use App\Shared\Documents\Support\DocumentNaming;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
-// docs/4.2-file-management-naming.md — naming convention, repository placement, and versioning
-// (re-uploads create a new version, old version retained, never overwritten). All module file
-// writes go through here and Storage::disk('documents') (architecture.md ADR-004 action item),
-// never raw filesystem calls.
+// docs/4.2-file-management-naming.md + stakeholder-additional-features.md ("Automatic File Naming
+// Convention", 2026-07-25) — every stored file is renamed to
+// REC-{MODULE}-{DEPARTMENT}-{CONTROLNO}_{YYYYMMDD}_{FILELABEL}_V{n}.{ext} (see DocumentNaming).
+// Re-uploads create a new version (never overwritten, old versions retained); the version number
+// is baked into the filename so each version is a distinct file on disk. All module file writes
+// go through here and Storage::disk('documents') (architecture.md ADR-004), never raw filesystem
+// calls. The original client filename is retained in documents.original_filename for reference
+// only — it is never the stored filename.
 class DocumentService
 {
     /**
      * Store a user-uploaded file (e.g. research proposal, consent form).
      *
+     * @param  string  $documentType    Used as the FILELABEL segment (see Support\FileLabel).
+     * @param  string  $recordId        Tracking/control number — its trailing digits become CONTROLNO.
      * @param  string  $repositoryPath  e.g. "DPO/DPREQ/2026/DPREQ-2026-0001" per docs/4.2
+     * @param  ?string $department      Applicant department, normalized to the DEPARTMENT segment.
      */
     public function store(
         Model $documentable,
@@ -26,13 +34,16 @@ class DocumentService
         string $modulePrefix,
         string $recordId,
         string $repositoryPath,
+        ?string $department = null,
     ): Document {
-        $filename = sprintf(
-            '%s_%s_%s_%s.%s',
+        $version = $this->nextVersion($documentable, $documentType);
+
+        $filename = DocumentNaming::filename(
             $modulePrefix,
+            $department,
             $recordId,
             $documentType,
-            now()->format('Ymd'),
+            $version,
             $file->getClientOriginalExtension(),
         );
 
@@ -46,6 +57,8 @@ class DocumentService
             $file->getMimeType(),
             $file->getSize(),
             Auth::id(),
+            $version,
+            'submitted',
         );
     }
 
@@ -54,6 +67,7 @@ class DocumentService
      * corresponding UploadedFile — the bytes already exist in memory.
      *
      * @param  string  $repositoryPath  e.g. "DPO/DPREQ/2026/DPREQ-2026-0001" per docs/4.2
+     * @param  ?string $department      Applicant department, normalized to the DEPARTMENT segment.
      */
     public function storeGenerated(
         Model $documentable,
@@ -65,13 +79,16 @@ class DocumentService
         string $recordId,
         string $repositoryPath,
         int $generatedByUserId,
+        ?string $department = null,
     ): Document {
-        $filename = sprintf(
-            '%s_%s_%s_%s.%s',
+        $version = $this->nextVersion($documentable, $documentType);
+
+        $filename = DocumentNaming::filename(
             $modulePrefix,
+            $department,
             $recordId,
             $documentType,
-            now()->format('Ymd'),
+            $version,
             $extension,
         );
 
@@ -86,7 +103,17 @@ class DocumentService
             $mimeType,
             strlen($bytes),
             $generatedByUserId,
+            $version,
+            'generated',
         );
+    }
+
+    private function nextVersion(Model $documentable, string $documentType): int
+    {
+        return Document::where('documentable_type', $documentable->getMorphClass())
+            ->where('documentable_id', $documentable->getKey())
+            ->where('document_type', $documentType)
+            ->max('version') + 1;
     }
 
     private function createVersionedRecord(
@@ -97,12 +124,9 @@ class DocumentService
         string $mimeType,
         int $sizeBytes,
         int $uploadedBy,
+        int $version,
+        string $source = 'submitted',
     ): Document {
-        $nextVersion = Document::where('documentable_type', $documentable->getMorphClass())
-            ->where('documentable_id', $documentable->getKey())
-            ->where('document_type', $documentType)
-            ->max('version') + 1;
-
         Document::where('documentable_type', $documentable->getMorphClass())
             ->where('documentable_id', $documentable->getKey())
             ->where('document_type', $documentType)
@@ -116,8 +140,9 @@ class DocumentService
             'original_filename' => $originalFilename,
             'mime_type' => $mimeType,
             'size_bytes' => $sizeBytes,
-            'version' => $nextVersion,
+            'version' => $version,
             'uploaded_by' => $uploadedBy,
+            'source' => $source,
             'is_current_version' => true,
         ]);
     }

@@ -41,12 +41,12 @@ class DpoDashboardService
     }
 
     // docs/4.3: "Pending My Action | Records assigned to the logged-in reviewer/approver" —
-    // DPREQ has no per-user assignment for screening/endorsement/approval (docs/0.2's capability
-    // matrix gates those by role, not by a specific assignee), and dpo_staff owns every DPO-side
-    // status from screening through final approval (DPO Approver was retired as a separate role).
+    // DPREQ has no per-user assignment (docs/0.2's capability matrix gates by role), and the single
+    // dpo_staff role owns everything awaiting DPO action. After the 2026-07-25 collapse that is
+    // just `submitted` (needs to be taken under review) and `under_review` (needs a decision).
     private function pendingMyAction(User $user): array
     {
-        $statuses = ['screening', 'under_review', 'endorsed'];
+        $statuses = ['submitted', 'under_review'];
 
         $query = DpreqApplication::with('researchApplication')
             ->whereIn('status', $statuses)

@@ -7,6 +7,7 @@ use App\Modules\Dpnda\Models\DpndaRecord;
 use App\Modules\Dpnda\Models\Placement;
 use App\Shared\AuditLog\Services\AuditLogService;
 use App\Shared\AuditLog\Services\StatusHistoryService;
+use App\Shared\AuditLog\Support\SignatureIdentity;
 use App\Shared\Notifications\Services\NotificationService;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -61,9 +62,13 @@ class DpndaWorkflowService
             throw new RuntimeException("Illegal DPNDA transition: {$record->status} -> trainee_signed.");
         }
 
+        $identity = SignatureIdentity::capture();
+
         $record->update([
             'trainee_signature_id' => $typedFullName,
             'trainee_signature_image' => $signatureImage,
+            'trainee_signature_ip' => $identity['ip'],
+            'trainee_signature_user_agent' => $identity['user_agent'],
             'trainee_signed_at' => now(),
         ]);
 
@@ -94,9 +99,13 @@ class DpndaWorkflowService
             throw new RuntimeException("Illegal DPNDA transition: {$record->status} -> coordinator_countersigned.");
         }
 
+        $identity = SignatureIdentity::capture();
+
         $record->update([
             'coordinator_signature_id' => $typedFullName,
             'coordinator_signature_image' => $signatureImage,
+            'coordinator_signature_ip' => $identity['ip'],
+            'coordinator_signature_user_agent' => $identity['user_agent'],
             'coordinator_signed_at' => now(),
         ]);
 

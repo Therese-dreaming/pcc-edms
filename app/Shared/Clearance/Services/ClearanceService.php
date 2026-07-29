@@ -6,85 +6,109 @@ use App\Modules\Dpreq\Models\DpreqApplication;
 use App\Modules\Remis\Models\RemisApplication;
 use App\Shared\AuditLog\Services\AuditLogService;
 use App\Shared\AuditLog\Services\StatusHistoryService;
-use App\Shared\Clearance\Jobs\GenerateJointClearancePdfJob;
+use App\Shared\Clearance\Jobs\GenerateDpreqClearancePdfJob;
+use App\Shared\Clearance\Jobs\GenerateRemisClearancePdfJob;
+use App\Shared\Clearance\Jobs\GenerateRemisExemptionPdfJob;
 use App\Shared\Clearance\Models\ClearanceCertificate;
+use App\Shared\Documents\Services\RetentionService;
 use App\Shared\Notifications\Services\NotificationService;
 use App\Shared\ResearchApplications\Models\ResearchApplication;
 use Illuminate\Support\Str;
 
-// docs/0.4-dpo-ethics-integration.md — the DPO <-> Ethics convergence point. Both
-// DpreqWorkflowService::approve() and Remis's positive-decision path call in here; neither
-// module depends on the other directly (system-design.md §4's module-boundary rule), they both
-// only depend on this shared service. The certificate is withheld (no issued_at/qr_token/PDF)
-// until both signatures exist — this is the one rule that must never be bypassed.
+// docs/0.4-dpo-ethics-integration.md — the DPO <-> Ethics integration point. As of
+// stakeholder-additional-features.md (2026-07-25) the two departments issue INDEPENDENT
+// certificates: signDpoTrack() issues the DPREQ clearance the moment DPO approves;
+// signEthicsTrack() issues the REMIS clearance the moment Ethics decides. Neither waits for the
+// other, and there is no joint dual-signed release gate anymore. Both DpreqWorkflowService and
+// RemisWorkflowService still depend only on this shared service, never on each other
+// (system-design.md §4's module-boundary rule).
 class ClearanceService
 {
     public function __construct(
         private readonly StatusHistoryService $statusHistory,
         private readonly AuditLogService $auditLog,
         private readonly NotificationService $notifications,
+        private readonly CertificateNumberService $certificateNumbers,
+        private readonly RetentionService $retention,
     ) {
     }
 
-    public function signDpoTrack(ResearchApplication $researchApplication, int $signerId, string $certificateNumber): ClearanceCertificate
+    // DPO track — issued independently on DPO approval (no dependency on the Ethics track).
+    public function signDpoTrack(ResearchApplication $researchApplication, int $signerId): ClearanceCertificate
     {
         $certificate = $this->ensureCertificate($researchApplication);
 
-        $certificate->update([
-            'dpreq_certificate_number' => $certificateNumber,
-            'dpo_signed_by' => $signerId,
-            'dpo_signed_at' => now(),
-        ]);
-
-        $this->auditLog->record('clearance_certificate.dpo_signed', $certificate, null, ['dpo_signed_by' => $signerId]);
-
-        $this->maybeIssue($certificate->fresh());
-
-        return $certificate->fresh();
-    }
-
-    public function signEthicsTrack(ResearchApplication $researchApplication, int $signerId, string $certificateNumber): ClearanceCertificate
-    {
-        $certificate = $this->ensureCertificate($researchApplication);
-
-        $certificate->update([
-            'remis_certificate_number' => $certificateNumber,
-            'ethics_signed_by' => $signerId,
-            'ethics_signed_at' => now(),
-        ]);
-
-        $this->auditLog->record('clearance_certificate.ethics_signed', $certificate, null, ['ethics_signed_by' => $signerId]);
-
-        $this->maybeIssue($certificate->fresh());
-
-        return $certificate->fresh();
-    }
-
-    private function ensureCertificate(ResearchApplication $researchApplication): ClearanceCertificate
-    {
-        return ClearanceCertificate::firstOrCreate(['research_application_id' => $researchApplication->id]);
-    }
-
-    private function maybeIssue(ClearanceCertificate $certificate): void
-    {
-        if (! $certificate->isFullySigned() || $certificate->isIssued()) {
-            return;
+        if ($certificate->isDpreqIssued()) {
+            return $certificate; // idempotent — never re-issue or hand out a second control number
         }
 
-        $researchApplication = $certificate->researchApplication;
-
         $certificate->update([
-            'issued_at' => now(),
-            'valid_until' => $researchApplication->target_end_date,
-            'qr_token' => Str::random(32),
+            'dpreq_certificate_number' => $this->certificateNumbers->next('DPREQ'),
+            'dpo_signed_by' => $signerId,
+            'dpo_signed_at' => now(),
+            'dpreq_issued_at' => now(),
+            'dpreq_valid_until' => $researchApplication->target_end_date,
+            'dpreq_qr_token' => Str::random(32),
         ]);
+        $certificate = $certificate->fresh();
 
-        $this->auditLog->record('clearance_certificate.issued', $certificate, null, ['issued_at' => now()->toIso8601String()]);
+        $this->auditLog->record('clearance_certificate.dpreq_issued', $certificate, null, [
+            'dpo_signed_by' => $signerId,
+            'dpreq_certificate_number' => $certificate->dpreq_certificate_number,
+        ]);
 
         $dpreq = DpreqApplication::where('research_application_id', $researchApplication->id)->first();
         if ($dpreq && $dpreq->canTransitionTo('clearance_issued')) {
             $this->transitionToClearanceIssued($dpreq);
         }
+
+        $this->refreshOverallStatus($researchApplication->fresh(), $certificate);
+
+        // stakeholder-additional-features.md — superseded submissions are archived once the
+        // clearance issues; the approved version stays current.
+        $this->retention->archiveForIssuedClearance($researchApplication, 'dpo');
+
+        // docs/1.2 "Clearance Issued (ready to download) -> Applicant". Linked to the DPREQ record
+        // (the certificate itself has no standalone show page).
+        $this->notifications->notifyUser(
+            $researchApplication->applicant,
+            'DPO clearance issued',
+            "Your Data Privacy (DPREQ) clearance for \"{$researchApplication->research_title}\" has been issued (Control No. {$certificate->dpreq_certificate_number}) and is ready to download.",
+            $researchApplication->dpreqApplication,
+        );
+
+        GenerateDpreqClearancePdfJob::dispatch($certificate->id);
+
+        return $certificate;
+    }
+
+    // Ethics track — issued independently on the Ethics decision (no dependency on the DPO track).
+    // `$exempted` issues a Certificate of Exemption instead of a full Research Ethics Clearance
+    // (stakeholder 2026-07-28); both carry a REMIS control number and QR verification.
+    public function signEthicsTrack(ResearchApplication $researchApplication, int $signerId, bool $exempted = false): ClearanceCertificate
+    {
+        $certificate = $this->ensureCertificate($researchApplication);
+
+        if ($certificate->isRemisIssued()) {
+            return $certificate; // idempotent
+        }
+
+        $certificate->update([
+            'remis_certificate_number' => $this->certificateNumbers->next('REMIS'),
+            'remis_certificate_kind' => $exempted ? 'exemption' : 'clearance',
+            'ethics_signed_by' => $signerId,
+            'ethics_signed_at' => now(),
+            'remis_issued_at' => now(),
+            'remis_valid_until' => $researchApplication->target_end_date,
+            'remis_qr_token' => Str::random(32),
+        ]);
+        $certificate = $certificate->fresh();
+
+        $this->auditLog->record('clearance_certificate.remis_issued', $certificate, null, [
+            'ethics_signed_by' => $signerId,
+            'remis_certificate_number' => $certificate->remis_certificate_number,
+            'remis_certificate_kind' => $certificate->remis_certificate_kind,
+        ]);
 
         $remis = RemisApplication::where('research_application_id', $researchApplication->id)->first();
         if ($remis && $remis->canTransitionTo('clearance_issued')) {
@@ -92,15 +116,49 @@ class ClearanceService
             $this->startMonitoring($remis->fresh());
         }
 
-        $researchApplication->update(['overall_status' => 'clearance_issued']);
+        $this->refreshOverallStatus($researchApplication->fresh(), $certificate);
 
-        // docs/1.2 + docs/3.3: "Clearance Issued (ready to download) -> Applicant/Researcher".
-        // One notification, not one per track — it's the same joint clearance and the same
-        // person (the applicant) either way. Linked to the DPREQ record (not the certificate
-        // itself, which has no standalone show page) so clicking the notification goes somewhere.
-        $this->notifications->notifyUser($researchApplication->applicant, 'Joint clearance issued', "Your joint clearance for \"{$researchApplication->research_title}\" has been issued and is ready to download.", $researchApplication->dpreqApplication);
+        $this->retention->archiveForIssuedClearance($researchApplication, 'ethics');
 
-        GenerateJointClearancePdfJob::dispatch($certificate->id);
+        $label = $exempted ? 'exemption' : 'clearance';
+        $title = $exempted ? 'Ethics exemption issued' : 'Ethics clearance issued';
+
+        // docs/3.3 "Clearance Issued (ready to download) -> Researcher".
+        $this->notifications->notifyUser(
+            $researchApplication->applicant,
+            $title,
+            "Your Research Ethics (REMIS) {$label} for \"{$researchApplication->research_title}\" has been issued (Control No. {$certificate->remis_certificate_number}) and is ready to download.",
+            $researchApplication->remisApplication,
+        );
+
+        if ($exempted) {
+            GenerateRemisExemptionPdfJob::dispatch($certificate->id);
+        } else {
+            GenerateRemisClearancePdfJob::dispatch($certificate->id);
+        }
+
+        return $certificate;
+    }
+
+    private function ensureCertificate(ResearchApplication $researchApplication): ClearanceCertificate
+    {
+        return ClearanceCertificate::firstOrCreate(['research_application_id' => $researchApplication->id]);
+    }
+
+    // With independent issuance, the shared research_application is only "clearance_issued" once
+    // BOTH tracks have issued their own certificate; while just one side has issued it stays
+    // "partially_cleared" so dashboards/reports can distinguish the half-done state.
+    private function refreshOverallStatus(ResearchApplication $researchApplication, ClearanceCertificate $certificate): void
+    {
+        $status = match (true) {
+            $certificate->isDpreqIssued() && $certificate->isRemisIssued() => 'clearance_issued',
+            $certificate->isDpreqIssued() || $certificate->isRemisIssued() => 'partially_cleared',
+            default => $researchApplication->overall_status,
+        };
+
+        if ($researchApplication->overall_status !== $status) {
+            $researchApplication->update(['overall_status' => $status]);
+        }
     }
 
     private function transitionToClearanceIssued(DpreqApplication|RemisApplication $application): void
@@ -117,8 +175,8 @@ class ClearanceService
     }
 
     // docs/3.4-remis-monitoring-archiving.md — the FRS never describes a manual "start
-    // monitoring" action, so this ASSUMES monitoring begins automatically the moment clearance
-    // is issued (there's nothing else gating the start of study execution). DPREQ has no
+    // monitoring" action, so this ASSUMES monitoring begins automatically the moment the REMIS
+    // clearance is issued (there's nothing else gating the start of study execution). DPREQ has no
     // equivalent: its track ends at `clearance_issued` (DpreqApplication::LEGAL_TRANSITIONS).
     private function startMonitoring(RemisApplication $remis): void
     {

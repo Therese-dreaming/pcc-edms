@@ -43,6 +43,7 @@ class GenerateResearchTeamNdaPdfJob implements ShouldQueue
             recordId: $nda->tracking_number,
             repositoryPath: "DPO/DPREQ/{$year}/{$nda->tracking_number}",
             generatedByUserId: $this->generatedByUserId,
+            department: $nda->researchApplication->department,
         );
     }
 }

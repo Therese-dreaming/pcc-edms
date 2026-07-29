@@ -42,6 +42,7 @@ class OjtEvaluationReportService
             'DPNDA',
             $recordId,
             "DPO/DPNDA/{$year}/{$placement->department_assigned}/{$recordId}",
+            $placement->department_assigned,
         );
 
         $this->auditLog->record('ojt_evaluation_report.uploaded', $report, null, $report->toArray());

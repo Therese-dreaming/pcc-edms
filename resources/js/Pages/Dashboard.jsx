@@ -1,11 +1,22 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageHeader from '@/Components/PageHeader';
+import StatCard from '@/Components/StatCard';
 import WidgetCard from '@/Components/Dashboard/WidgetCard';
 import { Head } from '@inertiajs/react';
-import { IconLayoutDashboard } from '@tabler/icons-react';
+import {
+    IconLayoutDashboard, IconStack2, IconClockPause, IconCircleCheck, IconCircleX, IconTimeDuration30,
+} from '@tabler/icons-react';
 
-export default function Dashboard({ dpoWidgets, ordWidgets }) {
-    const hasWidgets = dpoWidgets || ordWidgets;
+export default function Dashboard({ dpoWidgets, ordWidgets, endorserWidgets, adminSummary }) {
+    const hasWidgets = dpoWidgets || ordWidgets || endorserWidgets || adminSummary;
+
+    const summaryTiles = adminSummary && [
+        { label: 'Total Applications', value: adminSummary.total, icon: IconStack2 },
+        { label: 'Pending Reviews', value: adminSummary.pending_reviews, icon: IconClockPause },
+        { label: 'Approved', value: adminSummary.approved, icon: IconCircleCheck },
+        { label: 'Disapproved', value: adminSummary.disapproved, icon: IconCircleX },
+        { label: 'Avg. Processing (days)', value: adminSummary.avg_processing_days ?? '—', icon: IconTimeDuration30 },
+    ];
 
     return (
         <AuthenticatedLayout
@@ -22,16 +33,46 @@ export default function Dashboard({ dpoWidgets, ordWidgets }) {
             <div className="py-12">
                 <div className="mx-auto max-w-7xl space-y-8 sm:px-6 lg:px-8">
                     {!hasWidgets && (
-                        <div className="rounded-lg border border-zinc-200 bg-white">
-                            <div className="p-6 text-zinc-600">
-                                Nothing to show yet — new submissions and pending actions will appear here.
-                            </div>
+                        <div className="rounded-xl border border-border bg-surface-secondary p-6 text-sm text-fg-secondary shadow-resting">
+                            Nothing to show yet — new submissions and pending actions will appear here.
                         </div>
+                    )}
+
+                    {/* FRS §XVII — administrator summary tiles */}
+                    {summaryTiles && (
+                        <section>
+                            <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-fg-tertiary">
+                                Overview
+                            </h2>
+                            <div className="grid grid-cols-2 gap-5 md:grid-cols-3 xl:grid-cols-5">
+                                {summaryTiles.map((tile) => (
+                                    <StatCard key={tile.label} label={tile.label} value={tile.value} icon={tile.icon} />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* Academic endorsement chain — adviser / program head / dean. Shown first
+                        because for an adviser this is their whole job in the system. */}
+                    {endorserWidgets && (
+                        <section>
+                            <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-fg-tertiary">
+                                Endorsement
+                            </h2>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                                <WidgetCard title="Awaiting My Endorsement" widget={endorserWidgets.awaiting_my_endorsement} />
+                                <WidgetCard title="For Revision" widget={endorserWidgets.for_revision} />
+                                <WidgetCard title="Recently Endorsed (30d)" widget={endorserWidgets.recently_endorsed} />
+                                {endorserWidgets.my_classes && (
+                                    <WidgetCard title="My Classes" widget={endorserWidgets.my_classes} />
+                                )}
+                            </div>
+                        </section>
                     )}
 
                     {dpoWidgets && (
                         <section>
-                            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-primary-700">
+                            <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-fg-tertiary">
                                 DPO
                             </h2>
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -45,7 +86,7 @@ export default function Dashboard({ dpoWidgets, ordWidgets }) {
 
                     {ordWidgets && (
                         <section>
-                            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-primary-700">
+                            <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-fg-tertiary">
                                 ORD / Ethics
                             </h2>
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">

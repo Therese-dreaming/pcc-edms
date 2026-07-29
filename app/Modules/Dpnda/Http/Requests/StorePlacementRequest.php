@@ -15,7 +15,9 @@ class StorePlacementRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'trainee_email' => ['required', 'email', 'exists:users,email'],
+            // Item 3 — a transferee may have no account yet. The email need not already exist; if
+            // it doesn't, the controller creates the trainee account and emails them a setup link.
+            'trainee_email' => ['required', 'email', 'max:255'],
             'trainee_last_name' => ['required', 'string', 'max:255'],
             'trainee_first_name' => ['required', 'string', 'max:255'],
             'trainee_middle_initial' => ['nullable', 'string', 'max:10'],

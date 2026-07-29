@@ -8,6 +8,7 @@ use App\Modules\Dpnda\Http\Requests\StorePlacementRequest;
 use App\Modules\Dpnda\Models\DpndaRecord;
 use App\Modules\Dpnda\Services\DpndaWorkflowService;
 use App\Modules\Dpnda\Services\OjtEvaluationReportService;
+use App\Shared\AuditLog\Services\AuditLogService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
@@ -22,6 +23,7 @@ class DpndaRecordController extends Controller
     public function __construct(
         private readonly DpndaWorkflowService $workflow,
         private readonly OjtEvaluationReportService $evaluationReports,
+        private readonly AuditLogService $auditLog,
     ) {
     }
 
@@ -41,7 +43,7 @@ class DpndaRecordController extends Controller
         $search = trim((string) $request->string('search'));
         $status = (string) $request->string('status');
 
-        $query = DpndaRecord::with('placement')->latest();
+        $query = DpndaRecord::with('placement')->whereNull('archived_at')->latest();
         $scope($query);
 
         if ($search !== '') {
@@ -60,7 +62,7 @@ class DpndaRecordController extends Controller
             $query->where('status', $status);
         }
 
-        $countsQuery = DpndaRecord::query();
+        $countsQuery = DpndaRecord::query()->whereNull('archived_at');
         $scope($countsQuery);
 
         return Inertia::render('Dpnda/Index', [
@@ -70,6 +72,39 @@ class DpndaRecordController extends Controller
         ]);
     }
 
+    // Register bulk actions (DPNDA index Actions menu). Authorized per-record.
+    public function bulkArchive(Request $request): RedirectResponse
+    {
+        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+
+        $count = 0;
+        foreach (DpndaRecord::whereIn('id', $ids)->get() as $record) {
+            if ($request->user()->can('archive', $record) && $record->archived_at === null) {
+                $record->update(['archived_at' => now()]);
+                $this->auditLog->record('dpnda_record.archived', $record, null, ['archived_at' => now()->toDateTimeString()]);
+                $count++;
+            }
+        }
+
+        return back()->with('success', $count === 1 ? '1 record archived.' : "{$count} records archived.");
+    }
+
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+
+        $count = 0;
+        foreach (DpndaRecord::whereIn('id', $ids)->get() as $record) {
+            if ($request->user()->can('delete', $record)) {
+                $this->auditLog->record('dpnda_record.deleted', $record, $record->toArray(), null);
+                $record->delete(); // soft delete — recoverable
+                $count++;
+            }
+        }
+
+        return back()->with('success', $count === 1 ? '1 record deleted.' : "{$count} records deleted.");
+    }
+
     public function create(): Response
     {
         $this->authorize('create', DpndaRecord::class);
@@ -77,16 +112,39 @@ class DpndaRecordController extends Controller
         return Inertia::render('Dpnda/Create');
     }
 
-    public function store(StorePlacementRequest $request): RedirectResponse
+    public function store(StorePlacementRequest $request, \App\Shared\Auth\Services\AdminUserService $users): RedirectResponse
     {
         $validated = $request->validated();
-        $trainee = User::where('email', $validated['trainee_email'])->firstOrFail();
+
+        // Item 3 — resolve the trainee, or create the account for a transferee who has none and
+        // email them a setup link (same activation path as an admin-created account).
+        $trainee = User::where('email', $validated['trainee_email'])->first();
+        $invited = false;
+
+        if ($trainee === null) {
+            $roleSlug = $validated['trainee_type'] === 'external_ojt' ? 'ojt_trainee_external' : 'ojt_trainee_internal';
+            $trainee = $users->createApplicant(
+                [
+                    'name' => trim("{$validated['trainee_first_name']} {$validated['trainee_last_name']}"),
+                    'email' => $validated['trainee_email'],
+                    'role_id' => \App\Shared\Auth\Models\Role::where('name', $roleSlug)->value('id'),
+                    'department' => $validated['department'] ?? null,
+                ],
+                auditEvent: 'user.trainee_created_by_coordinator',
+            );
+            $invited = true;
+        }
+
         unset($validated['trainee_email']);
 
         $record = $this->workflow->createPlacement([...$validated, 'trainee_id' => $trainee->id], $request->user()->id);
 
-        return redirect()->route('dpnda.show', $record)
-            ->with('success', "NDA {$record->tracking_number} created.");
+        $message = "NDA {$record->tracking_number} created.";
+        if ($invited) {
+            $message .= " An account setup link was emailed to {$trainee->email}.";
+        }
+
+        return redirect()->route('dpnda.show', $record)->with('success', $message);
     }
 
     public function show(DpndaRecord $dpndaRecord): Response

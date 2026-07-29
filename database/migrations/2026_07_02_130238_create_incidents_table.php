@@ -42,7 +42,11 @@ return new class extends Migration
                 ->default('not_started');
             $table->foreignId('verified_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('verified_at')->nullable();
+            // Register housekeeping (index bulk Actions): archived_at removes a closed incident from
+            // the active register while keeping it; soft-delete hides it (recoverable).
+            $table->timestamp('archived_at')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

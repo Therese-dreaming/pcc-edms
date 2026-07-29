@@ -44,4 +44,18 @@ class DpndaRecordPolicy
     {
         return $record->placement->coordinator_id === $user->id;
     }
+
+    // Register housekeeping (index bulk Actions). DPO staff/admin curate the register; the owning
+    // coordinator may act only on their own still-draft record.
+    public function archive(User $user, DpndaRecord $record): bool
+    {
+        return $user->hasAnyRole(['dpo_staff', 'system_administrator'])
+            || ($record->placement->coordinator_id === $user->id && $record->status === 'draft');
+    }
+
+    public function delete(User $user, DpndaRecord $record): bool
+    {
+        return $user->hasRole('system_administrator')
+            || ($record->placement->coordinator_id === $user->id && $record->status === 'draft');
+    }
 }

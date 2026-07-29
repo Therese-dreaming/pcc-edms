@@ -8,12 +8,13 @@ use Tests\TestCase;
 class ExampleTest extends TestCase
 {
     /**
-     * A basic test example.
+     * `/` is not a page — routes/web.php redirects it to the dashboard for an
+     * authenticated user and to the login screen for a guest.
      */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_the_application_redirects_guests_to_login(): void
     {
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        $response->assertRedirect(route('login'));
     }
 }

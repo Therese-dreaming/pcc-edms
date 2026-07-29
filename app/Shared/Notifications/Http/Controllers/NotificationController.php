@@ -16,10 +16,16 @@ class NotificationController extends Controller
 {
     public function index(Request $request): Response
     {
-        $notifications = Notification::query()
-            ->where('user_id', $request->user()->id)
+        $filter = $request->string('filter')->toString() === 'unread' ? 'unread' : 'all';
+
+        $base = Notification::query()->where('user_id', $request->user()->id);
+        $unreadCount = (clone $base)->whereNull('read_at')->count();
+
+        $notifications = (clone $base)
+            ->when($filter === 'unread', fn ($q) => $q->whereNull('read_at'))
             ->latest()
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
 
         // Deliberately not named `notifications` — HandleInertiaRequests already shares a
         // `notifications` prop (bell badge count + recent list) on every request, and Inertia
@@ -27,6 +33,8 @@ class NotificationController extends Controller
         // silently break the bell on this specific page.
         return Inertia::render('Notifications/Index', [
             'notificationHistory' => $notifications,
+            'filter' => $filter,
+            'unreadCount' => $unreadCount,
         ]);
     }
 

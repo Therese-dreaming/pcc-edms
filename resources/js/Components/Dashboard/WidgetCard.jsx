@@ -4,25 +4,25 @@ import { Link } from '@inertiajs/react';
 // widgets all share the same { count, items: [{label, detail, url, at}] } shape.
 export default function WidgetCard({ title, widget }) {
     return (
-        <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
-            <div className="flex items-center justify-between border-b border-zinc-200 bg-primary-50 px-4 py-3">
-                <h3 className="text-sm font-semibold text-primary-800">{title}</h3>
-                <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-primary-700">
+        <div className="overflow-hidden rounded-xl border border-border bg-surface-secondary shadow-resting">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                <h3 className="text-sm font-semibold text-fg-primary">{title}</h3>
+                <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-white">
                     {widget.count}
                 </span>
             </div>
-            <ul className="max-h-72 divide-y divide-zinc-100 overflow-y-auto">
+            <ul className="max-h-72 divide-y divide-border overflow-y-auto">
                 {widget.items.length === 0 && (
-                    <li className="px-4 py-6 text-center text-sm text-zinc-400">Nothing here.</li>
+                    <li className="px-4 py-6 text-center text-sm text-fg-tertiary">Nothing here.</li>
                 )}
                 {widget.items.map((item, i) => (
                     <li key={i}>
-                        <Link href={item.url} className="block px-4 py-2 hover:bg-zinc-50">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-primary-700">{item.label}</span>
-                                <span className="text-xs text-zinc-400">{item.at}</span>
+                        <Link href={item.url} className="block px-4 py-2.5 hover:bg-surface-tertiary">
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="truncate text-sm font-semibold text-fg-primary-strong">{item.label}</span>
+                                <span className="shrink-0 text-xs text-fg-tertiary">{item.at}</span>
                             </div>
-                            <div className="truncate text-sm text-zinc-600">{item.detail}</div>
+                            <div className="truncate text-sm text-fg-secondary">{item.detail}</div>
                         </Link>
                     </li>
                 ))}

@@ -16,7 +16,10 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->foreignId('role_id')->nullable()->after('id')->constrained('roles')->nullOnDelete();
-            $table->string('department')->nullable()->after('email');
+            // stakeholder-additional-features.md (2026-07-25) — captured when an adviser creates
+            // an applicant account; nullable since staff/admin accounts have no student number.
+            $table->string('student_number')->nullable()->after('email');
+            $table->string('department')->nullable()->after('student_number');
             $table->enum('account_status', ['pending_validation', 'active', 'suspended', 'deactivated'])
                 ->default('pending_validation')->after('department');
             $table->string('sso_subject_id')->nullable()->unique()->after('account_status');
@@ -27,7 +30,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->dropConstrainedForeignId('role_id');
-            $table->dropColumn(['department', 'account_status', 'sso_subject_id']);
+            $table->dropColumn(['student_number', 'department', 'account_status', 'sso_subject_id']);
         });
     }
 };

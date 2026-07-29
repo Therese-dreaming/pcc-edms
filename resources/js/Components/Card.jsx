@@ -4,11 +4,11 @@
 // heavy elevation.
 export default function Card({ title, actions, children, className = '', bodyClassName = 'p-6' }) {
     return (
-        <div className={`overflow-hidden rounded-lg border border-zinc-200 bg-white ${className}`}>
+        <div className={`overflow-hidden rounded-xl border border-border bg-surface-secondary shadow-resting ${className}`}>
             {(title || actions) && (
-                <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+                <div className="flex items-center justify-between border-b border-border px-6 py-4">
                     {title && (
-                        <h3 className="font-sans text-sm font-semibold uppercase tracking-wide text-primary-700">
+                        <h3 className="text-sm font-semibold text-fg-primary">
                             {title}
                         </h3>
                     )}

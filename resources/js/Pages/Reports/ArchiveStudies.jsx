@@ -1,9 +1,17 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageHeader from '@/Components/PageHeader';
 import ReportToolbar from '@/Components/Reports/ReportToolbar';
+import { ReportCard, StatCard } from '@/Components/Reports/Charts';
+import { DateField, FilterBar, ReportTable, SelectField, TextField, TrackingPill } from '@/Components/Reports/ReportFilters';
 import { Head, router } from '@inertiajs/react';
 import { IconArchive } from '@tabler/icons-react';
 import { useState } from 'react';
+
+const OUTCOME_TONE = {
+    completed: 'bg-success-bg text-success-text',
+    discontinued: 'bg-warning-bg text-warning-text',
+    withdrawn: 'bg-danger-bg text-danger-text',
+};
 
 export default function ArchiveStudies({ filters, data }) {
     const [form, setForm] = useState({
@@ -18,6 +26,11 @@ export default function ArchiveStudies({ filters, data }) {
         router.get(route('reports.archive-studies'), form, { preserveState: true });
     };
 
+    const byOutcome = data.rows.reduce((acc, r) => {
+        acc[r.final_outcome] = (acc[r.final_outcome] ?? 0) + 1;
+        return acc;
+    }, {});
+
     return (
         <AuthenticatedLayout
             header={
@@ -30,71 +43,51 @@ export default function ArchiveStudies({ filters, data }) {
         >
             <Head title="Archive Studies Report" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-6xl sm:px-6 lg:px-8">
-                    <ReportToolbar
-                        csvHref={route('reports.archive-studies') + '?format=csv&' + new URLSearchParams(form).toString()}
-                    />
+            <div className="mx-auto max-w-6xl px-5 py-8 sm:px-7 lg:px-10">
+                <ReportToolbar
+                    csvHref={route('reports.archive-studies') + '?format=csv&' + new URLSearchParams(form).toString()}
+                />
 
-                    <form onSubmit={submit} className="mb-6 flex flex-wrap items-end gap-3 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">Archived From</label>
-                            <input type="date" value={form.date_from} onChange={(e) => setForm({ ...form, date_from: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">Archived To</label>
-                            <input type="date" value={form.date_to} onChange={(e) => setForm({ ...form, date_to: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">Department</label>
-                            <input type="text" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} className="rounded-md border-zinc-300 text-sm" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-zinc-600">Final Outcome</label>
-                            <select value={form.final_outcome} onChange={(e) => setForm({ ...form, final_outcome: e.target.value })} className="rounded-md border-zinc-300 text-sm">
-                                <option value="">Any</option>
-                                <option value="completed">Completed</option>
-                                <option value="discontinued">Discontinued</option>
-                                <option value="withdrawn">Withdrawn</option>
-                            </select>
-                        </div>
-                        <button type="submit" className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
-                            Apply
-                        </button>
-                    </form>
+                <FilterBar onSubmit={submit}>
+                    <DateField label="Archived from" value={form.date_from} onChange={(e) => setForm({ ...form, date_from: e.target.value })} />
+                    <DateField label="Archived to" value={form.date_to} onChange={(e) => setForm({ ...form, date_to: e.target.value })} />
+                    <TextField label="Department" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} placeholder="All departments" />
+                    <SelectField label="Final outcome" value={form.final_outcome} onChange={(e) => setForm({ ...form, final_outcome: e.target.value })}>
+                        <option value="">Any</option>
+                        <option value="completed">Completed</option>
+                        <option value="discontinued">Discontinued</option>
+                        <option value="withdrawn">Withdrawn</option>
+                    </SelectField>
+                </FilterBar>
 
-                    <p className="mb-4 text-sm text-zinc-600">{data.total} archived studies.</p>
-
-                    <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white shadow-sm">
-                        <table className="min-w-full divide-y divide-zinc-200">
-                            <thead className="bg-zinc-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Tracking #</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Research Title</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">PI</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Department</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Final Outcome</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase text-zinc-500">Archived</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-zinc-200 bg-white">
-                                {data.rows.length === 0 && (
-                                    <tr><td colSpan={6} className="px-6 py-4 text-center text-zinc-500">No archived studies for the selected filters.</td></tr>
-                                )}
-                                {data.rows.map((row) => (
-                                    <tr key={row.tracking_number}>
-                                        <td className="px-6 py-4">{row.tracking_number}</td>
-                                        <td className="px-6 py-4">{row.research_title}</td>
-                                        <td className="px-6 py-4">{row.applicant}</td>
-                                        <td className="px-6 py-4">{row.department}</td>
-                                        <td className="px-6 py-4 capitalize">{row.final_outcome}</td>
-                                        <td className="px-6 py-4">{row.archived_at}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    <StatCard label="Archived studies" value={data.total} icon={IconArchive} helper="Matching current filters" />
+                    <StatCard label="Completed" value={byOutcome.completed ?? 0} />
+                    <StatCard label="Discontinued" value={byOutcome.discontinued ?? 0} />
+                    <StatCard label="Withdrawn" value={byOutcome.withdrawn ?? 0} />
                 </div>
+
+                <ReportCard icon={IconArchive} title="Archived studies" className="!p-0" right={<span className="text-xs text-fg-tertiary">{data.rows.length} rows</span>}>
+                    <ReportTable
+                        rowKey={(r) => r.tracking_number}
+                        rows={data.rows}
+                        empty="No archived studies for the selected filters."
+                        columns={[
+                            { key: 'tracking_number', label: 'Tracking #', render: (r) => <TrackingPill>{r.tracking_number}</TrackingPill> },
+                            { key: 'research_title', label: 'Research title', className: 'max-w-xs truncate font-medium text-fg-primary', render: (r) => <span title={r.research_title}>{r.research_title}</span> },
+                            { key: 'applicant', label: 'PI' },
+                            { key: 'department', label: 'Department' },
+                            {
+                                key: 'final_outcome', label: 'Outcome', render: (r) => (
+                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize ${OUTCOME_TONE[r.final_outcome] ?? 'bg-surface-tertiary text-fg-secondary'}`}>
+                                        {r.final_outcome}
+                                    </span>
+                                ),
+                            },
+                            { key: 'archived_at', label: 'Archived', className: 'tabular-nums text-fg-tertiary' },
+                        ]}
+                    />
+                </ReportCard>
             </div>
         </AuthenticatedLayout>
     );

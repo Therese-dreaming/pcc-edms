@@ -47,6 +47,11 @@ class IncidentService
         $this->notifications->notifyRole('ethics_committee_chair', $subject, $body, $incident);
         $this->notifications->notifyRole('ethics_secretariat', $subject, $body, $incident);
 
+        // Auto-pause monitoring for data breach/confidentiality breach incidents
+        if ($incident->notifiesDpo()) {
+            $this->autoPauseMonitoring($application);
+        }
+
         if ($incident->notifiesDpo()) {
             $this->notifications->notifyRole(
                 'dpo_staff',
@@ -132,5 +137,29 @@ class IncidentService
         $this->auditLog->record('incident.corrective_action_verified', $incident, null, ['verified_by' => $verifierId]);
 
         return $incident->fresh();
+    }
+
+    /**
+     * Auto-pause monitoring when a data breach is reported.
+     * Changes status from 'monitoring' to 'monitoring_paused' and records in audit log.
+     * ('monitoring_paused' is the legal status per RemisApplication::LEGAL_TRANSITIONS and the
+     * value RemisWorkflowService::resumeMonitoring() transitions back from.)
+     */
+    private function autoPauseMonitoring(RemisApplication $application): void
+    {
+        if ($application->status !== 'monitoring') {
+            return;
+        }
+
+        $fromStatus = $application->status;
+        $application->update(['status' => 'monitoring_paused']);
+
+        $this->statusHistory->record($application, $fromStatus, 'monitoring_paused');
+        $this->auditLog->record(
+            'remis_application.paused_for_incident',
+            $application,
+            ['status' => $fromStatus],
+            ['status' => 'monitoring_paused']
+        );
     }
 }

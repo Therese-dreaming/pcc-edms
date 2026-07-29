@@ -13,10 +13,13 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 
 // docs/4.1-user-roles-permissions.md — Admin-created accounts and role/rights reassignment.
-// Self-registration (RegisteredUserController) remains the only path that lets a user pick
-// their own password; admin-created accounts get a random one they never see, plus a
-// password-reset-link email (reusing the same Breeze flow self-service "forgot password"
-// already uses) so the account owner sets their own password on first login.
+// As of 2026-07-25, public self-registration is removed (stakeholder-additional-features.md):
+// every account is created here (admin) or through a class cohort — students self-enrolling with an
+// adviser's join code, or accepting an adviser's invitation (App\Shared\Onboarding\Services\
+// CohortService, which calls createApplicant() below). Created accounts get a random password they
+// never see, plus a
+// password-reset-link email (reusing the same Breeze "forgot password" flow) so the account
+// owner sets their own password on first login.
 class AdminUserService
 {
     public function __construct(private readonly AuditLogService $auditLog)
@@ -43,18 +46,27 @@ class AdminUserService
     /**
      * @param  array{name: string, email: string, role_id: ?int, department: ?string, account_status: string}  $data
      */
-    public function createUser(array $data): User
+    /**
+     * @param  ?string  $password  supply when the account owner chose their own password during
+     *                             creation (cohort self-enrolment) — the password-setup link is then
+     *                             skipped as noise. Null keeps the original behaviour: a random
+     *                             password they never see, plus a reset link to set their own.
+     */
+    public function createUser(array $data, ?string $password = null): User
     {
         $user = User::create([
             ...$data,
-            'password' => Str::password(24),
+            // `password` is cast `hashed` on the User model, so either value is hashed on write.
+            'password' => $password ?? Str::password(24),
         ]);
 
         // docs/4.1 Validation Flow step 2 applies to admin-created accounts too, not just
         // self-registration — firing this event queues the same verification email either way.
         event(new Registered($user));
 
-        Password::sendResetLink(['email' => $user->email]);
+        if ($password === null) {
+            Password::sendResetLink(['email' => $user->email]);
+        }
 
         $this->auditLog->record('user.created', $user, null, [
             'name' => $user->name,
@@ -62,6 +74,45 @@ class AdminUserService
             'role_id' => $user->role_id,
             'account_status' => $user->account_status,
         ]);
+
+        return $user;
+    }
+
+    /**
+     * Adviser-initiated applicant account creation (stakeholder-additional-features.md,
+     * 2026-07-25). Reuses createUser() — same random-password + verification/reset-email
+     * activation path — but forces an applicant role and `pending_validation` status, and is
+     * NOT self_registered (so the account skips /select-role: its role is already set). The
+     * optional research title is informational context for the adviser and is recorded in the
+     * audit trail rather than stored as a user column (the real title is captured on Form 1).
+     *
+     * Also used by cohort enrolment (App\Shared\Onboarding\Services\CohortService), which passes a
+     * student-chosen `$password` and its own `$auditEvent` so provenance stays accurate — an
+     * account created by a student self-enrolling with a class code is not the same event as an
+     * adviser typing it in.
+     *
+     * @param  array{name: string, email: string, role_id: int, student_number?: ?string, department?: ?string}  $data
+     */
+    public function createApplicant(
+        array $data,
+        ?string $researchTitle = null,
+        ?string $password = null,
+        string $auditEvent = 'user.applicant_created_by_adviser',
+    ): User {
+        $user = $this->createUser([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'role_id' => $data['role_id'],
+            'student_number' => $data['student_number'] ?? null,
+            'department' => $data['department'] ?? null,
+            'account_status' => 'pending_validation',
+        ], $password);
+
+        $this->auditLog->record($auditEvent, $user, null, array_filter([
+            'student_number' => $data['student_number'] ?? null,
+            'department' => $data['department'] ?? null,
+            'research_title' => $researchTitle,
+        ]));
 
         return $user;
     }
