@@ -41,14 +41,18 @@ else
     ERRORS=$((ERRORS + 1))
 fi
 
-# 3. Run database migrations
-echo -n "3. Running database migrations... "
-php artisan migrate --no-interaction --force 2>/dev/null
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✓${NC} Migrations up to date"
+# 3. Database migrations are explicit on production deploys.
+# Only run them when DEPLOY_ALLOW_MIGRATE=true is set by the deploy operator.
+echo -n "3. Database migrations... "
+if [ "$DEPLOY_ALLOW_MIGRATE" = "true" ]; then
+    if php artisan migrate --no-interaction --force; then
+        echo -e "${GREEN}✓${NC} Migrations applied"
+    else
+        echo -e "${RED}✗${NC} Migration failed"
+        ERRORS=$((ERRORS + 1))
+    fi
 else
-    echo -e "${RED}✗${NC} Migration failed"
-    ERRORS=$((ERRORS + 1))
+    echo -e "${YELLOW}⚠${NC} Skipped (set DEPLOY_ALLOW_MIGRATE=true to apply)"
 fi
 
 # 4. Check storage permissions
@@ -62,17 +66,16 @@ fi
 
 # 5. Run tests
 echo -n "5. Running test suite... "
-php artisan test --no-coverage 2>/dev/null
-if [ $? -eq 0 ]; then
+if php artisan test --no-coverage; then
     echo -e "${GREEN}✓${NC} All tests pass"
 else
-    echo -e "${YELLOW}⚠${NC} Some tests failed"
-    # Don't count test failures as deployment blockers
+    echo -e "${RED}✗${NC} Some tests failed"
+    ERRORS=$((ERRORS + 1))
 fi
 
 # 6. Check queue workers
 echo -n "6. Checking queue workers... "
-if php artisan queue:restart 2>/dev/null; then
+if php artisan queue:restart; then
     echo -e "${GREEN}✓${NC} Queue restarted"
 else
     echo -e "${YELLOW}⚠${NC} Could not restart queue"
@@ -80,15 +83,14 @@ fi
 
 # 7. Clear cache
 echo -n "7. Clearing cache... "
-php artisan config:clear 2>/dev/null
-php artisan route:clear 2>/dev/null
-php artisan view:clear 2>/dev/null
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
 echo -e "${GREEN}✓${NC} Cache cleared"
 
 # 8. Rebuild assets
 echo -n "8. Building assets... "
-npm run build 2>/dev/null
-if [ $? -eq 0 ]; then
+if npm run build; then
     echo -e "${GREEN}✓${NC} Build successful"
 else
     echo -e "${RED}✗${NC} Build failed"

@@ -4,11 +4,12 @@
 # Daily database backup at 2:00 AM
 0 2 * * * cd /var/www/pcc-edms && /bin/bash /var/www/pcc-edms/scripts/backup.sh >> /var/log/pcc-edms/backup.log 2>&1
 
-# Run deployment checklist daily at 3:00 AM (logs system health)
-0 3 * * * cd /var/www/pcc-edms && /bin/bash /var/www/pcc-edms/scripts/deploy-checklist.sh >> /var/log/pcc-edms/deployment-check.log 2>&1
+# Deployment checks should be run manually before release, not on a timer.
+# They can trigger migrations/build steps and should not be scheduled as cron.
 
-# Queue worker monitor (restart if down)
-*/5 * * * * cd /var/www/pcc-edms && php artisan queue:work --daemon --sleep=3 --tries=3 --timeout=60 2>&1 | logger -t pcc-edms-queue
+# Queue workers should be managed by Supervisor or Horizon, not cron.
+# Example:
+#   php artisan queue:work --sleep=3 --tries=3 --timeout=60
 
 # Clean up old logs weekly
 0 0 * * 0 find /var/log/pcc-edms -name "*.log" -mtime +90 -delete
