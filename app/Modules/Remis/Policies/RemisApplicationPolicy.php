@@ -41,7 +41,11 @@ class RemisApplicationPolicy
     public function endorse(User $user, RemisApplication $application): bool
     {
         return match ($application->current_endorsement_step) {
-            'adviser' => $user->hasRole('adviser'),
+            // Adviser is a per-application assignment: only the designated adviser can endorse.
+            // When adviser_id is null (legacy/edge case), fall back to role-only check.
+            'adviser' => $user->hasRole('adviser')
+                && ($application->adviser_id === null || $application->adviser_id === $user->id),
+            // Program Head and Dean are institutional positions, not per-application — role-only.
             'program_head' => $user->hasRole('program_head'),
             'dean' => $user->hasRole('dean'),
             default => false,
@@ -66,6 +70,11 @@ class RemisApplicationPolicy
     }
 
     public function decide(User $user, RemisApplication $application): bool
+    {
+        return $user->hasRole('ethics_committee_chair');
+    }
+
+    public function reactivate(User $user, RemisApplication $application): bool
     {
         return $user->hasRole('ethics_committee_chair');
     }

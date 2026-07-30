@@ -20,6 +20,7 @@ Route::middleware(['auth', 'verified'])->prefix('remis')->name('remis.')->group(
     Route::post('/{remisApplication}/assign-reviewer', [RemisApplicationController::class, 'assignReviewer'])->name('assign-reviewer');
     Route::post('/{remisApplication}/submit-review', [RemisApplicationController::class, 'submitReview'])->name('submit-review');
     Route::post('/{remisApplication}/decide', [RemisApplicationController::class, 'decide'])->name('decide');
+    Route::post('/{remisApplication}/reactivate', [RemisApplicationController::class, 'reactivate'])->name('reactivate');
     Route::get('/{remisApplication}/clearance-pdf', [RemisApplicationController::class, 'downloadClearancePdf'])->name('clearance-pdf');
 
     // docs/3.4 — Monitoring & Completion

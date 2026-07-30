@@ -11,6 +11,7 @@ use App\Shared\AuditLog\Services\StatusHistoryService;
 use App\Shared\AuditLog\Support\SignatureIdentity;
 use App\Shared\Clearance\Services\ClearanceService;
 use App\Shared\ResearchApplications\Models\ResearchApplication;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -133,22 +134,24 @@ class ResearchTeamNdaService
 
     public function createForApplication(ResearchApplication $researchApplication): ResearchTeamNda
     {
-        $nda = ResearchTeamNda::create([
-            'research_application_id' => $researchApplication->id,
-            'tracking_number' => $this->nextTrackingNumber(),
-            'status' => 'pending_signatures',
-        ]);
+        return DB::transaction(function () use ($researchApplication) {
+            $nda = ResearchTeamNda::create([
+                'research_application_id' => $researchApplication->id,
+                'tracking_number' => $this->nextTrackingNumber(),
+                'status' => 'pending_signatures',
+            ]);
 
-        ResearchTeamNdaSignatory::create([
-            'research_team_nda_id' => $nda->id,
-            'user_id' => $researchApplication->applicant_id,
-            'full_name' => $researchApplication->applicant->name,
-            'role' => 'leader',
-        ]);
+            ResearchTeamNdaSignatory::create([
+                'research_team_nda_id' => $nda->id,
+                'user_id' => $researchApplication->applicant_id,
+                'full_name' => $researchApplication->applicant->name,
+                'role' => 'leader',
+            ]);
 
-        $this->auditLog->record('research_team_nda.created', $nda, null, $nda->toArray());
+            $this->auditLog->record('research_team_nda.created', $nda, null, $nda->toArray());
 
-        return $nda;
+            return $nda;
+        });
     }
 
     public function sign(ResearchTeamNdaSignatory $signatory, string $typedFullName, ?string $signatureImage = null): ResearchTeamNdaSignatory
@@ -201,7 +204,7 @@ class ResearchTeamNdaService
         // OJT/Trainee NDA tracking prefix) to avoid confusing the two NDA instruments docs/2.1
         // splits apart.
         $year = now()->year;
-        $count = ResearchTeamNda::where('tracking_number', 'like', "RTNDA-{$year}-%")->count();
+        $count = ResearchTeamNda::where('tracking_number', 'like', "RTNDA-{$year}-%")->lockForUpdate()->count();
 
         return sprintf('RTNDA-%d-%04d', $year, $count + 1);
     }

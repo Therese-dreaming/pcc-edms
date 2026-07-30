@@ -18,6 +18,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 // docs/1.1-1.3 (application), docs/1.2 (workflow) — the DPO track's Inertia controller.
@@ -266,7 +267,12 @@ class DpreqApplicationController extends Controller
     public function startReview(DpreqApplication $dpreqApplication): RedirectResponse
     {
         $this->authorize('screen', $dpreqApplication);
-        $this->workflow->startReview($dpreqApplication);
+
+        try {
+            $this->workflow->startReview($dpreqApplication);
+        } catch (RuntimeException $e) {
+            return back()->withErrors(['action' => $e->getMessage()]);
+        }
 
         return back()->with('success', 'Application is now under review.');
     }
@@ -283,7 +289,12 @@ class DpreqApplicationController extends Controller
     public function resubmit(DpreqApplication $dpreqApplication): RedirectResponse
     {
         $this->authorize('resubmit', $dpreqApplication);
-        $this->workflow->resubmit($dpreqApplication);
+
+        try {
+            $this->workflow->resubmit($dpreqApplication);
+        } catch (RuntimeException $e) {
+            return back()->withErrors(['action' => $e->getMessage()]);
+        }
 
         return back()->with('success', 'Application resubmitted.');
     }
@@ -315,7 +326,11 @@ class DpreqApplicationController extends Controller
         // C2 (concern 10) — a rejection requires the acting DPO to re-enter their own password.
         $this->confirmPassword($request);
 
-        $this->workflow->reject($dpreqApplication, $validated['reason']);
+        try {
+            $this->workflow->reject($dpreqApplication, $validated['reason']);
+        } catch (RuntimeException $e) {
+            return back()->withErrors(['action' => $e->getMessage()]);
+        }
 
         return back()->with('success', 'Application rejected.');
     }
@@ -352,7 +367,11 @@ class DpreqApplicationController extends Controller
             ->where('user_id', $request->user()->id)
             ->firstOrFail();
 
-        $this->researchTeamNda->sign($signatory, $validated['typed_full_name'], $validated['signature_image'] ?? null);
+        try {
+            $this->researchTeamNda->sign($signatory, $validated['typed_full_name'], $validated['signature_image'] ?? null);
+        } catch (RuntimeException $e) {
+            return back()->withErrors(['nda' => $e->getMessage()]);
+        }
 
         return back()->with('success', 'NDA signed.');
     }

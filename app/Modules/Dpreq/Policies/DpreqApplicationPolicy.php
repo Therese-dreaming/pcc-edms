@@ -53,12 +53,12 @@ class DpreqApplicationPolicy
 
     public function screen(User $user, DpreqApplication $application): bool
     {
-        return $user->hasRole('dpo_staff');
+        return $user->hasRole('dpo_staff') && $application->applicant_id !== $user->id;
     }
 
     public function returnForCorrection(User $user, DpreqApplication $application): bool
     {
-        return $user->hasRole('dpo_staff');
+        return $user->hasRole('dpo_staff') && $application->applicant_id !== $user->id;
     }
 
     public function resubmit(User $user, DpreqApplication $application): bool
@@ -70,12 +70,12 @@ class DpreqApplicationPolicy
     {
         // docs/0.2: DPO Approver was retired as a separate role — dpo_staff owns the full
         // track end to end, including final approval.
-        return $user->hasRole('dpo_staff');
+        return $user->hasRole('dpo_staff') && $application->applicant_id !== $user->id;
     }
 
     public function reject(User $user, DpreqApplication $application): bool
     {
-        return $user->hasRole('dpo_staff');
+        return $user->hasRole('dpo_staff') && $application->applicant_id !== $user->id;
     }
 
     // Register housekeeping (index bulk Actions). DPO staff curate the whole register; an applicant

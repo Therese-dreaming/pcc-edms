@@ -9,6 +9,7 @@ use App\Shared\AuditLog\Services\AuditLogService;
 use App\Shared\AuditLog\Services\StatusHistoryService;
 use App\Shared\Notifications\Services\NotificationService;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 // docs/3.4-remis-monitoring-archiving.md FRS §XII/§XIV — periodic progress reports during
@@ -97,6 +98,10 @@ class RemisMonitoringService
 
     public function reviewProgressReport(ProgressReport $report, string $complianceStatus, ?string $notes, int $reviewerId): ProgressReport
     {
+        if ($report->reviewed_at !== null) {
+            throw new RuntimeException('This progress report has already been reviewed.');
+        }
+
         $report->update([
             'compliance_status' => $complianceStatus,
             'review_notes' => $notes,
@@ -120,44 +125,50 @@ class RemisMonitoringService
             throw new RuntimeException('A completion report can only be submitted while the study is in Monitoring.');
         }
 
-        $completion = CompletionReport::create([
-            'remis_application_id' => $application->id,
-            'completion_date' => $data['completion_date'],
-            'final_participant_count' => $data['final_participant_count'],
-            'compliance_statement' => $data['compliance_statement'],
-            'publication_status' => $data['publication_status'],
-            'data_storage_location' => $data['data_storage_location'],
-            'final_outcome' => 'completed',
-            'submitted_by' => $researcherId,
-        ]);
+        return DB::transaction(function () use ($application, $data, $researcherId) {
+            $completion = CompletionReport::create([
+                'remis_application_id' => $application->id,
+                'completion_date' => $data['completion_date'],
+                'final_participant_count' => $data['final_participant_count'],
+                'compliance_statement' => $data['compliance_statement'],
+                'publication_status' => $data['publication_status'],
+                'data_storage_location' => $data['data_storage_location'],
+                'final_outcome' => 'completed',
+                'submitted_by' => $researcherId,
+            ]);
 
-        $this->auditLog->record('remis_application.completion_report_submitted', $completion, null, $completion->toArray());
+            $this->auditLog->record('remis_application.completion_report_submitted', $completion, null, $completion->toArray());
 
-        $this->transition($application, 'closed', 'remis_application.closed');
-        $this->transition($application->fresh(), 'archived', 'remis_application.archived');
+            $this->transition($application, 'closed', 'remis_application.closed');
+            $this->transition($application->fresh(), 'archived', 'remis_application.archived');
 
-        $completion->update(['archived_at' => now()]);
-        $application = $application->fresh();
-        $this->auditLog->record('remis_application.archived', $application, null, ['archived_at' => now()->toIso8601String()]);
+            $completion->update(['archived_at' => now()]);
+            $application = $application->fresh();
+            $this->auditLog->record('remis_application.archived', $application, null, ['archived_at' => now()->toIso8601String()]);
 
-        $this->notifications->notifyUser($application->applicant, 'Study closed and archived', "REMIS application {$application->tracking_number} is now closed and archived.", $application);
-        foreach ($application->reviewAssignments as $assignment) {
-            $this->notifications->notifyUser($assignment->reviewer, 'Study closed and archived', "REMIS application {$application->tracking_number} is now closed and archived.", $application);
-        }
+            $this->notifications->notifyUser($application->applicant, 'Study closed and archived', "REMIS application {$application->tracking_number} is now closed and archived.", $application);
+            foreach ($application->reviewAssignments as $assignment) {
+                $this->notifications->notifyUser($assignment->reviewer, 'Study closed and archived', "REMIS application {$application->tracking_number} is now closed and archived.", $application);
+            }
 
-        return $completion->fresh();
+            return $completion->fresh();
+        });
     }
 
     private function transition(RemisApplication $application, string $toStatus, string $eventType): void
     {
-        if (! $application->canTransitionTo($toStatus)) {
-            throw new RuntimeException("Illegal REMIS transition: {$application->status} -> {$toStatus}.");
-        }
+        DB::transaction(function () use ($application, $toStatus, $eventType) {
+            $locked = RemisApplication::lockForUpdate()->findOrFail($application->id);
 
-        $fromStatus = $application->status;
-        $application->update(['status' => $toStatus]);
+            if (! $locked->canTransitionTo($toStatus)) {
+                throw new RuntimeException("Illegal REMIS transition: {$locked->status} -> {$toStatus}.");
+            }
 
-        $this->statusHistory->record($application, $fromStatus, $toStatus);
-        $this->auditLog->record($eventType, $application, ['status' => $fromStatus], ['status' => $toStatus]);
+            $fromStatus = $locked->status;
+            $locked->update(['status' => $toStatus]);
+
+            $this->statusHistory->record($locked, $fromStatus, $toStatus);
+            $this->auditLog->record($eventType, $locked, ['status' => $fromStatus], ['status' => $toStatus]);
+        });
     }
 }

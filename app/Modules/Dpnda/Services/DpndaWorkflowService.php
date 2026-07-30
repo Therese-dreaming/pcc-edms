@@ -95,54 +95,62 @@ class DpndaWorkflowService
 
     public function coordinatorCountersign(DpndaRecord $record, string $typedFullName, ?string $signatureImage = null): DpndaRecord
     {
-        if (! $record->canTransitionTo('coordinator_countersigned')) {
-            throw new RuntimeException("Illegal DPNDA transition: {$record->status} -> coordinator_countersigned.");
-        }
+        return DB::transaction(function () use ($record, $typedFullName, $signatureImage) {
+            $locked = DpndaRecord::lockForUpdate()->findOrFail($record->id);
 
-        $identity = SignatureIdentity::capture();
+            if (! $locked->canTransitionTo('coordinator_countersigned')) {
+                throw new RuntimeException("Illegal DPNDA transition: {$locked->status} -> coordinator_countersigned.");
+            }
 
-        $record->update([
-            'coordinator_signature_id' => $typedFullName,
-            'coordinator_signature_image' => $signatureImage,
-            'coordinator_signature_ip' => $identity['ip'],
-            'coordinator_signature_user_agent' => $identity['user_agent'],
-            'coordinator_signed_at' => now(),
-        ]);
+            $identity = SignatureIdentity::capture();
 
-        $this->transition($record, 'coordinator_countersigned', 'dpnda_record.coordinator_countersigned');
+            $locked->update([
+                'coordinator_signature_id' => $typedFullName,
+                'coordinator_signature_image' => $signatureImage,
+                'coordinator_signature_ip' => $identity['ip'],
+                'coordinator_signature_user_agent' => $identity['user_agent'],
+                'coordinator_signed_at' => now(),
+            ]);
 
-        // docs/2.2: "Completed/Archived | Fully executed NDA stored in repository | System (auto)"
-        $record = $this->transition($record, 'completed', 'dpnda_record.completed');
+            $this->transition($locked, 'coordinator_countersigned', 'dpnda_record.coordinator_countersigned');
 
-        // docs/2.2: Fully executed -> Trainee + Dept Coordinator + DPO (for records).
-        $this->notifications->notifyUser($record->placement->trainee, 'NDA fully executed', "NDA {$record->tracking_number} is fully executed.", $record);
-        $this->notifications->notifyUser($record->placement->coordinator, 'NDA fully executed', "NDA {$record->tracking_number} is fully executed.", $record);
-        $this->notifications->notifyRole('dpo_staff', 'NDA fully executed', "NDA {$record->tracking_number} is fully executed.", $record);
+            // docs/2.2: "Completed/Archived | Fully executed NDA stored in repository | System (auto)"
+            $locked = $this->transition($locked->fresh(), 'completed', 'dpnda_record.completed');
 
-        GenerateDpndaPdfJob::dispatch($record->id, $record->placement->coordinator_id);
+            // docs/2.2: Fully executed -> Trainee + Dept Coordinator + DPO (for records).
+            $this->notifications->notifyUser($locked->placement->trainee, 'NDA fully executed', "NDA {$locked->tracking_number} is fully executed.", $locked);
+            $this->notifications->notifyUser($locked->placement->coordinator, 'NDA fully executed', "NDA {$locked->tracking_number} is fully executed.", $locked);
+            $this->notifications->notifyRole('dpo_staff', 'NDA fully executed', "NDA {$locked->tracking_number} is fully executed.", $locked);
 
-        return $record->fresh();
+            GenerateDpndaPdfJob::dispatch($locked->id, $locked->placement->coordinator_id);
+
+            return $locked->fresh();
+        });
     }
 
     private function transition(DpndaRecord $record, string $toStatus, string $eventType, ?string $comments = null): DpndaRecord
     {
-        if (! $record->canTransitionTo($toStatus)) {
-            throw new RuntimeException("Illegal DPNDA transition: {$record->status} -> {$toStatus}.");
-        }
+        return DB::transaction(function () use ($record, $toStatus, $eventType, $comments) {
+            $locked = DpndaRecord::lockForUpdate()->findOrFail($record->id);
 
-        $fromStatus = $record->status;
-        $record->update(['status' => $toStatus]);
+            if (! $locked->canTransitionTo($toStatus)) {
+                throw new RuntimeException("Illegal DPNDA transition: {$locked->status} -> {$toStatus}.");
+            }
 
-        $this->statusHistory->record($record, $fromStatus, $toStatus, $comments);
-        $this->auditLog->record($eventType, $record, ['status' => $fromStatus], ['status' => $toStatus]);
+            $fromStatus = $locked->status;
+            $locked->update(['status' => $toStatus]);
 
-        return $record->fresh();
+            $this->statusHistory->record($locked, $fromStatus, $toStatus, $comments);
+            $this->auditLog->record($eventType, $locked, ['status' => $fromStatus], ['status' => $toStatus]);
+
+            return $locked->fresh();
+        });
     }
 
     private function nextTrackingNumber(): string
     {
         $year = now()->year;
-        $count = DpndaRecord::where('tracking_number', 'like', "DPNDA-{$year}-%")->count();
+        $count = DpndaRecord::where('tracking_number', 'like', "DPNDA-{$year}-%")->lockForUpdate()->count();
 
         return sprintf('DPNDA-%d-%04d', $year, $count + 1);
     }

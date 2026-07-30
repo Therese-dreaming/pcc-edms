@@ -281,13 +281,17 @@ class RemisApplicationController extends Controller
             'checklist.required_templates_used' => ['boolean'],
         ]);
 
-        $this->workflow->screen(
-            $remisApplication,
-            $validated['decision'],
-            $validated['comments'] ?? null,
-            $validated['checklist'] ?? [],
-            $request->user()->id,
-        );
+        try {
+            $this->workflow->screen(
+                $remisApplication,
+                $validated['decision'],
+                $validated['comments'] ?? null,
+                $validated['checklist'] ?? [],
+                $request->user()->id,
+            );
+        } catch (RuntimeException $e) {
+            return back()->withErrors(['action' => $e->getMessage()]);
+        }
 
         return back()->with('success', 'Screening recorded.');
     }
@@ -298,6 +302,10 @@ class RemisApplicationController extends Controller
         $validated = $request->validate(['reviewer_email' => ['required', 'email', 'exists:users,email']]);
 
         $reviewer = User::where('email', $validated['reviewer_email'])->firstOrFail();
+
+        if (! $reviewer->hasRole('ethics_reviewer')) {
+            return back()->withErrors(['reviewer_email' => 'The specified user does not hold the Ethics Reviewer role.']);
+        }
 
         try {
             $this->workflow->assignReviewer($remisApplication, $reviewer->id);
@@ -345,7 +353,7 @@ class RemisApplicationController extends Controller
     {
         $this->authorize('decide', $remisApplication);
         $validated = $request->validate([
-            'outcome' => ['required', 'in:approved,approved_with_conditions,exempted,deferred,disapproved'],
+            'outcome' => ['required', 'in:approved,approved_with_conditions,exempted,deferred,for_revision,disapproved'],
             'conditions' => ['nullable', 'string'],
             'remarks' => ['nullable', 'string'],
             'signature' => ['required', 'string'],
@@ -377,6 +385,19 @@ class RemisApplicationController extends Controller
         }
 
         return back()->with('success', 'Decision issued.');
+    }
+
+    public function reactivate(RemisApplication $remisApplication): RedirectResponse
+    {
+        $this->authorize('reactivate', $remisApplication);
+
+        try {
+            $this->workflow->reactivateFromDeferred($remisApplication);
+        } catch (RuntimeException $e) {
+            return back()->withErrors(['reactivate' => $e->getMessage()]);
+        }
+
+        return back()->with('success', 'Application reactivated for review.');
     }
 
     public function submitProgressReport(Request $request, RemisApplication $remisApplication): RedirectResponse

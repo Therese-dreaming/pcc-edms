@@ -162,7 +162,12 @@ class DpndaRecordController extends Controller
     public function sendForSigning(DpndaRecord $dpndaRecord): RedirectResponse
     {
         $this->authorize('sendForSigning', $dpndaRecord);
-        $this->workflow->sendForSigning($dpndaRecord);
+
+        try {
+            $this->workflow->sendForSigning($dpndaRecord);
+        } catch (RuntimeException $e) {
+            return back()->withErrors(['action' => $e->getMessage()]);
+        }
 
         return back()->with('success', 'Sent to trainee for signing.');
     }
@@ -188,7 +193,12 @@ class DpndaRecordController extends Controller
     {
         $this->authorize('decline', $dpndaRecord);
         $validated = $request->validate(['reason' => ['required', 'string']]);
-        $this->workflow->decline($dpndaRecord, $validated['reason']);
+
+        try {
+            $this->workflow->decline($dpndaRecord, $validated['reason']);
+        } catch (RuntimeException $e) {
+            return back()->withErrors(['action' => $e->getMessage()]);
+        }
 
         return back()->with('success', 'NDA declined.');
     }

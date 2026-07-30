@@ -13,6 +13,7 @@ use App\Shared\AuditLog\Support\SignatureIdentity;
 use App\Shared\Clearance\Services\ClearanceService;
 use App\Shared\Revisions\Services\RevisionService;
 use App\Shared\Notifications\Services\NotificationService;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 // docs/3.3-remis-review-workflow.md — enforces the Ethics track's legal status transitions
@@ -324,6 +325,11 @@ class RemisWorkflowService
             'signature_user_agent' => $decisionIdentity['user_agent'],
         ]);
 
+        // for_revision: set returned_from_status so resubmit goes back to for_review, not endorsement.
+        if ($outcome === 'for_revision') {
+            $application->update(['returned_from_status' => 'for_review']);
+        }
+
         $application = $this->transition($application, $outcome, "remis_application.decision_{$outcome}", $remarks);
 
         // docs/3.3: Decision issued (any of the four outcomes) -> Researcher.
@@ -358,19 +364,38 @@ class RemisWorkflowService
         $this->notifications->notifyRole('adviser', $subject, $body, $application);
     }
 
-    private function transition(RemisApplication $application, string $toStatus, string $eventType, ?string $comments = null): RemisApplication
+    // docs/3.3: deferred is not a terminal state — the Chair can reactivate for re-review.
+    public function reactivateFromDeferred(RemisApplication $application): RemisApplication
     {
-        if (! $application->canTransitionTo($toStatus)) {
-            throw new RuntimeException("Illegal REMIS transition: {$application->status} -> {$toStatus}.");
+        $application = $this->transition($application, 'for_review', 'remis_application.reactivated');
+
+        $this->notifications->notifyRole('ethics_committee_chair', 'REMIS application reactivated', "REMIS application {$application->tracking_number} has been reactivated for review.", $application);
+
+        // Notify assigned reviewers that the study is back for review.
+        foreach ($application->reviewAssignments as $assignment) {
+            $this->notifications->notifyUser($assignment->reviewer, 'REMIS application reactivated', "REMIS application {$application->tracking_number} has been reactivated for review.", $application);
         }
 
-        $fromStatus = $application->status;
-        $application->update(['status' => $toStatus]);
+        return $application;
+    }
 
-        $this->statusHistory->record($application, $fromStatus, $toStatus, $comments);
-        $this->auditLog->record($eventType, $application, ['status' => $fromStatus], ['status' => $toStatus]);
+    private function transition(RemisApplication $application, string $toStatus, string $eventType, ?string $comments = null): RemisApplication
+    {
+        return DB::transaction(function () use ($application, $toStatus, $eventType, $comments) {
+            $locked = RemisApplication::lockForUpdate()->findOrFail($application->id);
 
-        return $application->fresh();
+            if (! $locked->canTransitionTo($toStatus)) {
+                throw new RuntimeException("Illegal REMIS transition: {$locked->status} -> {$toStatus}.");
+            }
+
+            $fromStatus = $locked->status;
+            $locked->update(['status' => $toStatus]);
+
+            $this->statusHistory->record($locked, $fromStatus, $toStatus, $comments);
+            $this->auditLog->record($eventType, $locked, ['status' => $fromStatus], ['status' => $toStatus]);
+
+            return $locked->fresh();
+        });
     }
 
     /**

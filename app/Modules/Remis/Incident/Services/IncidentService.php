@@ -7,6 +7,7 @@ use App\Modules\Remis\Models\RemisApplication;
 use App\Shared\AuditLog\Services\AuditLogService;
 use App\Shared\AuditLog\Services\StatusHistoryService;
 use App\Shared\Notifications\Services\NotificationService;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 // docs/3.5-remis-incident-reporting.md — filing, tracking, and corrective-action monitoring,
@@ -85,17 +86,21 @@ class IncidentService
 
     public function transition(Incident $incident, string $toStatus): Incident
     {
-        if (! $incident->canTransitionTo($toStatus)) {
-            throw new RuntimeException("Illegal incident transition: {$incident->status} -> {$toStatus}.");
-        }
+        return DB::transaction(function () use ($incident, $toStatus) {
+            $locked = Incident::lockForUpdate()->findOrFail($incident->id);
 
-        $fromStatus = $incident->status;
-        $incident->update(['status' => $toStatus]);
+            if (! $locked->canTransitionTo($toStatus)) {
+                throw new RuntimeException("Illegal incident transition: {$locked->status} -> {$toStatus}.");
+            }
 
-        $this->statusHistory->record($incident, $fromStatus, $toStatus);
-        $this->auditLog->record('incident.status_changed', $incident, ['status' => $fromStatus], ['status' => $toStatus]);
+            $fromStatus = $locked->status;
+            $locked->update(['status' => $toStatus]);
 
-        return $incident->fresh();
+            $this->statusHistory->record($locked, $fromStatus, $toStatus);
+            $this->auditLog->record('incident.status_changed', $locked, ['status' => $fromStatus], ['status' => $toStatus]);
+
+            return $locked->fresh();
+        });
     }
 
     public function setCorrectiveAction(Incident $incident, string $required, string $dueDate): Incident

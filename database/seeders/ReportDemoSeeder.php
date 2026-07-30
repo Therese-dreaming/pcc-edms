@@ -154,9 +154,9 @@ class ReportDemoSeeder extends Seeder
             // Complete the first three so the "accomplished NDAs" report has real rows;
             // leave the rest in-flight for status diversity.
             if ($i < 3) {
-                $dpndaWorkflow->sendForSigning($record);
+                $record = $dpndaWorkflow->sendForSigning($record);
                 Auth::onceUsingId($this->userIds[$p['trainee']]);
-                $dpndaWorkflow->traineeSign($record, 'Demo Trainee'.$i);
+                $record = $dpndaWorkflow->traineeSign($record, 'Demo Trainee'.$i);
                 Auth::onceUsingId($this->userIds['coordinator']);
                 $dpndaWorkflow->coordinatorCountersign($record, 'Cathy Coordinator');
             } elseif ($i === 3) {

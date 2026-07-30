@@ -8,6 +8,7 @@ use App\Shared\AuditLog\Services\StatusHistoryService;
 use App\Shared\Clearance\Services\ClearanceService;
 use App\Shared\Notifications\Services\NotificationService;
 use App\Shared\Revisions\Services\RevisionService;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 // docs/1.2-dpreq-workflow.md — enforces the DPO track's legal status transitions
@@ -115,18 +116,22 @@ class DpreqWorkflowService
         string $eventType,
         ?string $comments = null,
     ): DpreqApplication {
-        if (! $application->canTransitionTo($toStatus)) {
-            throw new RuntimeException(
-                "Illegal DPREQ transition: {$application->status} -> {$toStatus}."
-            );
-        }
+        return DB::transaction(function () use ($application, $toStatus, $eventType, $comments) {
+            $locked = DpreqApplication::lockForUpdate()->findOrFail($application->id);
 
-        $fromStatus = $application->status;
-        $application->update(['status' => $toStatus]);
+            if (! $locked->canTransitionTo($toStatus)) {
+                throw new RuntimeException(
+                    "Illegal DPREQ transition: {$locked->status} -> {$toStatus}."
+                );
+            }
 
-        $this->statusHistory->record($application, $fromStatus, $toStatus, $comments);
-        $this->auditLog->record($eventType, $application, ['status' => $fromStatus], ['status' => $toStatus]);
+            $fromStatus = $locked->status;
+            $locked->update(['status' => $toStatus]);
 
-        return $application->fresh();
+            $this->statusHistory->record($locked, $fromStatus, $toStatus, $comments);
+            $this->auditLog->record($eventType, $locked, ['status' => $fromStatus], ['status' => $toStatus]);
+
+            return $locked->fresh();
+        });
     }
 }

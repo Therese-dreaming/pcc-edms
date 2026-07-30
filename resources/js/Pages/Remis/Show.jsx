@@ -199,8 +199,9 @@ export default function Show({ application, legalTransitions, revisions }) {
     const canReview = isAssignedReviewer && application.status === 'for_review' && !myAssignment?.submitted_at;
     const canDecide =
         roleName === 'ethics_committee_chair' && application.status === 'for_review' && allReviewersSubmitted;
+    const canReactivate = roleName === 'ethics_committee_chair' && application.status === 'deferred';
 
-    const hasAnyWorkflowAction = canEndorse || canResubmit || canScreen || canAssignReviewer || canReview || canDecide;
+    const hasAnyWorkflowAction = canEndorse || canResubmit || canScreen || canAssignReviewer || canReview || canDecide || canReactivate;
 
     const endorseForm = useForm({ action: 'approve', remarks: '', signature: '', signature_image: null });
 
@@ -1077,6 +1078,7 @@ export default function Show({ application, legalTransitions, revisions }) {
                                                 <option value="approved_with_conditions">Approved with Conditions</option>
                                                 <option value="exempted">Exempted (Certificate of Exemption)</option>
                                                 <option value="deferred">Deferred</option>
+                                                <option value="for_revision">Return for Revision</option>
                                                 <option value="disapproved">Disapproved</option>
                                             </select>
                                             {decideForm.data.outcome === 'approved_with_conditions' && (
@@ -1108,6 +1110,26 @@ export default function Show({ application, legalTransitions, revisions }) {
                                             >
                                                 <Warning size={16} weight="regular" />
                                                 {decideForm.processing ? 'Submitting...' : 'Issue Decision'}
+                                            </button>
+                                        </form>
+                                    )}
+
+                                    {canReactivate && (
+                                        <form
+                                            onSubmit={(e) => { e.preventDefault(); router.post(route('remis.reactivate', application.id)); }}
+                                            className={panelClass}
+                                        >
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <ArrowRight size={18} weight="regular" className="text-amber-600" />
+                                                <h4 className="text-base font-semibold text-zinc-900">Reactivate for Review</h4>
+                                            </div>
+                                            <p className="text-sm text-zinc-600 mb-3">This application was deferred. Reactivating it will return it to the review queue.</p>
+                                            <button
+                                                type="submit"
+                                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold shadow-sm transition-colors"
+                                            >
+                                                <ArrowRight size={16} weight="regular" />
+                                                Reactivate
                                             </button>
                                         </form>
                                     )}
