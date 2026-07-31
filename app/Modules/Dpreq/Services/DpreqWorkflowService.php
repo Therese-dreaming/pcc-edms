@@ -100,7 +100,10 @@ class DpreqWorkflowService
         }
 
         // docs/1.2: Approved / Rejected -> Applicant. Signing (not the clearance) is the next step.
-        $this->notifications->notifyUser(
+        // Sent synchronously (notifyUserSync): this is the "your NDA is ready to sign" heads-up
+        // the leader actively waits on, so it must not be stranded by a missing queue worker —
+        // same reasoning as the co-researcher invitation mails sent just above (concern 6 / A2).
+        $this->notifications->notifyUserSync(
             $application->applicant,
             'Application approved — sign the Team NDA',
             "DPREQ application {$application->tracking_number} was approved. The clearance will be issued once you and all co-researchers have signed the Research Team NDA.",

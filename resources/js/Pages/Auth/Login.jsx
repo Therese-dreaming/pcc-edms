@@ -63,6 +63,48 @@ const policySections = [
     },
 ];
 
+// Login-page "How It Works" tab — a plain-language walk-through of every track (DPO/DPREQ,
+// REMIS ethics, and DPNDA OJT) from registration to issued clearance. Static copy, no backend
+// data. Icons intentionally reuse the Tabler set already imported above.
+const processSteps = [
+    {
+        number: '01',
+        title: 'Register',
+        icon: IconUserCheck,
+        body: 'Create your account as a researcher, adviser, or OJT trainee, then verify your email address to activate your access.',
+    },
+    {
+        number: '02',
+        title: 'Submit Form 1',
+        icon: IconFileDescription,
+        body: 'Fill out the unified research application. A single form covers both the Data Privacy (DPO) and Research Ethics (REMIS) tracks.',
+    },
+    {
+        number: '03',
+        title: 'DPO track (DPREQ)',
+        icon: IconShieldCheck,
+        body: 'The Data Protection Office reviews your data privacy compliance. Once approved, sign the Research Team NDA (Form 2) — when every team member has signed, your Data Privacy Clearance (Form 3) is issued.',
+    },
+    {
+        number: '04',
+        title: 'Ethics track (REMIS)',
+        icon: IconScale,
+        body: 'Your adviser endorses, the secretariat screens, reviewers assess risk, and the committee chair decides. Approved or exempted studies receive a Research Ethics Clearance.',
+    },
+    {
+        number: '05',
+        title: 'Download clearances',
+        icon: IconBook2,
+        body: 'Both certificates are downloadable PDFs and carry a QR code so anyone can verify them publicly.',
+    },
+    {
+        number: '06',
+        title: 'OJT trainees (DPNDA)',
+        icon: IconBriefcase2,
+        body: 'Your coordinator creates your NDA (Form 5). You sign it, the Department Head countersigns, and the executed NDA is filed with the DPO.',
+    },
+];
+
 export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
@@ -71,6 +113,9 @@ export default function Login({ status, canResetPassword }) {
     });
 
     const [showPassword, setShowPassword] = useState(false);
+    // Right-hand panel tab: 'policy' (default, the responsible-use notice) or 'process'
+    // (the "How It Works" walk-through).
+    const [panelTab, setPanelTab] = useState('policy');
 
     useEffect(() => {
         if (status) notifySuccess(status);
@@ -315,7 +360,9 @@ export default function Login({ status, canResetPassword }) {
 
                 <aside
                     className="relative hidden h-screen overflow-y-auto bg-primary-900 text-white lg:block"
-                    aria-labelledby="policy-title"
+                    aria-labelledby={
+                        panelTab === 'policy' ? 'policy-title' : 'process-title'
+                    }
                 >
                     <div
                         className="pointer-events-none fixed inset-y-0 right-0 -z-0 hidden w-[60%] lg:block"
@@ -348,7 +395,9 @@ export default function Login({ status, canResetPassword }) {
                                         PCC EDMS
                                     </p>
                                     <p className="font-display text-base font-bold">
-                                        Responsible use notice
+                                        {panelTab === 'policy'
+                                            ? 'Responsible use notice'
+                                            : 'Research & OJT workflow'}
                                     </p>
                                 </div>
                             </div>
@@ -372,6 +421,51 @@ export default function Login({ status, canResetPassword }) {
                             </nav>
                         </header>
 
+                        {/* Panel tab switcher — toggles the responsible-use policy (default) and
+                            the "How It Works" process walk-through. */}
+                        <div
+                            className="mt-8 inline-flex rounded-xl border border-white/15 bg-primary-950/40 p-1"
+                            role="tablist"
+                            aria-label="Panel content"
+                        >
+                            <button
+                                type="button"
+                                role="tab"
+                                id="tab-policy"
+                                aria-selected={panelTab === 'policy'}
+                                aria-controls="panel-policy"
+                                onClick={() => setPanelTab('policy')}
+                                className={`rounded-lg px-5 py-2.5 font-subtitle text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 ${
+                                    panelTab === 'policy'
+                                        ? 'bg-accent-400 text-primary-950'
+                                        : 'text-white/70 hover:text-white'
+                                }`}
+                            >
+                                Policy
+                            </button>
+                            <button
+                                type="button"
+                                role="tab"
+                                id="tab-process"
+                                aria-selected={panelTab === 'process'}
+                                aria-controls="panel-process"
+                                onClick={() => setPanelTab('process')}
+                                className={`rounded-lg px-5 py-2.5 font-subtitle text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 ${
+                                    panelTab === 'process'
+                                        ? 'bg-accent-400 text-primary-950'
+                                        : 'text-white/70 hover:text-white'
+                                }`}
+                            >
+                                How It Works
+                            </button>
+                        </div>
+
+                        {panelTab === 'policy' && (
+                        <div
+                            id="panel-policy"
+                            role="tabpanel"
+                            aria-labelledby="tab-policy"
+                        >
                         <div className="pt-14">
                             <p className="font-subtitle text-xs font-bold uppercase tracking-[0.12em] text-accent-400">
                                 Terms and data policy
@@ -459,6 +553,76 @@ export default function Login({ status, canResetPassword }) {
                                 </p>
                             </div>
                         </div>
+
+                        </div>
+                        )}
+
+                        {panelTab === 'process' && (
+                        <div
+                            id="panel-process"
+                            role="tabpanel"
+                            aria-labelledby="tab-process"
+                        >
+                        <div className="pt-14">
+                            <p className="font-subtitle text-xs font-bold uppercase tracking-[0.12em] text-accent-400">
+                                How it works
+                            </p>
+                            <h2
+                                id="process-title"
+                                className="mt-4 max-w-[16ch] font-display text-[clamp(40px,4.6vw,68px)] font-extrabold leading-[0.98] tracking-[-0.05em]"
+                            >
+                                From registration to clearance.
+                            </h2>
+                            <p className="mt-6 max-w-[66ch] font-subtitle text-base font-medium leading-7 tracking-[0.01em] text-white/72">
+                                Every research and OJT document follows a clear, tracked path. Here is what happens after you sign in, from your first form to your issued clearance.
+                            </p>
+                        </div>
+
+                        <div className="mt-14 border-t border-white/15">
+                            {processSteps.map(({ number, title, icon: Icon, body }) => (
+                                <section
+                                    key={number}
+                                    className="grid grid-cols-[44px_1fr] gap-5 border-b border-white/15 py-7 sm:grid-cols-[56px_180px_1fr] sm:gap-6"
+                                    aria-labelledby={`process-${number}`}
+                                >
+                                    <span className="font-subtitle text-xs font-bold tabular-nums tracking-[0.08em] text-accent-400">
+                                        {number}
+                                    </span>
+                                    <h3
+                                        id={`process-${number}`}
+                                        className="col-start-2 flex items-start gap-3 font-display text-xl font-bold leading-6 text-white sm:col-start-auto"
+                                    >
+                                        <Icon
+                                            size={19}
+                                            className="mt-0.5 shrink-0 text-white/45 sm:hidden"
+                                            aria-hidden="true"
+                                        />
+                                        {title}
+                                    </h3>
+                                    <p className="col-start-2 max-w-[68ch] font-subtitle text-sm font-medium leading-6 tracking-[0.01em] text-white/68 sm:col-start-auto">
+                                        {body}
+                                    </p>
+                                </section>
+                            ))}
+                        </div>
+
+                        <div className="mt-10 grid gap-6 border border-accent-400/35 bg-primary-950/45 p-6 sm:grid-cols-[auto_1fr] sm:items-start sm:p-8">
+                            <IconArrowRight
+                                size={26}
+                                className="text-accent-400"
+                                aria-hidden="true"
+                            />
+                            <div>
+                                <h3 className="font-display text-xl font-bold">
+                                    Ready to get started?
+                                </h3>
+                                <p className="mt-3 max-w-[64ch] font-subtitle text-sm font-medium leading-6 text-white/70">
+                                    Sign in to submit your first form, or use the public verifier to check a clearance with its QR code.
+                                </p>
+                            </div>
+                        </div>
+                        </div>
+                        )}
 
                         <footer className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-white/15 pt-6 font-subtitle text-xs text-white/48">
                             <p>Policy draft v0.1 Â· Last revised July 2026</p>

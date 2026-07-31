@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\Mail;
 // AuditLogService pattern used everywhere else.
 //
 // docs/4.3 "Notification Channels": "Email (required, mirrors in-app)". Every notification
-// created here also queues a `NotificationMail` — see EMAIL_SETUP.md for configuring a real
+// created here also dispatches a `NotificationMail` — queued by default (notifyUser), or inline
+// for user-waited-on mails (notifyUserSync). See EMAIL_SETUP.md for configuring a real
 // SMTP/Mailgun/SES mailer; with the Laravel-default `MAIL_MAILER=log`, mail is written to
 // storage/logs/laravel.log instead of actually sending, so this is always safe to leave on. SMS
 // (the third channel docs/4.3 lists) is explicitly out of scope — the doc itself marks it
@@ -21,6 +22,22 @@ use Illuminate\Support\Facades\Mail;
 class NotificationService
 {
     public function notifyUser(User $user, string $subject, string $body, ?Model $related = null): Notification
+    {
+        return $this->createNotification($user, $subject, $body, $related, sync: false);
+    }
+
+    /**
+     * Same as notifyUser(), but the mirrored email is sent inline (synchronously) instead of
+     * being queued. Use for mails a user actively waits on — e.g. "your NDA is ready to sign" —
+     * where a missing queue worker (QUEUE_CONNECTION=database with no `queue:work` running) must
+     * not strand the delivery (concern 6 / A2, same reasoning as ResearchTeamNdaInvitationMail).
+     */
+    public function notifyUserSync(User $user, string $subject, string $body, ?Model $related = null): Notification
+    {
+        return $this->createNotification($user, $subject, $body, $related, sync: true);
+    }
+
+    private function createNotification(User $user, string $subject, string $body, ?Model $related, bool $sync): Notification
     {
         $notification = Notification::create([
             'user_id' => $user->id,
@@ -31,7 +48,7 @@ class NotificationService
             'related_id' => $related?->getKey(),
         ]);
 
-        $this->sendEmail($user, $notification);
+        $this->sendEmail($user, $notification, $sync);
 
         return $notification;
     }
@@ -50,7 +67,7 @@ class NotificationService
         }
     }
 
-    private function sendEmail(User $user, Notification $notification): void
+    private function sendEmail(User $user, Notification $notification, bool $sync = false): void
     {
         if (! $user->email) {
             return;
@@ -58,8 +75,10 @@ class NotificationService
 
         $actionUrl = $notification->related_url ? url($notification->related_url) : null;
 
-        Mail::to($user->email)->queue(
-            new NotificationMail($notification->subject, $notification->body, $actionUrl)
-        );
+        $mail = new NotificationMail($notification->subject, $notification->body, $actionUrl);
+
+        $sync
+            ? Mail::to($user->email)->send($mail)
+            : Mail::to($user->email)->queue($mail);
     }
 }

@@ -53,6 +53,7 @@ export default function Sign({ token, state, member, nda, signedAt }) {
     const { data, setData, post, processing, errors } = useForm({
         typed_full_name: member?.full_name ?? '',
         signature_image: null,
+        obligations_accepted: false,
     });
 
     const submit = (e) => {
@@ -112,16 +113,36 @@ export default function Sign({ token, state, member, nda, signedAt }) {
                     </dl>
                 </div>
 
-                <div className="mb-6 max-h-40 overflow-y-auto rounded-lg border border-stone-200 p-4 text-xs leading-relaxed text-stone-600">
-                    <p className="mb-2 font-semibold text-stone-700">Non-Disclosure Agreement</p>
-                    <p className="mb-2">
-                        As a member of this research team, I agree to keep confidential all personal data and
-                        sensitive information accessed in the course of this study, to use it only for the
-                        study's approved purpose, and to follow the institution's data-privacy and research-ethics
-                        requirements. I understand this electronic signature — my typed full name together with the
-                        recorded date, time, and originating device — is legally binding under RA 8792.
+                <div className="mb-6 max-h-56 overflow-y-auto rounded-lg border border-stone-200 p-4 text-xs leading-relaxed text-stone-600">
+                    <p className="mb-3 font-semibold text-stone-700">Obligations of the Researcher/s</p>
+                    <ol className="list-decimal space-y-1.5 pl-4">
+                        <li>I will use the data gathered solely for the purpose of conducting the study.</li>
+                        <li>I will not disclose, publish, or otherwise disseminate confidential information to any third party without the prior written consent of the school.</li>
+                        <li>I shall not use the information for any commercial, personal, or other unauthorized purpose.</li>
+                        <li>I will anonymize participants&rsquo; identities and responses and will keep it confidential.</li>
+                        <li>I will maintain reasonable security measures in the storage such as password protected files or other appropriate measures.</li>
+                        <li>I will avoid exposing participants to harm or risk.</li>
+                        <li>Upon completion of the study, I will return or destroy all confidential information and all copies at the school&rsquo;s request.</li>
+                        <li>I will promptly share a copy of the study in PDF form by uploading it in the EDMS, if the school requests it.</li>
+                    </ol>
+                    <p className="mt-3 border-t border-stone-200 pt-3">
+                        This electronic signature — my typed full name together with the recorded date, time, and
+                        originating device — is legally binding under RA 8792.
                     </p>
                 </div>
+
+                <label className="mb-6 flex cursor-pointer items-start gap-2.5 rounded-lg border border-stone-200 bg-stone-50 p-3.5">
+                    <input
+                        type="checkbox"
+                        checked={data.obligations_accepted}
+                        onChange={(e) => setData('obligations_accepted', e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-stone-300 text-primary-700 focus:ring-primary-600"
+                    />
+                    <span className="text-xs font-medium leading-snug text-stone-700">
+                        I have read and agree to abide by all Obligations of the Researcher/s listed above.
+                    </span>
+                </label>
+                <InputError message={errors.obligations_accepted} className="-mt-4 mb-4" />
 
                 <form onSubmit={submit} className="space-y-5">
                     <div>
@@ -146,7 +167,7 @@ export default function Sign({ token, state, member, nda, signedAt }) {
 
                     <button
                         type="submit"
-                        disabled={processing || !data.typed_full_name}
+                        disabled={processing || !data.typed_full_name || !data.obligations_accepted}
                         className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-primary-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <IconCertificate size={16} strokeWidth={2.5} aria-hidden="true" />

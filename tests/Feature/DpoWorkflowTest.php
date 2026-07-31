@@ -141,4 +141,35 @@ class DpoWorkflowTest extends TestCase
         $this->actingAs($this->dpo)->post("/dpreq/{$this->application->id}/start-screening")->assertNotFound();
         $this->actingAs($this->dpo)->post("/dpreq/{$this->application->id}/endorse")->assertNotFound();
     }
+
+    /** @test */
+    public function the_leader_cannot_sign_the_nda_without_accepting_the_obligations(): void
+    {
+        $this->actingAs($this->dpo);
+        $workflow = app(DpreqWorkflowService::class);
+        $workflow->startReview($this->application);
+        // Approval creates the team NDA and opens signing for the leader.
+        $workflow->approve($this->application->fresh(), $this->dpo->id);
+
+        $this->actingAs($this->applicant);
+
+        // Form 2 gate: without ticking the "OBLIGATIONS OF THE RESEARCHER/S" acceptance the
+        // signature is rejected at the controller (obligations_accepted => accepted). The
+        // service-level leaderSignsNda() helper bypasses this, so it is asserted over HTTP here.
+        $this->post(route('dpreq.sign-nda', $this->application), [
+            'typed_full_name' => 'Rosa',
+        ])->assertSessionHasErrors('obligations_accepted');
+
+        $leader = $this->application->fresh()->researchApplication->researchTeamNda
+            ->signatories()->where('role', 'leader')->firstOrFail();
+        $this->assertNull($leader->signed_at);
+
+        // Accepting the obligations lets the leader sign.
+        $this->post(route('dpreq.sign-nda', $this->application), [
+            'typed_full_name' => 'Rosa',
+            'obligations_accepted' => true,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertNotNull($leader->fresh()->signed_at);
+    }
 }

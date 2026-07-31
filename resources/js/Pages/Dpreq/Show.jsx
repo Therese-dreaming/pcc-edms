@@ -143,7 +143,7 @@ export default function Show({ application, legalTransitions, revisions }) {
     const approveError = pageErrors?.nda;
 
     const returnForm = useForm({ comments: '' });
-    const signForm = useForm({ typed_full_name: '', signature_image: null });
+    const signForm = useForm({ typed_full_name: '', signature_image: null, obligations_accepted: false });
     const memberForm = useForm({ full_name: '', email: '' });
     const transferForm = useForm({ new_leader_email: '' });
 
@@ -635,6 +635,36 @@ export default function Show({ application, legalTransitions, revisions }) {
                                                     Sign this NDA
                                                 </h4>
 
+                                                {/* Form 2 — OBLIGATIONS OF THE RESEARCHER/S. The signer must
+                                                    review and accept all eight obligations before signing. */}
+                                                <div className="rounded-lg border border-primary-200 bg-white p-3">
+                                                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-fg-secondary">
+                                                        Obligations of the Researcher/s
+                                                    </p>
+                                                    <ol className="list-decimal space-y-1 pl-4 text-[0.6875rem] leading-relaxed text-fg-secondary">
+                                                        <li>I will use the data gathered solely for the purpose of conducting the study.</li>
+                                                        <li>I will not disclose, publish, or otherwise disseminate confidential information to any third party without the prior written consent of the school.</li>
+                                                        <li>I shall not use the information for any commercial, personal, or other unauthorized purpose.</li>
+                                                        <li>I will anonymize participants&rsquo; identities and responses and will keep it confidential.</li>
+                                                        <li>I will maintain reasonable security measures in the storage such as password protected files or other appropriate measures.</li>
+                                                        <li>I will avoid exposing participants to harm or risk.</li>
+                                                        <li>Upon completion of the study, I will return or destroy all confidential information and all copies at the school&rsquo;s request.</li>
+                                                        <li>I will promptly share a copy of the study in PDF form by uploading it in the EDMS, if the school requests it.</li>
+                                                    </ol>
+                                                    <label className="mt-3 flex cursor-pointer items-start gap-2 rounded-md bg-primary-50 p-2.5 ring-1 ring-inset ring-primary-200">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={signForm.data.obligations_accepted}
+                                                            onChange={(e) => signForm.setData('obligations_accepted', e.target.checked)}
+                                                            className="mt-0.5 h-4 w-4 rounded border-primary-300 text-primary-700 focus:ring-primary-600"
+                                                        />
+                                                        <span className="text-xs font-medium leading-snug text-fg-primary">
+                                                            I have read and agree to abide by all Obligations of the Researcher/s listed above.
+                                                        </span>
+                                                    </label>
+                                                    <InputError message={signForm.errors.obligations_accepted} className="mt-1" />
+                                                </div>
+
                                                 <div className="space-y-1.5">
                                                     <label className="block text-xs font-medium text-fg-secondary">
                                                         Full Name
@@ -661,8 +691,8 @@ export default function Show({ application, legalTransitions, revisions }) {
 
                                                 <button
                                                     type="submit"
-                                                    disabled={signForm.processing}
-                                                    className={PRIMARY_BTN}
+                                                    disabled={signForm.processing || !signForm.data.obligations_accepted}
+                                                    className={`${PRIMARY_BTN} disabled:cursor-not-allowed disabled:opacity-50`}
                                                 >
                                                     {signForm.processing ? 'Signing…' : 'Sign NDA'}
                                                 </button>

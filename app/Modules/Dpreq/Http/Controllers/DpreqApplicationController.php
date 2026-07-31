@@ -361,6 +361,9 @@ class DpreqApplicationController extends Controller
         $validated = $request->validate([
             'typed_full_name' => ['required', 'string'],
             'signature_image' => ['nullable', 'string', 'starts_with:data:image/png;base64,', 'max:200000'],
+            // Form 2 gate — the signer must explicitly accept the eight "OBLIGATIONS OF THE
+            // RESEARCHER/S" items rendered above the signature block before signing.
+            'obligations_accepted' => ['accepted'],
         ]);
 
         $signatory = $dpreqApplication->researchApplication->researchTeamNda->signatories()

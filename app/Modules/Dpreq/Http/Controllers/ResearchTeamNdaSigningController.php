@@ -58,6 +58,9 @@ class ResearchTeamNdaSigningController extends Controller
         $validated = $request->validate([
             'typed_full_name' => ['required', 'string', 'max:255'],
             'signature_image' => ['nullable', 'string', 'starts_with:data:image/png;base64,', 'max:200000'],
+            // Form 2 gate — the member must explicitly accept the eight "OBLIGATIONS OF THE
+            // RESEARCHER/S" items shown on the signing page before their signature is recorded.
+            'obligations_accepted' => ['accepted'],
         ]);
 
         try {

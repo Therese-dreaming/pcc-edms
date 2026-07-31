@@ -3,14 +3,16 @@
 namespace App\Shared\Notifications\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
 // docs/4.3-esignature-notifications.md "Notification Channels": "Email (required, mirrors
-// in-app)". Queued for the same reason PDF generation is (docs/system-design.md §5) — sending
-// mail is a slow external call that shouldn't block the request that triggered the notification.
-class NotificationMail extends Mailable implements ShouldQueue
+// in-app)". Deliberately NOT `ShouldQueue`: the dispatch choice (queue vs. inline send) belongs
+// to the caller — see NotificationService. `notifyUser()` queues it (slow external call kept off
+// the request, docs/system-design.md §5); `notifyUserSync()` sends it inline for mails a user
+// actively waits on where a missing queue worker must not strand the delivery (concern 6 / A2,
+// same reasoning as ResearchTeamNdaInvitationMail).
+class NotificationMail extends Mailable
 {
     use Queueable, SerializesModels;
 
