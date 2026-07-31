@@ -48,20 +48,9 @@
         print-color-adjust: exact;
     }
 
-    .content-wrapper { padding-bottom: 50px; }
-
-    .footer {
-        position: fixed;
-        bottom: 0;
-        right: 0;
-        width: 100%;
-        border-top: 1.5px solid #000;
-        padding-top: 6px;
-        font-size: 8pt;
-        color: #333;
-        text-align: right;
-        font-family: 'Courier New', monospace;
-    }
+    /* The footer lives in the @page bottom-margin band (see partials/_footer.blade.php), so body
+       content never needs reserved bottom padding to avoid it. */
+    .content-wrapper { padding-bottom: 0; }
 
     .inst-header { text-align: center; margin-bottom: 10px; }
     .inst-header-img { height: 52px; width: auto; }
