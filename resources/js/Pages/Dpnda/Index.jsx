@@ -4,9 +4,14 @@ import Pagination from '@/Components/Pagination';
 import Popover from '@/Components/Popover';
 import StatusBadge from '@/Components/StatusBadge';
 import { confirmAction, confirmDanger, notifySuccess } from '@/lib/confirm';
-import { Head, Link, router } from '@inertiajs/react';
-import { IconArchive, IconArrowUpRight, IconCheck, IconClock, IconEyeOff, IconFilter, IconPlus, IconSearch, IconSignature, IconTrash } from '@tabler/icons-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { IconArchive, IconArrowUpRight, IconCalendar, IconCalendarTime, IconCheck, IconClock, IconEyeOff, IconFilter, IconPlus, IconSearch, IconSignature, IconTrash } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
+
+const TRAINEE_ROLES = ['ojt_trainee_internal', 'ojt_trainee_external'];
+
+const SECONDARY_LINK =
+    'inline-flex min-h-10 items-center gap-2 rounded-full border border-border-medium bg-surface-secondary px-4 text-sm font-semibold text-fg-secondary shadow-sm transition-colors hover:bg-surface-tertiary';
 
 const STATUS_LABELS = {
     draft: 'Draft',
@@ -28,6 +33,8 @@ const formatDate = (value) =>
     value ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 
 export default function Index({ records, filters, statusCounts = {} }) {
+    const { roleName } = usePage().props.auth;
+    const isTrainee = TRAINEE_ROLES.includes(roleName);
     const [searchQuery, setSearchQuery] = useState(filters?.search ?? '');
     const [statusFilter, setStatusFilter] = useState(filters?.status ?? 'all');
     const [selectedIds, setSelectedIds] = useState([]);
@@ -170,6 +177,18 @@ export default function Index({ records, filters, statusCounts = {} }) {
                         </Popover>
 
                         <div className="ml-auto flex flex-wrap items-center gap-2">
+                            <Link href={route('dpnda.calendar')} className={SECONDARY_LINK}>
+                                <IconCalendar size={16} />
+                                Calendar
+                            </Link>
+
+                            {isTrainee && (
+                                <Link href={route('dpnda.schedules.index')} className={SECONDARY_LINK}>
+                                    <IconCalendarTime size={16} />
+                                    My Schedule
+                                </Link>
+                            )}
+
                             <Link
                                 href={route('dpnda.create')}
                                 className="inline-flex min-h-10 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-white transition-colors hover:bg-primary-strong"

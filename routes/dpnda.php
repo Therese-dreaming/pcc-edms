@@ -1,6 +1,8 @@
 <?php
 
+use App\Modules\Dpnda\Http\Controllers\DpndaCalendarController;
 use App\Modules\Dpnda\Http\Controllers\DpndaRecordController;
+use App\Modules\Dpnda\Http\Controllers\TraineeScheduleController;
 use Illuminate\Support\Facades\Route;
 
 // docs/2.1-2.2 — the OJT/Trainee NDA (Form 5) track. Policy-gated in the controller.
@@ -12,6 +14,14 @@ Route::middleware(['auth', 'verified'])->prefix('dpnda')->name('dpnda.')->group(
     // Register bulk actions (index Actions menu). Authorized per-record in the controller.
     Route::post('/bulk-archive', [DpndaRecordController::class, 'bulkArchive'])->name('bulk-archive');
     Route::delete('/bulk-destroy', [DpndaRecordController::class, 'bulkDestroy'])->name('bulk-destroy');
+
+    // Deployment calendar (whereabouts month view) and trainee self-service weekly schedule.
+    // Registered BEFORE the {dpndaRecord} wildcard so "calendar"/"schedules" aren't captured as an id.
+    Route::get('/calendar', [DpndaCalendarController::class, 'index'])->name('calendar');
+    Route::get('/schedules', [TraineeScheduleController::class, 'index'])->name('schedules.index');
+    Route::post('/schedules', [TraineeScheduleController::class, 'store'])->name('schedules.store');
+    Route::put('/schedules/{schedule}', [TraineeScheduleController::class, 'update'])->name('schedules.update');
+    Route::delete('/schedules/{schedule}', [TraineeScheduleController::class, 'destroy'])->name('schedules.destroy');
 
     Route::get('/{dpndaRecord}', [DpndaRecordController::class, 'show'])->name('show');
 

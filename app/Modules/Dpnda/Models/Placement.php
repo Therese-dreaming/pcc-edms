@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 // docs/2.1-dpnda-nda-template.md §2.1.b (Form 5, reqs/DPO EFORM 5 SAMPLE.pdf) — first-class
@@ -67,6 +68,12 @@ class Placement extends Model
     public function ojtEvaluationReport(): HasOne
     {
         return $this->hasOne(OjtEvaluationReport::class);
+    }
+
+    // Trainee-entered weekly whereabouts blocks (self-service schedule).
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(TraineeSchedule::class)->orderBy('day_of_week')->orderBy('start_time');
     }
 
     public function traineeFullName(): string

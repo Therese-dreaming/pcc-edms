@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Modules\Dpnda\Models\DpndaRecord;
 use App\Modules\Dpnda\Models\Placement;
+use App\Modules\Dpnda\Models\TraineeSchedule;
 use App\Modules\Dpnda\Policies\DpndaRecordPolicy;
 use App\Modules\Dpnda\Policies\PlacementPolicy;
+use App\Modules\Dpnda\Policies\TraineeSchedulePolicy;
 use App\Modules\Dpreq\Models\DpreqApplication;
 use App\Modules\Dpreq\Policies\DpreqApplicationPolicy;
 use App\Modules\Remis\Incident\Models\Incident;
@@ -52,6 +54,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(DpreqApplication::class, DpreqApplicationPolicy::class);
         Gate::policy(DpndaRecord::class, DpndaRecordPolicy::class);
         Gate::policy(Placement::class, PlacementPolicy::class);
+        Gate::policy(TraineeSchedule::class, TraineeSchedulePolicy::class);
         Gate::policy(RemisApplication::class, RemisApplicationPolicy::class);
         Gate::policy(Incident::class, IncidentPolicy::class);
         Gate::policy(ProgressReport::class, ProgressReportPolicy::class);
