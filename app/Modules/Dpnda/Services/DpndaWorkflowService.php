@@ -58,39 +58,55 @@ class DpndaWorkflowService
 
     public function traineeSign(DpndaRecord $record, string $typedFullName, ?string $signatureImage = null): DpndaRecord
     {
-        if (! $record->canTransitionTo('trainee_signed')) {
-            throw new RuntimeException("Illegal DPNDA transition: {$record->status} -> trainee_signed.");
-        }
+        // Lock first, then write signature fields, then transition — same pattern as
+        // coordinatorCountersign(). Writing before the lock would let a concurrent request
+        // overwrite signature data on a record whose transition is about to fail.
+        return DB::transaction(function () use ($record, $typedFullName, $signatureImage) {
+            $locked = DpndaRecord::lockForUpdate()->findOrFail($record->id);
 
-        $identity = SignatureIdentity::capture();
+            if (! $locked->canTransitionTo('trainee_signed')) {
+                throw new RuntimeException("Illegal DPNDA transition: {$locked->status} -> trainee_signed.");
+            }
 
-        $record->update([
-            'trainee_signature_id' => $typedFullName,
-            'trainee_signature_image' => $signatureImage,
-            'trainee_signature_ip' => $identity['ip'],
-            'trainee_signature_user_agent' => $identity['user_agent'],
-            'trainee_signed_at' => now(),
-        ]);
+            $identity = SignatureIdentity::capture();
 
-        $record = $this->transition($record, 'trainee_signed', 'dpnda_record.trainee_signed');
+            $locked->update([
+                'trainee_signature_id' => $typedFullName,
+                'trainee_signature_image' => $signatureImage,
+                'trainee_signature_ip' => $identity['ip'],
+                'trainee_signature_user_agent' => $identity['user_agent'],
+                'trainee_signed_at' => now(),
+            ]);
 
-        // docs/2.2: Trainee signed -> Dept Coordinator.
-        $this->notifications->notifyUser($record->placement->coordinator, 'Trainee signed NDA', "{$record->placement->traineeFullName()} signed NDA {$record->tracking_number} — countersignature needed.", $record);
+            $locked = $this->transition($locked, 'trainee_signed', 'dpnda_record.trainee_signed');
 
-        return $record;
+            // docs/2.2: Trainee signed -> Dept Coordinator.
+            $this->notifications->notifyUser($locked->placement->coordinator, 'Trainee signed NDA', "{$locked->placement->traineeFullName()} signed NDA {$locked->tracking_number} — countersignature needed.", $locked);
+
+            return $locked;
+        });
     }
 
     public function decline(DpndaRecord $record, string $reason): DpndaRecord
     {
-        $record->update(['decline_reason' => $reason]);
+        // Lock before writing decline_reason — same pattern as traineeSign()/coordinatorCountersign().
+        return DB::transaction(function () use ($record, $reason) {
+            $locked = DpndaRecord::lockForUpdate()->findOrFail($record->id);
 
-        $record = $this->transition($record, 'declined', 'dpnda_record.declined', $reason);
+            if (! $locked->canTransitionTo('declined')) {
+                throw new RuntimeException("Illegal DPNDA transition: {$locked->status} -> declined.");
+            }
 
-        // docs/2.2: Declined -> Dept Coordinator + DPO.
-        $this->notifications->notifyUser($record->placement->coordinator, 'NDA declined', "{$record->placement->traineeFullName()} declined NDA {$record->tracking_number}: \"{$reason}\"", $record);
-        $this->notifications->notifyRole('dpo_staff', 'NDA declined', "NDA {$record->tracking_number} was declined by the trainee: \"{$reason}\"", $record);
+            $locked->update(['decline_reason' => $reason]);
 
-        return $record;
+            $locked = $this->transition($locked, 'declined', 'dpnda_record.declined', $reason);
+
+            // docs/2.2: Declined -> Dept Coordinator + DPO.
+            $this->notifications->notifyUser($locked->placement->coordinator, 'NDA declined', "{$locked->placement->traineeFullName()} declined NDA {$locked->tracking_number}: \"{$reason}\"", $locked);
+            $this->notifications->notifyRole('dpo_staff', 'NDA declined', "NDA {$locked->tracking_number} was declined by the trainee: \"{$reason}\"", $locked);
+
+            return $locked;
+        });
     }
 
     public function coordinatorCountersign(DpndaRecord $record, string $typedFullName, ?string $signatureImage = null): DpndaRecord
@@ -150,7 +166,9 @@ class DpndaWorkflowService
     private function nextTrackingNumber(): string
     {
         $year = now()->year;
-        $count = DpndaRecord::where('tracking_number', 'like', "DPNDA-{$year}-%")->lockForUpdate()->count();
+        // withTrashed: soft-deleted rows still occupy their tracking number; excluding them
+        // would let a new record collide with a deleted one's number.
+        $count = DpndaRecord::withTrashed()->where('tracking_number', 'like', "DPNDA-{$year}-%")->lockForUpdate()->count();
 
         return sprintf('DPNDA-%d-%04d', $year, $count + 1);
     }

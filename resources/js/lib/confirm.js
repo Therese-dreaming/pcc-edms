@@ -4,9 +4,11 @@ import Swal from 'sweetalert2';
 // instead of building its own Swal.mixin. Colors/fonts live in
 // resources/css/app.css's `.swal2-*` rules; this file only sets structure
 // (buttons, timers) and which semantic variant to apply.
+// NOTE: focusCancel is deliberately NOT set here. SweetAlert2 warns about it on toasts
+// (notifySuccess) — and that warning fires on the key's mere presence, not its value — so each
+// dialog below that actually has a cancel button opts into focusCancel: true on its own.
 const swal = Swal.mixin({
     reverseButtons: true,
-    focusCancel: true,
     customClass: {
         confirmButton: 'swal2-styled',
         cancelButton: 'swal2-styled swal2-cancel',
@@ -28,6 +30,7 @@ export function confirmDanger({ title, text, confirmText = 'Confirm' }) {
             showCancelButton: true,
             confirmButtonText: confirmText,
             cancelButtonText: 'Cancel',
+            focusCancel: true,
             customClass: {
                 confirmButton: variantClass('danger'),
                 cancelButton: 'swal2-styled swal2-cancel',
@@ -48,6 +51,7 @@ export function confirmAction({ title, text, confirmText = 'Confirm' }) {
             showCancelButton: true,
             confirmButtonText: confirmText,
             cancelButtonText: 'Cancel',
+            focusCancel: true,
         })
         .then((result) => result.isConfirmed);
 }
@@ -74,6 +78,7 @@ export function confirmWithPassword({ title, text, confirmText = 'Confirm', reas
             confirmButtonText: confirmText,
             cancelButtonText: 'Cancel',
             focusConfirm: false,
+            focusCancel: true,
             customClass: {
                 confirmButton: variantClass('danger'),
                 cancelButton: 'swal2-styled swal2-cancel',
@@ -112,6 +117,7 @@ export function promptPassword({ title, text, confirmText = 'Confirm' }) {
             showCancelButton: true,
             confirmButtonText: confirmText,
             cancelButtonText: 'Cancel',
+            focusCancel: true,
             customClass: {
                 confirmButton: variantClass('danger'),
                 cancelButton: 'swal2-styled swal2-cancel',
@@ -156,4 +162,45 @@ export function notifyResultWarning(title, html) {
 
 export function notifyResultError(title, html) {
     return swal.fire({ title, html, icon: 'error', confirmButtonText: 'OK', customClass: { confirmButton: variantClass('danger') } });
+}
+
+/**
+ * A blocking, non-dismissible "working…" modal shown while a form submission (any non-GET
+ * Inertia visit) is in flight, so every action has a visible loading state. Driven globally by
+ * resources/js/lib/feedback.js — pair showLoading() with hideLoading(). Uses Swal directly (no
+ * buttons, so none of the mixin's button styling applies); the shared .swal2-* theme CSS still
+ * styles the popup/title/text.
+ */
+let loadingOpen = false;
+
+export function showLoading(title = 'Working…', text = 'Hang tight — saving your changes.') {
+    if (loadingOpen) return;
+    loadingOpen = true;
+    Swal.fire({
+        title,
+        text,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        allowEnterKey: false,
+        showConfirmButton: false,
+        didOpen: () => Swal.showLoading(),
+    });
+}
+
+export function hideLoading() {
+    if (!loadingOpen) return;
+    loadingOpen = false;
+    Swal.close();
+}
+
+/**
+ * Render a server flash payload ({ success, error, warning } — see HandleInertiaRequests) with
+ * the appropriate alert. Success is a brief auto-dismissing toast; error/warning stay open until
+ * acknowledged since they carry detail worth reading. Only the first populated key is shown.
+ */
+export function showFlash(flash) {
+    if (!flash) return;
+    if (flash.success) notifySuccess(flash.success);
+    else if (flash.error) notifyResultError('Something went wrong', flash.error);
+    else if (flash.warning) notifyResultWarning('Heads up', flash.warning);
 }

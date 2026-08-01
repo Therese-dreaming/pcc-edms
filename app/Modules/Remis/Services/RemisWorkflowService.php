@@ -65,78 +65,77 @@ class RemisWorkflowService
         ?string $signature,
         ?string $signatureImage = null,
     ): RemisApplication {
-        if ($application->status !== 'under_endorsement' || $application->current_endorsement_step !== $step) {
-            throw new RuntimeException("It is not currently the {$step}'s turn to endorse this application.");
-        }
+        // Lock the application row BEFORE checking status/step and creating the EndorsementAction.
+        // Without this, two concurrent approvals at the same step could both pass the check and both
+        // create EndorsementAction rows, effectively skipping the next endorser in the chain.
+        return DB::transaction(function () use ($application, $step, $endorserId, $action, $remarks, $signature, $signatureImage) {
+            $locked = RemisApplication::lockForUpdate()->findOrFail($application->id);
 
-        $identity = SignatureIdentity::capture();
+            if ($locked->status !== 'under_endorsement' || $locked->current_endorsement_step !== $step) {
+                throw new RuntimeException("It is not currently the {$step}'s turn to endorse this application.");
+            }
 
-        EndorsementAction::create([
-            'remis_application_id' => $application->id,
-            'step' => $step,
-            'endorser_id' => $endorserId,
-            'action' => $action,
-            'remarks' => $remarks,
-            'signature_id' => $signature,
-            'signature_image' => $signatureImage,
-            'signature_ip' => $identity['ip'],
-            'signature_user_agent' => $identity['user_agent'],
-            'acted_at' => now(),
-        ]);
+            $identity = SignatureIdentity::capture();
 
-        $this->auditLog->record("remis_application.endorsement_{$action}", $application, null, [
-            'step' => $step, 'action' => $action,
-        ]);
+            EndorsementAction::create([
+                'remis_application_id' => $locked->id,
+                'step' => $step,
+                'endorser_id' => $endorserId,
+                'action' => $action,
+                'remarks' => $remarks,
+                'signature_id' => $signature,
+                'signature_image' => $signatureImage,
+                'signature_ip' => $identity['ip'],
+                'signature_user_agent' => $identity['user_agent'],
+                'acted_at' => now(),
+            ]);
 
-        if ($action === 'reject') {
-            $application = $this->transition($application, 'disapproved', 'remis_application.disapproved', $remarks);
+            $this->auditLog->record("remis_application.endorsement_{$action}", $locked, null, [
+                'step' => $step, 'action' => $action,
+            ]);
 
-            // Not an explicit docs/3.3 trigger line, but the applicant clearly needs to know
-            // their study was disapproved during endorsement — same treatment as decide()'s
-            // "Decision issued -> Researcher" for the formal decision later in the pipeline.
-            $this->notifications->notifyUser($application->applicant, 'REMIS application disapproved', "REMIS application {$application->tracking_number} was disapproved during endorsement: \"{$remarks}\"", $application);
+            if ($action === 'reject') {
+                $locked = $this->transition($locked, 'disapproved', 'remis_application.disapproved', $remarks);
 
-            return $application;
-        }
+                $this->notifications->notifyUser($locked->applicant, 'REMIS application disapproved', "REMIS application {$locked->tracking_number} was disapproved during endorsement: \"{$remarks}\"", $locked);
 
-        if ($action === 'return') {
-            $application->update(['returned_from_status' => 'under_endorsement']);
+                return $locked;
+            }
 
-            $application = $this->transition($application, 'for_revision', 'remis_application.for_revision', $remarks);
+            if ($action === 'return') {
+                $locked->update(['returned_from_status' => 'under_endorsement']);
 
-            // docs/3.3: For Revision (from any stage) -> Researcher.
-            $this->notifications->notifyUser($application->applicant, 'REMIS application returned for revision', "REMIS application {$application->tracking_number} was returned: \"{$remarks}\"", $application);
+                $locked = $this->transition($locked, 'for_revision', 'remis_application.for_revision', $remarks);
 
-            return $application;
-        }
+                $this->notifications->notifyUser($locked->applicant, 'REMIS application returned for revision', "REMIS application {$locked->tracking_number} was returned: \"{$remarks}\"", $locked);
 
-        // approve: advance to next step, or if Dean just approved, move to screening.
-        $nextStep = match ($step) {
-            'adviser' => 'program_head',
-            'program_head' => 'dean',
-            'dean' => null,
-        };
+                return $locked;
+            }
 
-        if ($nextStep === null) {
-            $application->update(['current_endorsement_step' => null]);
+            // approve: advance to next step, or if Dean just approved, move to screening.
+            $nextStep = match ($step) {
+                'adviser' => 'program_head',
+                'program_head' => 'dean',
+                'dean' => null,
+            };
 
-            $application = $this->transition($application, 'for_screening', 'remis_application.endorsement_complete');
+            if ($nextStep === null) {
+                $locked->update(['current_endorsement_step' => null]);
 
-            // docs/3.3: Routed to Ethics Secretariat -> Ethics Secretariat.
-            $this->notifications->notifyRole('ethics_secretariat', 'REMIS application ready for screening', "REMIS application {$application->tracking_number} completed endorsement and is ready for screening.", $application);
+                $locked = $this->transition($locked, 'for_screening', 'remis_application.endorsement_complete');
 
-            return $application;
-        }
+                $this->notifications->notifyRole('ethics_secretariat', 'REMIS application ready for screening', "REMIS application {$locked->tracking_number} completed endorsement and is ready for screening.", $locked);
 
-        $application->update(['current_endorsement_step' => $nextStep]);
+                return $locked;
+            }
 
-        // docs/3.3: Endorsement step advanced -> Researcher + next endorser.
-        $this->notifications->notifyUser($application->applicant, 'REMIS endorsement advanced', "REMIS application {$application->tracking_number} advanced to the {$nextStep} endorsement step.", $application);
-        // Still a role broadcast: unlike the adviser (whose ownership comes from the applicant's
-        // cohort), the schema has no per-application program head or dean to target.
-        $this->notifications->notifyRole($nextStep, 'REMIS application awaiting endorsement', "REMIS application {$application->tracking_number} is awaiting your endorsement.", $application);
+            $locked->update(['current_endorsement_step' => $nextStep]);
 
-        return $application->fresh();
+            $this->notifications->notifyUser($locked->applicant, 'REMIS endorsement advanced', "REMIS application {$locked->tracking_number} advanced to the {$nextStep} endorsement step.", $locked);
+            $this->notifications->notifyRole($nextStep, 'REMIS application awaiting endorsement', "REMIS application {$locked->tracking_number} is awaiting your endorsement.", $locked);
+
+            return $locked->fresh();
+        });
     }
 
     public function resubmitFromRevision(RemisApplication $application): RemisApplication
@@ -177,6 +176,17 @@ class RemisWorkflowService
      */
     public function screen(RemisApplication $application, string $decision, ?string $comments = null, array $checklist = [], ?int $screenedBy = null): RemisApplication
     {
+        // Validate the status BEFORE creating the checklist row — otherwise a failed transition
+        // leaves an orphaned screening_checklists record (the transition throws, the create doesn't
+        // roll back because it happened outside any wrapping transaction).
+        if (! $application->canTransitionTo(match ($decision) {
+            'complete' => 'for_review',
+            'incomplete', 'returned_for_compliance' => 'for_revision',
+            default => throw new RuntimeException("Unknown screening decision: {$decision}"),
+        })) {
+            throw new RuntimeException("Illegal REMIS transition: {$application->status} -> screening outcome '{$decision}'.");
+        }
+
         $record = \App\Modules\Remis\Models\ScreeningChecklist::create([
             'remis_application_id' => $application->id,
             'proposal_attached' => $checklist['proposal_attached'] ?? false,

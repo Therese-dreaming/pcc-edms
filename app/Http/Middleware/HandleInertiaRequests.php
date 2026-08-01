@@ -38,6 +38,15 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
                 'roleName' => $user?->role?->name,
             ],
+            // One-shot flash messages (set via back()->with('success', …) etc.). Shared on every
+            // response so the global SweetAlert feedback layer (resources/js/lib/feedback.js) can
+            // toast them after the page they belong to renders. Laravel flashes these for a single
+            // request, so they naturally disappear on the next navigation.
+            'flash' => [
+                'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
+                'warning' => $request->session()->get('warning'),
+            ],
             // docs/4.3 — notification bell. Shared on every request (not fetched separately)
             // since this app has no websocket/polling infra; a full Inertia page visit already
             // refreshes it on every navigation, which is enough for an MVP in-app bell.

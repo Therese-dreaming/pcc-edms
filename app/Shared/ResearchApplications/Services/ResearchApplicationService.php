@@ -329,7 +329,8 @@ class ResearchApplicationService
     private function nextDpreqTrackingNumber(): string
     {
         $year = now()->year;
-        $count = DpreqApplication::where('tracking_number', 'like', "DPREQ-{$year}-%")->lockForUpdate()->count();
+        // withTrashed: soft-deleted rows still occupy their tracking number.
+        $count = DpreqApplication::withTrashed()->where('tracking_number', 'like', "DPREQ-{$year}-%")->lockForUpdate()->count();
 
         return sprintf('DPREQ-%d-%04d', $year, $count + 1);
     }
@@ -337,7 +338,8 @@ class ResearchApplicationService
     private function nextRemisTrackingNumber(): string
     {
         $year = now()->year;
-        $count = RemisApplication::where('tracking_number', 'like', "REC-{$year}-%")->lockForUpdate()->count();
+        // withTrashed: soft-deleted rows still occupy their tracking number.
+        $count = RemisApplication::withTrashed()->where('tracking_number', 'like', "REC-{$year}-%")->lockForUpdate()->count();
 
         return sprintf('REC-%d-%04d', $year, $count + 1);
     }

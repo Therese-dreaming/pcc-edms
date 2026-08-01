@@ -59,6 +59,12 @@ class DpreqWorkflowService
 
     public function resubmit(DpreqApplication $application): DpreqApplication
     {
+        // Same gate as REMIS's resubmitFromRevision(): don't let the application re-enter the
+        // review queue while a mandatory revision/document request is still outstanding.
+        if ($this->revisions->hasOutstandingMandatory($application)) {
+            throw new RuntimeException('Cannot resubmit: there are outstanding required items you must still provide.');
+        }
+
         $application = $this->transition($application, 'submitted', 'dpreq_application.resubmitted');
 
         $this->notifications->notifyRole('dpo_staff', 'DPREQ application resubmitted', "DPREQ application {$application->tracking_number} was resubmitted after correction.", $application);
