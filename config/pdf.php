@@ -52,9 +52,15 @@ return [
     | ASSUMPTION placeholders pending real DPO/EVP confirmation — see
     | docs/9.1-review-and-open-questions.md.
     |
+    | `approval_signature` is the public-relative path to the EVP's captured
+    | signature PNG. When present it renders as an image above the approval
+    | line in every PDF that includes pdf/partials/_approval.blade.php.
+    | Stakeholder confirmed 2026-08-03: capture once, auto-attach to docs.
+    |
     */
     'approval_signatory' => 'Dr. Jennifer S. Apolinario',
     'approval_title' => 'Executive Vice President',
+    'approval_signature' => 'images/signatures/evp.png',
     'dpo_officer' => 'Dr. Virgilio V. Vivo',
     'research_ethics_head' => 'Dr. Antonio Cruz',
 
