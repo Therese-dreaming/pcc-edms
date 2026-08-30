@@ -23,6 +23,12 @@ Route::middleware(['auth', 'verified'])->prefix('dpnda')->name('dpnda.')->group(
     Route::put('/schedules/{schedule}', [TraineeScheduleController::class, 'update'])->name('schedules.update');
     Route::delete('/schedules/{schedule}', [TraineeScheduleController::class, 'destroy'])->name('schedules.destroy');
 
+    // Batch onboarding (roadmap A3) — CSV import of trainee placements, preview then confirm.
+    // Also before the {dpndaRecord} wildcard.
+    Route::get('/import', [DpndaRecordController::class, 'importForm'])->name('import');
+    Route::post('/import/preview', [DpndaRecordController::class, 'preview'])->name('import.preview');
+    Route::post('/import/confirm', [DpndaRecordController::class, 'confirmImport'])->name('import.confirm');
+
     Route::get('/{dpndaRecord}', [DpndaRecordController::class, 'show'])->name('show');
 
     Route::post('/{dpndaRecord}/send-for-signing', [DpndaRecordController::class, 'sendForSigning'])->name('send-for-signing');

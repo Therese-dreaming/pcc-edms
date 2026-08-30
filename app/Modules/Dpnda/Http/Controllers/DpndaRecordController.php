@@ -112,6 +112,52 @@ class DpndaRecordController extends Controller
         return Inertia::render('Dpnda/Create');
     }
 
+    // Batch onboarding (roadmap A3, 2026-08-31): coordinators import whole trainee batches from
+    // a CSV at OJT intake instead of filling the one-trainee form N times. Preview-then-confirm,
+    // same shape as the admin bulk user import; nothing persists until confirmImport().
+    public function importForm(): Response
+    {
+        $this->authorize('create', DpndaRecord::class);
+
+        return Inertia::render('Dpnda/Import');
+    }
+
+    public function preview(Request $request, \App\Modules\Dpnda\Services\DpndaImportService $import): Response
+    {
+        $this->authorize('create', DpndaRecord::class);
+
+        $request->validate(['file' => ['required', 'file', 'mimes:csv,txt']]);
+
+        $rows = $import->previewImport($request->file('file'));
+        session(['dpnda_import_rows' => $rows]);
+
+        return Inertia::render('Dpnda/Import', ['preview' => $rows]);
+    }
+
+    public function confirmImport(Request $request, \App\Modules\Dpnda\Services\DpndaImportService $import): RedirectResponse
+    {
+        $this->authorize('create', DpndaRecord::class);
+
+        $rows = session('dpnda_import_rows', []);
+
+        if ($rows === []) {
+            return redirect()->route('dpnda.import')->withErrors(['file' => 'No preview found — upload a CSV first.']);
+        }
+
+        $result = $import->importPlacements($rows, $request->user()->id);
+        session()->forget('dpnda_import_rows');
+
+        $message = 'Created ' . $result['created'] . ' placement' . ($result['created'] === 1 ? '' : 's') . '.';
+        if ($result['invited'] > 0) {
+            $message .= ' ' . $result['invited'] . ' new trainee account' . ($result['invited'] === 1 ? '' : 's') . ' invited by email.';
+        }
+        if ($result['skipped'] > 0) {
+            $message .= ' Skipped ' . $result['skipped'] . ' invalid row' . ($result['skipped'] === 1 ? '' : 's') . '.';
+        }
+
+        return redirect()->route('dpnda.index')->with('success', $message);
+    }
+
     public function store(StorePlacementRequest $request, \App\Shared\Auth\Services\AdminUserService $users): RedirectResponse
     {
         $validated = $request->validated();
