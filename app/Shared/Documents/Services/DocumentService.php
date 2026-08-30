@@ -19,6 +19,10 @@ use Illuminate\Support\Facades\Storage;
 // only — it is never the stored filename.
 class DocumentService
 {
+    public function __construct(private readonly VirusScanService $virusScan)
+    {
+    }
+
     /**
      * Store a user-uploaded file (e.g. research proposal, consent form).
      *
@@ -36,6 +40,11 @@ class DocumentService
         string $repositoryPath,
         ?string $department = null,
     ): Document {
+        // Roadmap Phase C — antivirus gate (config/antivirus.php; no-op unless enabled, but
+        // fail-closed when it is). Runs before any version computation or Storage write, so an
+        // infected file is never persisted and never bumps the version chain.
+        $this->virusScan->scan($file);
+
         $version = $this->nextVersion($documentable, $documentType);
 
         $filename = DocumentNaming::filename(
