@@ -92,6 +92,13 @@ class RemisApplicationPolicy
         return $application->applicant_id === $user->id;
     }
 
+    // docs/HANDOFF.md Part L — a Data Breach/Confidentiality Breach incident auto-pauses
+    // monitoring; the study's researcher resumes it once corrective actions are in place.
+    public function resumeMonitoring(User $user, RemisApplication $application): bool
+    {
+        return $application->applicant_id === $user->id;
+    }
+
     // docs/3.5-remis-incident-reporting.md "Who Can File" — lives here, not on IncidentPolicy,
     // because Laravel resolves the policy class from the *authorized object's* class
     // ($this->authorize('file', $remisApplication) looks up RemisApplication's policy), not

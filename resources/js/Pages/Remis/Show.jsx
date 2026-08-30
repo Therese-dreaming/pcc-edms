@@ -36,6 +36,7 @@ const STATUS_LABELS = {
     disapproved: 'Disapproved',
     clearance_issued: 'Clearance Issued',
     monitoring: 'Monitoring',
+    monitoring_paused: 'Monitoring Paused',
     closed: 'Closed',
     archived: 'Archived',
 };
@@ -200,8 +201,9 @@ export default function Show({ application, legalTransitions, revisions }) {
     const canDecide =
         roleName === 'ethics_committee_chair' && application.status === 'for_review' && allReviewersSubmitted;
     const canReactivate = roleName === 'ethics_committee_chair' && application.status === 'deferred';
+    const canResumeMonitoring = isApplicant && application.status === 'monitoring_paused';
 
-    const hasAnyWorkflowAction = canEndorse || canResubmit || canScreen || canAssignReviewer || canReview || canDecide || canReactivate;
+    const hasAnyWorkflowAction = canEndorse || canResubmit || canScreen || canAssignReviewer || canReview || canDecide || canReactivate || canResumeMonitoring;
 
     const endorseForm = useForm({ action: 'approve', remarks: '', signature: '', signature_image: null });
 
@@ -613,12 +615,46 @@ export default function Show({ application, legalTransitions, revisions }) {
                             )}
 
                             {/* Monitoring & Completion Card */}
-                            {['monitoring', 'closed', 'archived'].includes(application.status) && (
+                            {['monitoring', 'monitoring_paused', 'closed', 'archived'].includes(application.status) && (
                                 <div className="bg-surface-secondary rounded-lg border border-border shadow-sm overflow-hidden">
                                     <div className="border-b border-border bg-surface-tertiary/50 px-6 py-4">
                                         <h3 className="text-lg font-semibold text-fg-primary">Monitoring &amp; Completion</h3>
                                     </div>
                                     <div className="p-6">
+                                        {application.status === 'monitoring_paused' && (
+                                            <div className="mb-6 p-4 border rounded-lg bg-surface-tertiary border-border">
+                                                <div className="flex items-start gap-3">
+                                                    <Warning size={20} weight="fill" className="mt-0.5 shrink-0 text-primary-700" />
+                                                    <div className="text-sm">
+                                                        <p className="font-semibold text-fg-primary">Monitoring is paused.</p>
+                                                        <p className="mt-1 text-fg-secondary">
+                                                            A Data Breach or Confidentiality Breach incident was filed for this
+                                                            study, so monitoring was automatically paused. Progress reports are
+                                                            suspended until monitoring is resumed.
+                                                        </p>
+                                                        {canResumeMonitoring && (
+                                                            <form
+                                                                className="mt-3"
+                                                                onSubmit={(e) => {
+                                                                    e.preventDefault();
+                                                                    router.post(route('remis.resume-monitoring', application.id));
+                                                                }}
+                                                            >
+                                                                <button
+                                                                    type="submit"
+                                                                    disabled={router.processing}
+                                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary-700 hover:bg-primary-800 text-white text-sm font-semibold shadow-sm transition-colors"
+                                                                >
+                                                                    <ArrowRight size={16} weight="regular" />
+                                                                    Resume Monitoring
+                                                                </button>
+                                                            </form>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {application.completion_report && (
                                             <div className="mb-6 p-4 bg-surface-tertiary border border-border rounded-lg text-sm">
                                                 <p className="font-semibold text-fg-primary">

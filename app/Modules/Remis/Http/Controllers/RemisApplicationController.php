@@ -400,6 +400,20 @@ class RemisApplicationController extends Controller
         return back()->with('success', 'Application reactivated for review.');
     }
 
+    // docs/HANDOFF.md Part L — the researcher resumes monitoring after an incident auto-paused it.
+    public function resumeMonitoring(Request $request, RemisApplication $remisApplication): RedirectResponse
+    {
+        $this->authorize('resumeMonitoring', $remisApplication);
+
+        try {
+            $this->workflow->resumeMonitoring($remisApplication, $request->user()->id);
+        } catch (RuntimeException $e) {
+            return back()->withErrors(['resume' => $e->getMessage()]);
+        }
+
+        return back()->with('success', 'Monitoring resumed.');
+    }
+
     public function submitProgressReport(Request $request, RemisApplication $remisApplication): RedirectResponse
     {
         $this->authorize('submitProgressReport', $remisApplication);

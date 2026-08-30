@@ -27,4 +27,6 @@ Route::middleware(['auth', 'verified'])->prefix('remis')->name('remis.')->group(
     Route::post('/{remisApplication}/progress-reports', [RemisApplicationController::class, 'submitProgressReport'])->name('progress-reports.store');
     Route::post('/progress-reports/{progressReport}/review', [RemisApplicationController::class, 'reviewProgressReport'])->name('progress-reports.review');
     Route::post('/{remisApplication}/completion-report', [RemisApplicationController::class, 'submitCompletionReport'])->name('completion-report.store');
+    // Incident auto-pause exit (docs/HANDOFF.md Part L): the researcher resumes monitoring.
+    Route::post('/{remisApplication}/resume-monitoring', [RemisApplicationController::class, 'resumeMonitoring'])->name('resume-monitoring');
 });
