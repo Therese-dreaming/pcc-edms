@@ -2,6 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import InputError from '@/Components/InputError';
 import RevisionPanel from '@/Components/RevisionPanel';
 import StatusBadge from '@/Components/StatusBadge';
+import CertificateHistory from '@/Components/CertificateHistory';
 import TextInput from '@/Components/TextInput';
 import SignaturePad from '@/Components/SignaturePad';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
@@ -925,6 +926,19 @@ export default function Show({ application, legalTransitions, revisions }) {
                                                 </a>
                                             </div>
                                         )}
+                                    </div>
+                                </div>
+
+                                {/* Certificate Issuance History (stakeholder Future Enhancement, 2026-08-31) */}
+                                <div className={PANEL}>
+                                    <div className={PANEL_HEAD}>
+                                        <div>
+                                            <p className={PANEL_EYEBROW}>Clearance</p>
+                                            <h3 className={PANEL_TITLE}>Certificate History</h3>
+                                        </div>
+                                    </div>
+                                    <div className="p-6">
+                                        <CertificateHistory certificate={research.clearance_certificate} />
                                     </div>
                                 </div>
 

@@ -154,7 +154,8 @@ class RemisApplicationController extends Controller
 
         $remisApplication->load([
             'researchApplication.applicant',
-            'researchApplication.clearanceCertificate',
+            'researchApplication.clearanceCertificate.dpoSignedBy',
+            'researchApplication.clearanceCertificate.ethicsSignedBy',
             // The additional (DPO-side) uploads and the generated Form 1 live on the DPREQ sibling —
             // load them so the shared "Submitted Documents" list and Form 1 appear here too
             // (concern 5/6, 2026-07-28).

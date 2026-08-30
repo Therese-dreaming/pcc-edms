@@ -2,6 +2,7 @@ import InputError from '@/Components/InputError';
 import PageHeader from '@/Components/PageHeader';
 import RevisionPanel from '@/Components/RevisionPanel';
 import StatusBadge from '@/Components/StatusBadge';
+import CertificateHistory from '@/Components/CertificateHistory';
 import TextInput from '@/Components/TextInput';
 import SignaturePad from '@/Components/SignaturePad';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -1218,6 +1219,19 @@ export default function Show({ application, legalTransitions, revisions }) {
                                                 </a>
                                             </div>
                                         )}
+                                    </div>
+                                </div>
+
+                                {/* Certificate Issuance History (stakeholder Future Enhancement, 2026-08-31) */}
+                                <div className="bg-surface-secondary rounded-lg border border-border shadow-sm overflow-hidden">
+                                    <div className="border-b border-border bg-surface-tertiary/50 px-5 py-4">
+                                        <h3 className="text-base font-semibold text-fg-primary flex items-center gap-2">
+                                            <Clock size={18} weight="regular" className="text-fg-secondary" />
+                                            Certificate History
+                                        </h3>
+                                    </div>
+                                    <div className="p-5">
+                                        <CertificateHistory certificate={application.research_application?.clearance_certificate} />
                                     </div>
                                 </div>
 

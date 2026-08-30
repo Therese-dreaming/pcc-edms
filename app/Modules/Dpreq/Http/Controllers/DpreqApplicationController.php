@@ -212,7 +212,8 @@ class DpreqApplicationController extends Controller
         $dpreqApplication->load([
             'researchApplication.researchTeamNda.signatories',
             'researchApplication.researchTeamNda.documents',
-            'researchApplication.clearanceCertificate',
+            'researchApplication.clearanceCertificate.dpoSignedBy',
+            'researchApplication.clearanceCertificate.ethicsSignedBy',
             // The mandatory intake uploads (proposal, instruments, letters, consent) attach to the
             // REMIS sibling — load them so the shared "Submitted Documents" list is complete on the
             // DPREQ side too (concern 5, 2026-07-28).
