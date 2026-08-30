@@ -5,7 +5,6 @@ namespace App\Modules\Dpreq\Services;
 use App\Modules\Dpreq\Models\DpreqApplication;
 use App\Shared\AuditLog\Services\AuditLogService;
 use App\Shared\AuditLog\Services\StatusHistoryService;
-use App\Shared\Clearance\Services\ClearanceService;
 use App\Shared\Notifications\Services\NotificationService;
 use App\Shared\Revisions\Services\RevisionService;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +22,6 @@ class DpreqWorkflowService
     public function __construct(
         private readonly StatusHistoryService $statusHistory,
         private readonly AuditLogService $auditLog,
-        private readonly ClearanceService $clearance,
         private readonly NotificationService $notifications,
         private readonly RevisionService $revisions,
         private readonly ResearchTeamNdaService $researchTeamNda,
