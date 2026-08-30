@@ -46,7 +46,11 @@ class VerificationController extends Controller
             ->first();
 
         if ($ethics) {
-            return $this->result('ETHICS', 'Research Ethics Clearance', $ethics->remis_certificate_number, $ethics->remis_issued_at, $ethics->remis_valid_until);
+            $label = $ethics->isRemisExemption()
+                ? 'Certificate of Exemption from Research Ethics Clearance'
+                : 'Research Ethics Clearance';
+
+            return $this->result('ETHICS', $label, $ethics->remis_certificate_number, $ethics->remis_issued_at, $ethics->remis_valid_until);
         }
 
         return Inertia::render('Verify', ['result' => null, 'searched' => true]);

@@ -28,42 +28,44 @@ class IncidentService
 
     public function file(RemisApplication $application, array $data, int $reporterId): Incident
     {
-        $incident = Incident::create([
-            'remis_application_id' => $application->id,
-            'incident_type' => $data['incident_type'],
-            'severity' => $data['severity'],
-            'incident_date' => $data['incident_date'],
-            'reported_by' => $reporterId,
-            'description' => $data['description'],
-            'immediate_actions' => $data['immediate_actions'] ?? null,
-            'status' => 'reported',
-        ]);
+        return DB::transaction(function () use ($application, $data, $reporterId) {
+            $incident = Incident::create([
+                'remis_application_id' => $application->id,
+                'incident_type' => $data['incident_type'],
+                'severity' => $data['severity'],
+                'incident_date' => $data['incident_date'],
+                'reported_by' => $reporterId,
+                'description' => $data['description'],
+                'immediate_actions' => $data['immediate_actions'] ?? null,
+                'status' => 'reported',
+            ]);
 
-        $this->statusHistory->record($incident, null, 'reported');
-        $this->auditLog->record('incident.filed', $incident, null, $incident->toArray());
+            $this->statusHistory->record($incident, null, 'reported');
+            $this->auditLog->record('incident.filed', $incident, null, $incident->toArray());
 
-        $subject = "Incident reported: {$application->tracking_number}";
-        $body = "A {$incident->incident_type} incident (severity: {$incident->severity}) was reported for {$application->tracking_number}.";
+            $subject = "Incident reported: {$application->tracking_number}";
+            $body = "A {$incident->incident_type} incident (severity: {$incident->severity}) was reported for {$application->tracking_number}.";
 
-        $this->notifications->notifyRole('ethics_committee_chair', $subject, $body, $incident);
-        $this->notifications->notifyRole('ethics_secretariat', $subject, $body, $incident);
+            $this->notifications->notifyRole('ethics_committee_chair', $subject, $body, $incident);
+            $this->notifications->notifyRole('ethics_secretariat', $subject, $body, $incident);
 
-        // Auto-pause monitoring for data breach/confidentiality breach incidents
-        if ($incident->notifiesDpo()) {
-            $this->autoPauseMonitoring($application);
-        }
+            // Auto-pause monitoring for data breach/confidentiality breach incidents
+            if ($incident->notifiesDpo()) {
+                $this->autoPauseMonitoring($application);
+            }
 
-        if ($incident->notifiesDpo()) {
-            $this->notifications->notifyRole(
-                'dpo_staff',
-                "DPO-relevant incident: {$application->tracking_number}",
-                "A {$incident->incident_type} incident was reported for REMIS study {$application->tracking_number}. This may be a Data Privacy Act matter — see docs/3.5.",
-                $incident,
-            );
-            $this->auditLog->record('incident.dpo_notified', $incident, null, ['incident_type' => $incident->incident_type]);
-        }
+            if ($incident->notifiesDpo()) {
+                $this->notifications->notifyRole(
+                    'dpo_staff',
+                    "DPO-relevant incident: {$application->tracking_number}",
+                    "A {$incident->incident_type} incident was reported for REMIS study {$application->tracking_number}. This may be a Data Privacy Act matter — see docs/3.5.",
+                    $incident,
+                );
+                $this->auditLog->record('incident.dpo_notified', $incident, null, ['incident_type' => $incident->incident_type]);
+            }
 
-        return $incident;
+            return $incident;
+        });
     }
 
     public function assign(Incident $incident, int $assigneeId): Incident
