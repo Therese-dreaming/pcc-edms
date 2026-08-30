@@ -206,6 +206,9 @@ class DpreqApplicationController extends Controller
     {
         $this->authorize('view', $dpreqApplication);
 
+        // docs/4.4 (B5, 2026-08-31): record access is logged for sensitive records.
+        $this->auditLog->record('dpreq_application.viewed', $dpreqApplication);
+
         $dpreqApplication->load([
             'researchApplication.researchTeamNda.signatories',
             'researchApplication.researchTeamNda.documents',

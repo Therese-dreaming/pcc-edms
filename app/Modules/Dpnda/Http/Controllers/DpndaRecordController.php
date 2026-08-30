@@ -151,6 +151,9 @@ class DpndaRecordController extends Controller
     {
         $this->authorize('view', $dpndaRecord);
 
+        // docs/4.4 (B5, 2026-08-31): record access is logged for sensitive records.
+        $this->auditLog->record('dpnda_record.viewed', $dpndaRecord);
+
         $dpndaRecord->load(['placement.trainee', 'placement.coordinator', 'placement.ojtEvaluationReport.uploader', 'statusHistory.changedBy', 'documents']);
 
         return Inertia::render('Dpnda/Show', [

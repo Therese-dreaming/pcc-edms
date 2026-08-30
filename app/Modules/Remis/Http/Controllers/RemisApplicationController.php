@@ -149,6 +149,9 @@ class RemisApplicationController extends Controller
     {
         $this->authorize('view', $remisApplication);
 
+        // docs/4.4 (B5, 2026-08-31): record access is logged for sensitive records.
+        $this->auditLog->record('remis_application.viewed', $remisApplication);
+
         $remisApplication->load([
             'researchApplication.applicant',
             'researchApplication.clearanceCertificate',

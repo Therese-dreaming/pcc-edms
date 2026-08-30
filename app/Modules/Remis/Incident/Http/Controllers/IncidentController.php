@@ -127,6 +127,9 @@ class IncidentController extends Controller
     {
         $this->authorize('view', $incident);
 
+        // docs/4.4 (B5, 2026-08-31): record access is logged for sensitive records.
+        $this->auditLog->record('incident.viewed', $incident);
+
         $incident->load(['remisApplication', 'reporter', 'assignee', 'verifier', 'statusHistory.changedBy']);
 
         return Inertia::render('Incidents/Show', [
