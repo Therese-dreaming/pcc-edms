@@ -2,6 +2,7 @@
 
 namespace App\Shared\Documents\Services;
 
+use App\Modules\Dpnda\Models\DpndaRecord;
 use App\Modules\Dpreq\Models\DpreqApplication;
 use App\Modules\Remis\Models\RemisApplication;
 use App\Shared\AuditLog\Services\AuditLogService;
@@ -105,6 +106,38 @@ class RetentionService
                 'reason' => 'clearance issued ' . optional($a->researchApplication->clearanceCertificate->dpreq_issued_at)->toDateString(),
             ]);
 
+        // REMIS studies whose ethics clearance/exemption issued past the window. Archived studies
+        // reached that state through clearance issuance (monitoring -> closed -> archived), so the
+        // certificate issue date — not the terminal transition — is the correct anchor: a completed
+        // study is an issued record on the 7-year schedule, not a rejected one on the 3-year schedule.
+        $issued = $issued->concat(
+            RemisApplication::query()
+                ->whereHas('researchApplication.clearanceCertificate', fn ($q) => $q
+                    ->whereNotNull('remis_issued_at')
+                    ->where('remis_issued_at', '<', $issuedCutoff))
+                ->with('researchApplication.clearanceCertificate')
+                ->get()
+                ->map(fn (RemisApplication $a) => [
+                    'record' => $a,
+                    'label' => $a->tracking_number,
+                    'reason' => 'ethics clearance issued ' . optional($a->researchApplication->clearanceCertificate->remis_issued_at)->toDateString(),
+                ])
+        );
+
+        // Fully executed OJT/trainee NDAs share the issued schedule (docs/9.1: DPREQ/DPNDA do not
+        // differ); counted from the terminal transition.
+        $issued = $issued->concat(
+            DpndaRecord::query()
+                ->where('status', 'completed')
+                ->where('updated_at', '<', $issuedCutoff)
+                ->get()
+                ->map(fn (DpndaRecord $r) => [
+                    'record' => $r,
+                    'label' => $r->tracking_number,
+                    'reason' => 'completed ' . $r->updated_at->toDateString(),
+                ])
+        );
+
         // Rejected/inactive: counted from the terminal transition (updated_at is when the record
         // last moved, which for a terminal status is that transition).
         $rejected = DpreqApplication::query()
@@ -118,13 +151,24 @@ class RetentionService
             ])
             ->concat(
                 RemisApplication::query()
-                    ->whereIn('status', ['disapproved', 'archived'])
+                    ->where('status', 'disapproved')
                     ->where('updated_at', '<', $rejectedCutoff)
                     ->get()
                     ->map(fn (RemisApplication $a) => [
                         'record' => $a,
                         'label' => $a->tracking_number,
-                        'reason' => $a->status . ' ' . $a->updated_at->toDateString(),
+                        'reason' => 'disapproved ' . $a->updated_at->toDateString(),
+                    ])
+            )
+            ->concat(
+                DpndaRecord::query()
+                    ->where('status', 'declined')
+                    ->where('updated_at', '<', $rejectedCutoff)
+                    ->get()
+                    ->map(fn (DpndaRecord $r) => [
+                        'record' => $r,
+                        'label' => $r->tracking_number,
+                        'reason' => 'declined ' . $r->updated_at->toDateString(),
                     ])
             );
 
