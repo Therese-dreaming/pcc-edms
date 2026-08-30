@@ -2,6 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import InputError from '@/Components/InputError';
 import SignaturePad from '@/Components/SignaturePad';
 import SelectWithOther from '@/Components/SelectWithOther';
+import DocumentDropzone from '@/Components/DocumentDropzone';
 import { Head, useForm } from '@inertiajs/react';
 import { IconArrowLeft, IconSend, IconShieldLock } from '@tabler/icons-react';
 import { Link } from '@inertiajs/react';
@@ -963,12 +964,12 @@ export default function Create({ documentSlots = [], fileLabels = [], uploadHint
                                 </h2>
                                 <p className="mt-1 text-xs text-fg-tertiary">{uploadHint}</p>
                             </div>
-                            <div className="space-y-5 p-6">
+                            <div className="space-y-7 p-6">
                                 <div>
                                     <p className="mb-3 text-sm font-bold text-fg-primary">Required <span className="text-red-600">*</span></p>
-                                    <div className="space-y-3">
+                                    <div className="grid gap-4 md:grid-cols-2">
                                         {mandatorySlots.map((slot) => (
-                                            <DocRow key={slot.key} slot={slot} files={data.documents[slot.key] ?? []} onAdd={(fl) => addDocumentFiles(slot.key, fl)} onRemove={(i) => removeDocumentFile(slot.key, i)} error={errors[`documents.${slot.key}`]} />
+                                            <DocumentDropzone key={slot.key} title={slot.title} badge="Required" files={data.documents[slot.key] ?? []} onAdd={(fl) => addDocumentFiles(slot.key, fl)} onRemove={(i) => removeDocumentFile(slot.key, i)} error={errors[`documents.${slot.key}`]} />
                                         ))}
                                     </div>
                                 </div>
@@ -976,9 +977,9 @@ export default function Create({ documentSlots = [], fileLabels = [], uploadHint
                                 {data.minors_involved && (
                                     <div>
                                         <p className="mb-3 text-sm font-bold text-fg-primary">Required (minors involved) <span className="text-red-600">*</span></p>
-                                        <div className="space-y-3">
+                                        <div className="grid gap-4 md:grid-cols-2">
                                             {conditionalSlots.map((slot) => (
-                                                <DocRow key={slot.key} slot={slot} files={data.documents[slot.key] ?? []} onAdd={(fl) => addDocumentFiles(slot.key, fl)} onRemove={(i) => removeDocumentFile(slot.key, i)} error={errors[`documents.${slot.key}`]} />
+                                                <DocumentDropzone key={slot.key} title={slot.title} badge="Required" files={data.documents[slot.key] ?? []} onAdd={(fl) => addDocumentFiles(slot.key, fl)} onRemove={(i) => removeDocumentFile(slot.key, i)} error={errors[`documents.${slot.key}`]} />
                                             ))}
                                         </div>
                                     </div>
@@ -986,9 +987,9 @@ export default function Create({ documentSlots = [], fileLabels = [], uploadHint
 
                                 <div>
                                     <p className="mb-3 text-sm font-bold text-fg-primary">As applicable <span className="font-normal text-fg-tertiary">(optional)</span></p>
-                                    <div className="space-y-3">
+                                    <div className="grid gap-4 md:grid-cols-2">
                                         {optionalSlots.map((slot) => (
-                                            <DocRow key={slot.key} slot={slot} files={data.documents[slot.key] ?? []} onAdd={(fl) => addDocumentFiles(slot.key, fl)} onRemove={(i) => removeDocumentFile(slot.key, i)} error={errors[`documents.${slot.key}`]} />
+                                            <DocumentDropzone key={slot.key} title={slot.title} badge="Optional" files={data.documents[slot.key] ?? []} onAdd={(fl) => addDocumentFiles(slot.key, fl)} onRemove={(i) => removeDocumentFile(slot.key, i)} error={errors[`documents.${slot.key}`]} />
                                         ))}
                                     </div>
                                 </div>
@@ -1062,50 +1063,6 @@ export default function Create({ documentSlots = [], fileLabels = [], uploadHint
                 </div>
             </div>
         </AuthenticatedLayout>
-    );
-}
-
-// A single labelled document slot. Accepts multiple files — the applicant may attach, e.g., two or
-// three research instruments (stakeholder 2026-07-28). Choosing files ADDS them to the list (never
-// overwrites); each file has its own Remove button. Uncontrolled input value reset so re-picking the
-// same file still fires onChange.
-function DocRow({ slot, files = [], onAdd, onRemove, error }) {
-    return (
-        <div className="grid gap-2 sm:grid-cols-[minmax(0,16rem)_1fr] sm:items-start">
-            <label className="pt-1.5 text-sm font-medium text-fg-secondary">{slot.title}</label>
-            <div>
-                {files.length > 0 && (
-                    <ul className="mb-2 space-y-1.5">
-                        {files.map((f, i) => (
-                            <li key={i} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface-tertiary px-3 py-1.5">
-                                <span className="truncate text-xs text-fg-secondary">{f.name}</span>
-                                <button
-                                    type="button"
-                                    onClick={() => onRemove(i)}
-                                    className="shrink-0 text-xs font-bold text-red-600 hover:underline"
-                                >
-                                    Remove
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border-medium bg-surface-secondary px-3 py-1.5 text-xs font-bold text-primary-700 hover:bg-surface-tertiary">
-                    + Add file{files.length > 0 ? ' (adds another)' : ''}
-                    <input
-                        type="file"
-                        multiple
-                        className="hidden"
-                        onChange={(e) => {
-                            onAdd(e.target.files);
-                            e.target.value = '';
-                        }}
-                    />
-                </label>
-                <p className="mt-1 text-xs text-fg-tertiary">You can add more than one file, one or several at a time.</p>
-                <InputError message={error} className="mt-1" />
-            </div>
-        </div>
     );
 }
 
