@@ -125,7 +125,12 @@ class ClearanceService
             $remis = RemisApplication::where('research_application_id', $researchApplication->id)->first();
             if ($remis && $remis->canTransitionTo('clearance_issued')) {
                 $this->transitionToClearanceIssued($remis);
-                $this->startMonitoring($remis->fresh());
+                // Only cleared studies enter monthly monitoring (docs/3.4). An exempted study is
+                // excused from full ethics clearance — and from the monitoring that follows it —
+                // so it rests at clearance_issued with no progress-report obligation.
+                if (! $exempted) {
+                    $this->startMonitoring($remis->fresh());
+                }
             }
 
             $this->refreshOverallStatus($researchApplication->fresh(), $certificate);

@@ -107,4 +107,36 @@ class EthicsExemptionTest extends TestCase
         Bus::assertDispatched(GenerateRemisClearancePdfJob::class);
         Bus::assertNotDispatched(GenerateRemisExemptionPdfJob::class);
     }
+
+    /** @test */
+    public function an_exempted_study_is_excused_from_monitoring(): void
+    {
+        Bus::fake();
+        $research = $this->newResearchApplication();
+        $research->remisApplication->update(['status' => 'approved']);
+        $chair = User::factory()->create([
+            'role_id' => Role::where('name', 'ethics_committee_chair')->value('id'),
+        ]);
+
+        app(ClearanceService::class)->signEthicsTrack($research, $chair->id, exempted: true);
+
+        // The certificate issues, but the study rests at clearance_issued — an exempted study
+        // has no monthly progress-report obligation (audit fix, 2026-08-31).
+        $this->assertSame('clearance_issued', $research->remisApplication->fresh()->status);
+    }
+
+    /** @test */
+    public function an_approved_study_still_enters_monitoring_after_issuance(): void
+    {
+        Bus::fake();
+        $research = $this->newResearchApplication();
+        $research->remisApplication->update(['status' => 'approved']);
+        $chair = User::factory()->create([
+            'role_id' => Role::where('name', 'ethics_committee_chair')->value('id'),
+        ]);
+
+        app(ClearanceService::class)->signEthicsTrack($research, $chair->id);
+
+        $this->assertSame('monitoring', $research->remisApplication->fresh()->status);
+    }
 }
