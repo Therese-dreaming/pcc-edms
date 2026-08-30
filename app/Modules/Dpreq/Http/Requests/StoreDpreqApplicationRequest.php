@@ -102,6 +102,23 @@ class StoreDpreqApplicationRequest extends FormRequest
             'review_checklist.avoid_harm' => ['required', 'in:yes,no,not_applicable'],
             'review_checklist.academic_use_only' => ['required', 'in:yes,no,not_applicable'],
 
+            // Unified Form 1, Parts II–V (reqs/ July-7-2026 PDF, resolution B1 2026-08-31).
+            // Nullable while the form rolls out; validated whenever supplied.
+            'funding_source_type' => ['nullable', 'in:self_funded,university_funded,externally_funded,other'],
+            'funding_source_type_other' => ['nullable', 'string', 'max:255', 'required_if:funding_source_type,other'],
+            'recruitment_method' => ['nullable', 'string'],
+            'target_participants' => ['nullable', 'array'],
+            'target_participants.*' => ['string', 'in:students,employees,faculty,parents,community_members,minors,vulnerable_groups,others'],
+            'ethics_checklist' => ['nullable', 'array'],
+            'ethics_checklist.*' => ['in:yes,no,not_applicable'],
+            'risk_band' => ['nullable', 'in:none,minimal,moderate,high'],
+            'risk_band_explanation' => ['nullable', 'string'],
+            'data_classification' => ['nullable', 'in:non_personal,personal_information,sensitive_personal_information,privileged_information'],
+            'data_storage_method' => ['nullable', 'string', 'max:255'],
+            'data_access_persons' => ['nullable', 'string'],
+            'data_retention_period' => ['nullable', 'string', 'max:255'],
+            'data_disposal_method' => ['nullable', 'string', 'max:255'],
+
             // Proposed DPO-internal fields (🔴, docs/1.1)
             'applicant_type' => ['required', 'in:internal_researcher,external_researcher,student'],
             'purpose' => ['required', 'string'],

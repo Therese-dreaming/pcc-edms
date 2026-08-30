@@ -75,6 +75,29 @@ export default function Create({ documentSlots = [], fileLabels = [], uploadHint
         confidentiality_measures: '',
         consent_process: '',
         data_storage_plan: '',
+
+        // Unified Form 1, Parts II–V (reqs/ July-7-2026 PDF, resolution B1 2026-08-31)
+        funding_source_type: '',
+        funding_source_type_other: '',
+        recruitment_method: '',
+        target_participants: [],
+        ethics_checklist: {
+            informed_consent: 'yes',
+            voluntary_participation: 'yes',
+            free_withdrawal: 'yes',
+            risks_minimized: 'yes',
+            confidentiality_protected: 'yes',
+            vulnerable_populations: 'no',
+            incentives_provided: 'no',
+            deception_involved: 'no',
+        },
+        risk_band: 'minimal',
+        risk_band_explanation: '',
+        data_classification: 'personal_information',
+        data_storage_method: '',
+        data_access_persons: '',
+        data_retention_period: '',
+        data_disposal_method: '',
     });
 
     // Document slots split by requirement, for the upload section below.
@@ -98,6 +121,34 @@ export default function Create({ documentSlots = [], fileLabels = [], uploadHint
 
     const setChecklist = (key, value) =>
         setData('review_checklist', { ...data.review_checklist, [key]: value });
+
+    // Unified Form 1 (resolution B1) — Part III participant checkboxes and Part IV ethics items.
+    const PARTICIPANT_OPTIONS = [
+        { value: 'students', label: 'Students' },
+        { value: 'employees', label: 'Employees' },
+        { value: 'faculty', label: 'Faculty' },
+        { value: 'parents', label: 'Parents' },
+        { value: 'community_members', label: 'Community Members' },
+        { value: 'minors', label: 'Minors' },
+        { value: 'vulnerable_groups', label: 'Vulnerable Groups' },
+        { value: 'others', label: 'Others' },
+    ];
+    const ETHICS_ITEMS = [
+        { key: 'informed_consent', label: 'Informed consent will be secured' },
+        { key: 'voluntary_participation', label: 'Participation is voluntary' },
+        { key: 'free_withdrawal', label: 'Participants may withdraw at any time' },
+        { key: 'risks_minimized', label: 'Risks to participants are minimized' },
+        { key: 'confidentiality_protected', label: 'Confidentiality will be protected' },
+        { key: 'vulnerable_populations', label: 'Vulnerable populations are involved' },
+        { key: 'incentives_provided', label: 'Incentives/compensation will be provided' },
+        { key: 'deception_involved', label: 'Deception is involved' },
+    ];
+    const toggleParticipant = (value) =>
+        setData('target_participants', data.target_participants.includes(value)
+            ? data.target_participants.filter((v) => v !== value)
+            : [...data.target_participants, value]);
+    const setEthicsItem = (key, value) =>
+        setData('ethics_checklist', { ...data.ethics_checklist, [key]: value });
 
     // B2 (concern 3.1) — the researcher count and the co-researcher roster stay in sync: the count
     // is the whole team (lead + co-researchers), so there are always count − 1 co-researcher rows.
@@ -498,6 +549,214 @@ export default function Create({ documentSlots = [], fileLabels = [], uploadHint
                                             Approved letter from head of target respondents on file?
                                         </span>
                                     </label>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Unified Form 1 additions — Parts II–V (reqs/ July-7-2026 PDF, resolution
+                            B1 2026-08-31). Optional structured intake collected alongside the
+                            confirmed Form 1 fields above. */}
+                        <section className="overflow-hidden rounded-xl border border-border bg-surface-secondary">
+                            <div className="border-b border-border bg-surface-tertiary px-6 py-4">
+                                <h2 className="text-xs font-extrabold uppercase tracking-[0.08em] text-primary-700">
+                                    Participants, Ethics &amp; Data Privacy Plan
+                                </h2>
+                                <p className="mt-1 text-xs text-fg-tertiary">
+                                    Unified application form, Parts II–V. Optional but recommended — reviewers use these to classify your study.
+                                </p>
+                            </div>
+
+                            <div className="space-y-6 p-6">
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <SelectWithOther
+                                        id="funding_source_type"
+                                        label="Funding Source"
+                                        value={data.funding_source_type}
+                                        otherValue={data.funding_source_type_other}
+                                        onValueChange={(v) => setData('funding_source_type', v)}
+                                        onOtherChange={(v) => setData('funding_source_type_other', v)}
+                                        options={[
+                                            { value: 'self_funded', label: 'Self-funded' },
+                                            { value: 'university_funded', label: 'University-funded' },
+                                            { value: 'externally_funded', label: 'Externally funded' },
+                                        ]}
+                                        error={errors.funding_source_type}
+                                        otherError={errors.funding_source_type_other}
+                                    />
+                                    <div>
+                                        <label htmlFor="recruitment_method" className="block text-xs font-bold text-fg-secondary">
+                                            Recruitment Method
+                                        </label>
+                                        <input
+                                            id="recruitment_method"
+                                            type="text"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            placeholder="e.g. class announcements, purposive sampling"
+                                            value={data.recruitment_method}
+                                            onChange={(e) => setData('recruitment_method', e.target.value)}
+                                        />
+                                        <InputError message={errors.recruitment_method} className="mt-1.5" />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p className="mb-2 text-xs font-bold text-fg-secondary">Target Participants</p>
+                                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                        {PARTICIPANT_OPTIONS.map((opt) => (
+                                            <label key={opt.value} className="flex items-center gap-2 text-sm text-fg-secondary">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={data.target_participants.includes(opt.value)}
+                                                    onChange={() => toggleParticipant(opt.value)}
+                                                    className="h-4 w-4 rounded border-border-medium text-primary-700 focus:ring-4 focus:ring-primary-700/20"
+                                                />
+                                                {opt.label}
+                                            </label>
+                                        ))}
+                                    </div>
+                                    <InputError message={errors.target_participants} className="mt-1.5" />
+                                </div>
+
+                                <div>
+                                    <p className="mb-2 text-xs font-bold text-fg-secondary">
+                                        Ethical Considerations Checklist
+                                    </p>
+                                    <div className="overflow-hidden rounded-lg border border-border-medium">
+                                        {ETHICS_ITEMS.map((item, i) => (
+                                            <div
+                                                key={item.key}
+                                                className={`flex flex-col gap-2 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between ${i % 2 ? 'bg-surface-tertiary/50' : ''}`}
+                                            >
+                                                <span className="text-sm text-fg-secondary">{item.label}</span>
+                                                <div className="flex gap-4">
+                                                    {['yes', 'no', 'not_applicable'].map((opt) => (
+                                                        <label key={opt} className="flex items-center gap-1.5 text-xs text-fg-secondary">
+                                                            <input
+                                                                type="radio"
+                                                                name={`ethics_${item.key}`}
+                                                                checked={data.ethics_checklist[item.key] === opt}
+                                                                onChange={() => setEthicsItem(item.key, opt)}
+                                                                className="h-3.5 w-3.5 border-border-medium text-primary-700 focus:ring-4 focus:ring-primary-700/20"
+                                                            />
+                                                            {opt === 'not_applicable' ? 'N/A' : opt.toUpperCase()}
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <InputError message={errors.ethics_checklist} className="mt-1.5" />
+                                </div>
+
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <p className="mb-2 text-xs font-bold text-fg-secondary">Potential Risks to Participants</p>
+                                        <div className="flex flex-wrap gap-3">
+                                            {['none', 'minimal', 'moderate', 'high'].map((band) => (
+                                                <label key={band} className="flex items-center gap-1.5 text-sm capitalize text-fg-secondary">
+                                                    <input
+                                                        type="radio"
+                                                        name="risk_band"
+                                                        checked={data.risk_band === band}
+                                                        onChange={() => setData('risk_band', band)}
+                                                        className="h-4 w-4 border-border-medium text-primary-700 focus:ring-4 focus:ring-primary-700/20"
+                                                    />
+                                                    {band}
+                                                </label>
+                                            ))}
+                                        </div>
+                                        <InputError message={errors.risk_band} className="mt-1.5" />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="data_classification" className="block text-xs font-bold text-fg-secondary">
+                                            Classification of Data (Data Privacy Act)
+                                        </label>
+                                        <select
+                                            id="data_classification"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            value={data.data_classification}
+                                            onChange={(e) => setData('data_classification', e.target.value)}
+                                        >
+                                            <option value="non_personal">Non-Personal Data</option>
+                                            <option value="personal_information">Personal Information</option>
+                                            <option value="sensitive_personal_information">Sensitive Personal Information</option>
+                                            <option value="privileged_information">Privileged Information</option>
+                                        </select>
+                                        <InputError message={errors.data_classification} className="mt-1.5" />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="risk_band_explanation" className="block text-xs font-bold text-fg-secondary">
+                                        Explain the risks (and how they are minimized)
+                                    </label>
+                                    <textarea
+                                        id="risk_band_explanation"
+                                        rows={2}
+                                        className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                        value={data.risk_band_explanation}
+                                        onChange={(e) => setData('risk_band_explanation', e.target.value)}
+                                    />
+                                    <InputError message={errors.risk_band_explanation} className="mt-1.5" />
+                                </div>
+
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <label htmlFor="data_storage_method" className="block text-xs font-bold text-fg-secondary">
+                                            Storage Method
+                                        </label>
+                                        <input
+                                            id="data_storage_method"
+                                            type="text"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            placeholder="e.g. password-protected computer"
+                                            value={data.data_storage_method}
+                                            onChange={(e) => setData('data_storage_method', e.target.value)}
+                                        />
+                                        <InputError message={errors.data_storage_method} className="mt-1.5" />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="data_access_persons" className="block text-xs font-bold text-fg-secondary">
+                                            Persons with Access to Data
+                                        </label>
+                                        <input
+                                            id="data_access_persons"
+                                            type="text"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            placeholder="e.g. researcher and adviser only"
+                                            value={data.data_access_persons}
+                                            onChange={(e) => setData('data_access_persons', e.target.value)}
+                                        />
+                                        <InputError message={errors.data_access_persons} className="mt-1.5" />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="data_retention_period" className="block text-xs font-bold text-fg-secondary">
+                                            Data Retention Period
+                                        </label>
+                                        <input
+                                            id="data_retention_period"
+                                            type="text"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            placeholder="e.g. 1 year after completion"
+                                            value={data.data_retention_period}
+                                            onChange={(e) => setData('data_retention_period', e.target.value)}
+                                        />
+                                        <InputError message={errors.data_retention_period} className="mt-1.5" />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="data_disposal_method" className="block text-xs font-bold text-fg-secondary">
+                                            Disposal Method
+                                        </label>
+                                        <input
+                                            id="data_disposal_method"
+                                            type="text"
+                                            className="mt-1.5 block w-full rounded-lg border border-border-medium px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-tertiary focus:border-primary-700 focus:ring-4 focus:ring-primary-700/10"
+                                            placeholder="e.g. secure deletion, shredding"
+                                            value={data.data_disposal_method}
+                                            onChange={(e) => setData('data_disposal_method', e.target.value)}
+                                        />
+                                        <InputError message={errors.data_disposal_method} className="mt-1.5" />
+                                    </div>
                                 </div>
                             </div>
                         </section>

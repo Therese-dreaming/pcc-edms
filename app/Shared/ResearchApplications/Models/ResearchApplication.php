@@ -22,6 +22,7 @@ class ResearchApplication extends Model
         'applicant_id',
         'research_title',
         'research_category',
+        'funding_source_type',
         'contact_number',
         'researcher_count',
         'co_researchers',
@@ -33,6 +34,8 @@ class ResearchApplication extends Model
         'section',
         'position',
         'respondents',
+        'recruitment_method',
+        'target_participants',
         'target_respondent_count',
         'data_collection_method',
         'data_capturing_tool',
@@ -41,6 +44,14 @@ class ResearchApplication extends Model
         'minors_involved',
         'respondent_head_letter_approved',
         'review_checklist',
+        'ethics_checklist',
+        'risk_band',
+        'risk_band_explanation',
+        'data_classification',
+        'data_storage_method',
+        'data_access_persons',
+        'data_retention_period',
+        'data_disposal_method',
         'researcher_signature',
         'overall_status',
     ];
@@ -54,6 +65,8 @@ class ResearchApplication extends Model
             'respondent_head_letter_approved' => 'boolean',
             'co_researchers' => 'array',
             'review_checklist' => 'array',
+            'target_participants' => 'array',
+            'ethics_checklist' => 'array',
         ];
     }
 
