@@ -58,6 +58,55 @@ fixes, Form 2 obligations gate, SweetAlert layer, DPNDA schedules/calendar, EVP 
 auto-attach, unified-form intake fields, exemption flow). `docs/HANDOFF.md`'s top section stops
 at 2026-07-25 for the same reason. Going forward: docs update in the same pass as the code.
 
+**Night-shift addendum (same day, requester-approved autonomous session):**
+1. **Env-configurable certificate signatories** (stakeholder confirmation: current names still
+   correct, but must be changeable without code edits): EVP name/title/signature path and the DPO
+   clearance title now read from `.env`; REC signatories already were (`config/rec.php`). New
+   `docs/SIGNATORIES.md` is the single guide; `.env.example` documents every key; two dead
+   `config/pdf.php` placeholder keys removed.
+2. **Latent production crash fixed:** issuance triggered by a token-based NDA signature (no
+   authenticated session) hit the NOT NULL `status_history.changed_by` and 500'd at the moment
+   the clearance should issue. Column now nullable, services pass explicit actors
+   (`ClearanceAttributionTest`). Prior verification had an authenticated final signer, which is
+   why it survived.
+3. Verification portal now labels exemption hits "Certificate of Exemption…" (was "Research
+   Ethics Clearance"); `IncidentService::file()` is transactional (`VerificationPortalTest`).
+4. New `docs/ROADMAP-TO-COMPLETION.md` — the single 100%-completion list (phases A–E).
+5. Suite: **152 passed (704 assertions)**.
+
+---
+
+## 2026-07-29 .. 2026-08-04 — Reconstructed from git history (no entries were written at the time)
+
+**Audit note (2026-08-31):** the changelog jumped from 2026-07-25 straight to 2026-08-31 while
+commits continued landing. Reconstructed below from `git log` messages/stats so the record is
+continuous; treat as accurate-but-secondhand.
+
+- **2026-07-29 — CI + process hardening** (`ce072bf`, `7518271`): GitHub Actions workflow added
+  (tests, build, audits); cron-driven deploy actions stopped — migrations must be run explicitly.
+- **2026-07-29 — Feature-test expansion** (`a7e5b4d`): tests for FRS metadata, ownership
+  transfer, Phase 3 access, REMIS register actions, revision management, screening & review.
+- **2026-07-31 — 14 workflow loopholes fixed** (`b41f65f`): race conditions, dead-ends,
+  authorization gaps, and error-handling holes across the module workflows. (The 2026-08-31 audit
+  later found and fixed survivors of this class: non-atomic `decide()`/`screen()`, missing
+  `for_review` gates, the `monitoring_paused` dead-end.)
+- **2026-07-31 — DPREQ enhancements** (`10e401d`): Form 2 obligations gate, synchronous leader
+  NDA notification, login process tab. Also dated this window: the unified-form intake fields and
+  the **Exempted** decision outcome (`2026_07_28_000001/2` migrations, adviser-account requests,
+  researcher signature on research_applications).
+- **2026-08-01 — PDF layout fixes** (`9189d6f`): footer moved to `@page` margin box; Form 3
+  blank-page overflow fixed.
+- **2026-08-02 — Feedback layer + DPNDA expansion** (`50b8e32`, `528b182`): global SweetAlert
+  feedback layer and workflow revision hardening; DPNDA redesigned to the design system with
+  trainee weekly schedules and a deployment calendar (`trainee_schedules` table, calendar/schedule
+  routes and pages).
+- **2026-08-04 — EVP signature auto-attach** (`dde6e9c`): EVP signature captured once as a PNG
+  (`public/images/signatures/evp.png`, `config/pdf.approval_signature`) and auto-attached to the
+  DPO clearance documents via `pdf/partials/_approval.blade.php` (stakeholder 2026-08-03).
+- **2026-08-31 (pre-audit) —** verification screenshots, `DocumentDropzone`, `SignaturePad`
+  rework, `Dpreq/Create.jsx` slim-down, `.agents` docs, and an accidental `.worktrees` gitlink
+  (`467d0b1`, "Update").
+
 ---
 
 ## 2026-07-25 — DPO workflow collapse + reuse of the revision engine (Phase 2)

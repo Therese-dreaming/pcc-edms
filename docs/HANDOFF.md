@@ -16,12 +16,18 @@ Requester-ordered audit: index the codebase, deep-read `docs/` + `reqs/`, fix lo
 (not just syntax), and produce a done/missing checklist. Full detail in `CHANGELOG.md`'s
 2026-08-31 entry; the short version for the next session:
 
-- **State:** 148 tests passing (662 assertions), `composer audit` clean (12 advisories
-  patched), `npm run build` clean. Seven commits landed on `main`, **still not pushed**.
+- **State:** 152 tests passing (704 assertions), `composer audit` clean (12 advisories
+  patched), `npm run build` clean. Twelve commits landed on `main`, **still not pushed**.
 - **Loopholes fixed:** non-atomic `decide()`/`screen()`; missing `for_review` gates on reviewer
   assignment/review submission; exempted studies wrongly entering monthly monitoring;
   `monitoring_paused` dead-end (resume route/policy/UI now wired); retention purge mis-bucketing
-  archived-issued REMIS studies and ignoring DPNDA; revision double-close.
+  archived-issued REMIS studies and ignoring DPNDA; revision double-close; verification portal
+  mislabeling exemption certificates; non-transactional incident filing; and a latent crash —
+  unauthenticated (token-signing) issuance hit NOT NULL `status_history.changed_by` (now
+  nullable + explicit actor attribution).
+- **New docs:** `ROADMAP-TO-COMPLETION.md` (the 100%-completion plan, phases A–E) and
+  `SIGNATORIES.md` (all certificate signatories are now env-configurable — stakeholder confirmed
+  the current names are correct but wanted them changeable without code edits).
 - **Important current-truth notes:** the REC Clearance/Exemption certificate layouts in
   `reqs/REMIS-certs/` (2026-07-31) ARE the implemented templates; the Exempted decision outcome
   and unified-form intake fields were built 2026-07-28 (this postdates §0's "2026-07-25
