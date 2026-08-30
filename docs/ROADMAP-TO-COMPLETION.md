@@ -54,44 +54,50 @@ on them.
 ## Phase C — IT / infrastructure dependent
 
 - [ ] **Hosting decision** (`7.0`): hosting type, PCC-owned domain/DNS, SSL provisioning, DB
-      hosting (MySQL 8.0+), backup schedule, queue-worker supervision, CI/CD. Everything in
-      `DEPLOYMENT_CHECKLIST.md` hangs on this.
+      hosting (MySQL 8.0+), backup schedule, queue-worker supervision, CI/CD. Once chosen,
+      everything else in this phase plugs into `docs/deployment/OPERATIONS.md` (2026-08-31).
 - [ ] **SSO (Microsoft Entra ID)** — provider confirmed (Microsoft 365 / `@pccnet.edu.ph`);
-      blocked on PCC IT registering an app and issuing client ID/secret/tenant ID. Architecture
-      is SSO-ready (ADR-002: nullable `users.sso_subject_id`).
+      blocked on PCC IT registering an app and issuing client ID/secret/tenant ID. **The exact
+      ask for IT is written in OPERATIONS.md §6.** Architecture is SSO-ready (ADR-002).
 - [ ] **Real mail delivery** — code side done (`EMAIL_SETUP.md`); needs Mailtrap/SMTP/Mailgun/SES
       credentials + a verified sending domain.
-- [ ] **Virus scanning (ClamAV)** — researched, feasible, free; requester deferred until the rest
-      is complete AND hosting is chosen (needs `clamd` on the serving machine). Recommended shape:
-      `clamd` daemon + socket client, not per-file `clamscan`.
-- [ ] **Local-disk backup job** (ADR-004 open action item) — `scripts/backup.sh` exists; wire the
-      production cron once hosting is known. Required before go-live: legally-retained documents
-      must survive disk failure.
-- [ ] **Production queue worker + scheduler** — Browsershot PDF jobs and the retention sweep need
-      `queue:work` and cron/Supervisor running in production (GETTING_STARTED + checklist).
+- [x] **Virus scanning (ClamAV)** — BUILT (2026-08-31): `VirusScanService` hooked into
+      `DocumentService::store()` (every upload), off by default (`ANTIVIRUS_ENABLED=false`) and
+      fail-closed when enabled; `VirusScanTest` covers clean/infected/broken-scanner/disabled.
+      The earlier "clamd only" reservation was relaxed: `clamscan` works at this system's volume,
+      `clamdscan` is a config switch if it ever grows (OPERATIONS.md §5).
+- [x] **Local-disk backup job** (ADR-004) — FIXED (2026-08-31): `scripts/backup.sh` previously
+      called a nonexistent `php artisan dump:database` and fell back to `pg_dump` (wrong engine —
+      this is MySQL). Now `mysqldump` from `.env` + documents tarball, 30-day retention.
+- [x] **Production queue worker + scheduler** — Supervisor config and cron wiring documented in
+      OPERATIONS.md §1; `pcc-edms-cron` was missing the Laravel scheduler entry (the retention
+      sweep would never have run) — fixed.
 
 ## Phase D — Process & go-live
 
 1. [ ] Resolve all Phase B rows (they are the go/no-go inputs).
 2. [ ] Phase C infrastructure stood up (staging first, per `7.0` tiers).
-3. [ ] **UAT round** with real office staff: run the golden paths in `GETTING_STARTED.md` for
-       every role account on staging; sign off per module.
-4. [ ] **Training/handover** for DPO staff, Ethics Secretariat/Chair, coordinators — the system
-       replaces paper, so the process change is the product.
+3. [ ] **UAT round** with real office staff — **script ready: `docs/UAT-SCRIPT.md`** (14
+       pass/fail scenarios, every role, verified against the code on 2026-08-31).
+4. [ ] **Training/handover** — **material ready: `docs/TRAINING.md`** (per-role quick
+       reference, written 2026-08-31).
 5. [ ] Legal review of e-signature posture (ADR-005 caveat: typed-name + metadata as operative
        record under RA 8792 — explicit DPO/Legal acceptance recommended).
-6. [ ] Deployment checklist run (`DEPLOYMENT_CHECKLIST.md`), backups verified, monitoring/uptime
-       tooling chosen.
+6. [ ] Deployment checklist run (`DEPLOYMENT_CHECKLIST.md` + `scripts/deploy-checklist.sh`),
+       backups verified including one restore drill (OPERATIONS.md §8), uptime monitoring chosen
+       (OPERATIONS.md §3).
 7. [ ] Push `main` to origin **only with the requester's explicit go-ahead** (standing rule).
 8. [ ] Go-live; keep paper fallback for one cycle if DPO wants it.
 
-## Phase E — Front-end redesign (PAUSED by requester)
+## Phase E — Front-end redesign — RECONCILED AT DOC LEVEL (2026-08-31)
 
-Do **not** resume without an explicit ask (HANDOFF §0). When resumed:
-- Reconcile the mixed state: maroon/paper design-token system (applied to shared components,
-  layouts, dashboards) vs. hand-edited pages (`Auth/*.jsx`, `Dpreq/Show.jsx`, `Dpnda/Create.jsx`)
-  which use a different aesthetic and must not be restyled without confirmation.
-- Write `docs/DESIGN.md` documenting whichever direction wins.
+The requester reopened Phase E on 2026-08-31 ("continue through Phases; no permission needed").
+Deliverable: **`docs/DESIGN.md`** — the canonical maroon/paper token system, the three
+sanctioned hand-edited exception pages (`Auth/*.jsx`, `Dpreq/Show.jsx`, `Dpnda/Create.jsx` —
+never restyled without page-by-page approval), rules for new UI work, and the remaining
+reconciliation path. No visual restyling was performed in this pass: the exceptions are the
+requester's own edits, and an unsanctioned sweep is exactly the failure the previous restyle
+attempt caused (HANDOFF §0). A future full visual pass proceeds page-by-page under DESIGN.md §4.
 
 ## Explicitly out of scope (decided, don't rebuild)
 

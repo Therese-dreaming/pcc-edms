@@ -4,6 +4,29 @@ Tracks substantive edits made to the `docs/` specification files after the initi
 
 ---
 
+## 2026-08-31 — Phase execution pass (A→E, requester: "continue through Phases")
+
+1. **Phase A leftovers:** certificate issuance history cards on the DPREQ/REMIS show pages
+   (`CertificateHistory`, signer relations eager-loaded); shared `StatusTimeline` component
+   (all three show pages already had timelines — verified before building).
+2. **Phase C built:** ClamAV upload scanning (`VirusScanService` in `DocumentService::store`,
+   off by default, fail-closed, 4 tests); `docs/deployment/OPERATIONS.md` (services, Supervisor
+   config, TLS, health checks, mail, ClamAV enablement, exact SSO ask for IT, retention gates,
+   restore drill); **ops bug fixes** — `scripts/backup.sh` called a nonexistent artisan command
+   and fell back to `pg_dump` (now `mysqldump` from `.env`), and `pcc-edms-cron` was missing the
+   Laravel scheduler entry (the retention sweep would never have run).
+3. **Phase D ready:** `docs/UAT-SCRIPT.md` (14 pass/fail scenarios, verified against code —
+   including the doc-drift finding that GETTING_STARTED's golden path predates concern 7's
+   sign-after-approval change) and `docs/TRAINING.md` (11-role quick reference).
+4. **Phase E reconciled at doc level:** `docs/DESIGN.md` — canonical token system, sanctioned
+   hand-edited exceptions, new-UI rules, reconciliation path. No unsanctioned restyling.
+5. Roadmap updated with per-phase outcomes; B8/B9 remain human-gated by design (compliance and
+   legal reviews cannot be self-approved).
+
+Suite: **163 passed (755 assertions)**.
+
+---
+
 ## 2026-08-31 — Roadmap execution session (requester-delegated decisions)
 
 Requester instructed: begin the roadmap; make the stakeholder calls from docs where they speak,

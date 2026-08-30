@@ -16,9 +16,16 @@ Requester-ordered audit: index the codebase, deep-read `docs/` + `reqs/`, fix lo
 (not just syntax), and produce a done/missing checklist. Full detail in `CHANGELOG.md`'s
 2026-08-31 entry; the short version for the next session:
 
-- **State:** 159 tests passing (751 assertions), `composer audit` clean (12 advisories
+- **State:** 163 tests passing (755 assertions), `composer audit` clean (12 advisories
   patched), `npm run build` clean. All work committed on `main` in incremental commits,
   **still not pushed**.
+- **Phase execution pass (requester: "continue through Phases A–E"):** certificate issuance
+  history on DPREQ/REMIS show pages; ClamAV upload scanning (off by default, fail-closed) +
+  `docs/deployment/OPERATIONS.md`; **ops bugs fixed** — backup.sh used pg_dump on a MySQL system
+  and pcc-edms-cron never ran the Laravel scheduler; `docs/UAT-SCRIPT.md` (14 scenarios) +
+  `docs/TRAINING.md`; `docs/DESIGN.md` reconciles the paused redesign at doc level (no
+  unsanctioned restyling). B8/B9 stay human-gated. Everything else from the roadmap session
+  below stands.
 - **Roadmap session (requester-delegated decisions, see `ROADMAP-TO-COMPLETION.md` Phase B):**
   unified Form 1 Parts II–V intake fields; `{entity}.viewed` audit events on sensitive-record
   show pages; coordinator CSV batch onboarding (`/dpnda/import`); targeted knowledge-graph
