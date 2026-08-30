@@ -75,7 +75,7 @@
                     <td style="width: 50%; border: none; padding: 0; vertical-align: top;">
                         <div style="border-top: 1.5px solid #000; width: 200px; margin-top: 30px; margin-bottom: 4px;"></div>
                         <div class="signer-name" style="text-align: left;">{{ $certificate->dpoSignedBy?->name }}</div>
-                        <div class="signer-title" style="text-align: left;">DPO Officer</div>
+                        <div class="signer-title" style="text-align: left;">{{ config('pdf.dpo_officer_title') }}</div>
                     </td>
                 </tr>
             </table>

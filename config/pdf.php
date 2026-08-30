@@ -49,19 +49,22 @@ return [
     | Signatories (docs/0.4, reqs/DPO EFORM 1 & 3 SAMPLE.pdf)
     |--------------------------------------------------------------------------
     |
-    | ASSUMPTION placeholders pending real DPO/EVP confirmation — see
-    | docs/9.1-review-and-open-questions.md.
+    | Every name/title printed on generated certificates is overridable from
+    | .env — change the people without touching code or templates. Full guide:
+    | docs/SIGNATORIES.md.
     |
     | `approval_signature` is the public-relative path to the EVP's captured
     | signature PNG. When present it renders as an image above the approval
     | line in every PDF that includes pdf/partials/_approval.blade.php.
     | Stakeholder confirmed 2026-08-03: capture once, auto-attach to docs.
     |
+    | REC-side signatories (ethics clearance / exemption) live in
+    | config/rec.php, also env-driven (REC_CHAIR_* / REC_MEMBER_*).
+    |
     */
-    'approval_signatory' => 'Dr. Jennifer S. Apolinario',
-    'approval_title' => 'Executive Vice President',
-    'approval_signature' => 'images/signatures/evp.png',
-    'dpo_officer' => 'Dr. Virgilio V. Vivo',
-    'research_ethics_head' => 'Dr. Antonio Cruz',
+    'approval_signatory' => env('EVP_NAME', 'Dr. Jennifer S. Apolinario'),
+    'approval_title' => env('EVP_TITLE', 'Executive Vice President'),
+    'approval_signature' => env('EVP_SIGNATURE_PATH', 'images/signatures/evp.png'),
+    'dpo_officer_title' => env('DPO_OFFICER_TITLE', 'DPO Officer'),
 
 ];
