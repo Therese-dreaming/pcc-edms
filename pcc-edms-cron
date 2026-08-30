@@ -1,14 +1,19 @@
 # PCC-EDMS Cron Jobs
 # Add these to crontab using: crontab /path/to/pcc-edms-cron
 
-# Daily database backup at 2:00 AM
+# Laravel scheduler — REQUIRED every minute. It drives the monthly retention sweep
+# (edms:apply-retention, report-only unless --purge + RETENTION_PURGE_ENABLED=true) and any
+# other Schedule:: entries. FIXED 2026-08-31: this line was missing, so scheduled jobs never ran.
+* * * * * cd /var/www/pcc-edms && php artisan schedule:run >> /dev/null 2>&1
+
+# Daily database + documents backup at 2:00 AM
 0 2 * * * cd /var/www/pcc-edms && /bin/bash /var/www/pcc-edms/scripts/backup.sh >> /var/log/pcc-edms/backup.log 2>&1
 
 # Deployment checks should be run manually before release, not on a timer.
 # They can trigger migrations/build steps and should not be scheduled as cron.
 
-# Queue workers should be managed by Supervisor or Horizon, not cron.
-# Example:
+# Queue workers should be managed by Supervisor or Horizon, not cron — see
+# docs/deployment/OPERATIONS.md for a ready-to-use Supervisor config.
 #   php artisan queue:work --sleep=3 --tries=3 --timeout=60
 
 # Clean up old logs weekly
