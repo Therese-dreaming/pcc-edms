@@ -168,15 +168,17 @@ authorization is the real gate, but the UI shouldn't offer actions it knows will
 
 ## Gaps Identified (not yet specified anywhere in `0.x`–`9.x` — flag for confirmation)
 
-- **Load/volume targets:** `system-design.md` §1 notes application volume is an ASSUMPTION;
-  without confirmed numbers, load testing has no target to test against. Needs DPO/ORD
-  estimates before a load-test plan can be written.
-- **Rate limiting** on the public verification portal is not specified anywhere in the source
-  docs — recommend adding this to `4.3` or a new security-requirements note, since it's the
-  one endpoint with no auth to fall back on.
-- **Concurrent-edit handling:** none of the workflow docs specify what happens if two endorsers
-  or reviewers act on the same application near-simultaneously (e.g. Program Head and Dean both
-  acting within the same second). Recommend optimistic locking on `status` columns and a test
-  for the resulting conflict response.
-- **Data retention enforcement:** `1.3`'s retention periods are ASSUMPTION placeholders; there's
-  no automated purge/archive job specified to test once real periods are confirmed.
+- **Load/volume targets:** `system-design.md` §1 notes application volume is an ASSUMPTION.
+  **2026-08-31 (roadmap session):** until DPO/ORD confirm, load testing plans against the
+  documented planning assumptions — low hundreds of DPREQ/REMIS applications per year, 500+
+  DPNDA placements per year with bursts at OJT intake (~50 concurrent submissions), and modest
+  concurrent reviewer/staff counts (single digits). These are test-planning numbers, not
+  commitments; replace when real estimates arrive.
+- ~~**Rate limiting** on the public verification portal…~~ **BUILT (2026-07-07, Phase 7):**
+  `/verify` is throttled to 10 requests/minute/IP and fails closed with a generic response.
+- ~~**Concurrent-edit handling…**~~ **BUILT (2026-07-25 + audit 2026-08-31):** real
+  `version`-column optimistic locking (`App\Shared\Concurrency`, `expected_version` round-trip,
+  `ConcurrentEditTest`), plus row-locked transactions around decide/screen/endorse/sign.
+- ~~**Data retention enforcement…**~~ **BUILT (2026-07-25):** `config/retention.php` (7 years
+  issued / 3 years rejected), `edms:apply-retention` monthly report-only sweep, purge behind a
+  double gate (`--purge` + `RETENTION_PURGE_ENABLED=true`), covered by `RetentionBucketTest`.

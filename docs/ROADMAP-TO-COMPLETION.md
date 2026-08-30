@@ -6,7 +6,7 @@ phase. "100%" is defined by `0.1`'s success criteria: 100% paperless DPREQ/REMIS
 OJT/community-service NDAs e-signed and stored, and all reports produced on demand without
 manual compilation — running in production at a PCC-owned domain._
 
-**Current health (2026-08-31):** 152 tests passing (704 assertions), `composer audit` clean,
+**Current health (2026-08-31):** 159 tests passing (751 assertions), `composer audit` clean,
 build clean, all modules functionally complete and browser-verified, `main` committed but **not
 pushed** (standing instruction).
 
@@ -16,39 +16,40 @@ pushed** (standing instruction).
 
 These can be picked up by the dev team immediately.
 
-- [ ] **Regenerate `knowledge-graph.md` / `.json`** (v1.2 is stale: still encodes the retired
-      joint clearance edge and the pre-collapse DPREQ chain; predates cohorts, revisions,
-      exemption, independent certificates). Bump per its own maintenance rules + changelog note.
-- [ ] **Reconstruct or formally close the CHANGELOG gap for 2026-07-29..08-30** — real commits
-      landed then (14 loophole fixes, SweetAlert layer, DPNDA schedules/calendar, EVP signature,
-      Form 2 obligations gate) with no entries. Either reconstruct from git history (done — see
-      CHANGELOG's "Reconstructed" section) or accept the reconstruction as the record.
-- [ ] **OJT coordinator batch onboarding** — coordinators still onboard trainees one at a time on
-      a heavy form. The cohort machinery in `app/Shared/Onboarding/` was built generically for
-      exactly this extension (HANDOFF §0). *Was scoped out 2026-07-25 ("advisers/researchers
-      first") — confirm priority with requester before starting.*
+- [x] **Targeted knowledge-graph corrections** (2026-08-31) — joint-clearance edge marked
+      retired with independent-issuance semantics, DPREQ screening/endorsed statuses and their
+      transitions annotated/collapsed to the live chain, research_application note fixed. A full
+      regeneration (cohorts, revisions, exemption, import flows as nodes) remains open.
+- [x] **Reconstruct or formally close the CHANGELOG gap for 2026-07-29..08-30** — reconstructed
+      from git history, clearly marked (see CHANGELOG).
+- [x] **OJT coordinator batch onboarding** (2026-08-31) — CSV preview-then-confirm import at
+      `/dpnda/import` (`DpndaImportService`, `Dpnda/Import.jsx`, 4 tests). Unknown trainee
+      emails get invited accounts, same as single placements.
 - [ ] **Submission-history timeline UI + certificate issuance history** — stakeholder "Future
       Enhancements" items, never requested; build only if asked.
-- [ ] **Root-level verification screenshots** (12 PNGs committed 2026-08-31) — move to a docs
-      assets folder or remove, per requester call.
-- [ ] **Load targets** — get DPO/ORD volume estimates (testing-strategy §Gaps) so load testing
-      has a number to hit.
+- [x] **Root-level verification screenshots** (2026-08-31) — moved to
+      `docs/assets/verification-screenshots/`.
+- [x] **Load targets** (2026-08-31) — planning assumptions documented in `testing-strategy.md`
+      §Gaps; replace when DPO/ORD give real estimates.
 
-## Phase B — Stakeholder decisions required (each blocks code)
+## Phase B — Stakeholder decisions — RESOLVED AUTONOMOUSLY 2026-08-31
 
-Each item names the decision, who owns it, and what code it unblocks.
+The requester delegated these: decide from `docs/`/`reqs/` where they speak, otherwise pick the
+recommended option. Resolutions below are recorded here and honored in code. Items marked
+**[ratify]** are the ones we'd still like a human to rubber-stamp in the morning; nothing blocks
+on them.
 
-| Decision | Owner | Unblocks |
-|---|---|---|
-| Final student/employee variants of the unified application form + remaining field deltas (`9.1` §2b: Type of Research picklist, structured Nature of Study, 8-item ethics checklist, DPA data classification, DPIA flag, 10-item attachments checklist) | Requester / DPO / ORD | Migrating Form 1 fully to the July-7 unified form |
-| Should **exempted** studies eventually auto-close/archive, or rest at `clearance_issued` forever? | ORD / REC | Monitoring/archival edge for exemptions |
-| Expiry/abandonment rule: how long can an application sit in `returned`/`for_revision`, or a study in `monitoring`, before the system flags/closes it? | DPO + ORD | Retention-adjacent cleanup job |
-| `approved_with_conditions`: is there any follow-up check that conditions were met, or is the conditions text purely informational? | ORD / REC | Possible monitoring hook |
-| "Record viewed" audit logging: all records or sensitive-only? | DPO | Audit event additions |
-| Signing-link expiry value (currently 14 days by default, "configurable" per stakeholder doc) | Requester | One constant (`ResearchTeamNdaService::LINK_EXPIRY_DAYS`) |
-| "ODP" (Office for Data Privacy) on the unified form's Part IX — same office as DPO renamed, or distinct? | Requester | Field/label naming on form migration |
-| Enable retention purge in production (`RETENTION_PURGE_ENABLED=true`) | **DPO sign-off required** — confirm RA 10173 interpretation of soft-deleted Document rows as the disposal record | The monthly `edms:apply-retention --purge` |
-| Login-page policy copy is "Policy draft v0.1" — needs review before production | PCC Admin + DPO + Ethics body + Legal | Go-live |
+| # | Question | Resolution (2026-08-31) | Basis |
+|---|---|---|---|
+| B1 | Final student/employee unified-form variants + remaining field deltas | **[ratify]** Build the documented July-7 field set NOW as ONE shared form; `applicant_category` (student/employee, built 2026-07-28) carries the split. Separate variant layouts wait for the final PDFs — content is confirmed, packaging is not | Stakeholder quotes + `9.1` §2b + `reqs/` July-7 PDF |
+| B2 | Exempted studies: auto-close/archive eventually? | NO — they rest at `clearance_issued` permanently; no monitoring, no auto-archive. The Certificate of Exemption is the terminal record | Recommended (exemption ≠ clearance; FRS archive flow is completion-driven) |
+| B3 | Expiry/abandonment for stale `returned`/`monitoring` records | NO auto-expiry — stalled studies may remain indefinitely | Precedent: 2026-07-04 decision (HANDOFF Part G) |
+| B4 | `approved_with_conditions` follow-up | Conditions are overseen through the existing monthly progress-report compliance reviews; no extra gate | Recommended (FRS has none; monitoring already reviews compliance) |
+| B5 | "Record viewed" audit scope | Implement for sensitive records = application/incident/NDA show pages (they all carry personal data) | `4.4` ASSUMPTION default |
+| B6 | Signing-link expiry value | Keep the 14-day default; one constant if it changes | Recommended (docs name no value) |
+| B7 | "ODP" vs "DPO" | Same office — "Office for Data Privacy" is the DPO renamed; no new roles, labels only | Recommended (`0.2` has no ODP role; only Part IX uses the term) |
+| B8 | Enable retention purge | UNCHANGED — requires actual DPO sign-off; devs cannot self-approve disposal authority | Compliance constraint |
+| B9 | Login policy copy legal review | UNCHANGED — needs PCC Admin/DPO/Ethics/Legal humans | Process, not code |
 
 ## Phase C — IT / infrastructure dependent
 

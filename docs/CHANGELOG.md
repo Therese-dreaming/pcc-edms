@@ -4,6 +4,33 @@ Tracks substantive edits made to the `docs/` specification files after the initi
 
 ---
 
+## 2026-08-31 — Roadmap execution session (requester-delegated decisions)
+
+Requester instructed: begin the roadmap; make the stakeholder calls from docs where they speak,
+else the recommended option. Resolutions are recorded in `ROADMAP-TO-COMPLETION.md` Phase B
+(B1–B9). Shipped this session:
+
+1. **Unified Form 1 intake fields, Parts II–V (B1)** — structured funding source, recruitment
+   method, target-participant checkboxes, 8-item ethics checklist, risk band + explanation, DPA
+   data classification, storage/access/retention/disposal plan. Nullable, validated-when-present;
+   edit path included. `UnifiedFormFieldsTest` (3).
+2. **Record-viewed audit events (B5)** — `{entity}.viewed` rows on DPREQ/REMIS/DPNDA/incident
+   show pages (docs/4.4 assumption scope: sensitive records).
+3. **OJT coordinator batch onboarding (A3)** — `/dpnda/import` CSV preview-then-confirm
+   (`DpndaImportService` + `Dpnda/Import.jsx`); invites unknown trainees. `DpndaImportTest` (4).
+4. **Knowledge-graph corrections (A1, targeted)** — joint edge retired with independent-issuance
+   semantics; DPREQ screening/endorsed statuses + transitions collapsed to the live chain.
+5. **Hygiene** — verification screenshots moved to `docs/assets/verification-screenshots/`;
+   load-target planning assumptions documented in `testing-strategy.md` §Gaps (the other three
+   gap items annotated as built).
+
+Decisions honored in code: B2 exempted studies rest at `clearance_issued` (already true after
+the audit fix); B3 no auto-expiry; B4 conditions overseen via monitoring; B6 14-day link default;
+B7 ODP = DPO. B8 (purge enablement) and B9 (policy copy legal review) remain human-gated.
+Suite: **159 passed (751 assertions)**.
+
+---
+
 ## 2026-08-31 — Full cross-audit: loophole fixes, retention correction, stale-doc sweep
 
 Requester-ordered audit (index → deep-read `docs/` + `reqs/` → fix logic loopholes → done/missing

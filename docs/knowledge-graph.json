@@ -261,7 +261,7 @@
       "label": "Research Application (Form 1)",
       "properties": {
         "sourceFile": "0.4-dpo-ethics-integration.md",
-        "note": "Shared parent record for a single Form 1 submission; dpreq_application and remis_application are its two 1:1 review tracks, converging on one dual-signed clearance certificate."
+        "note": "Shared parent record for a single Form 1 submission; dpreq_application and remis_application are its two 1:1 review tracks, each issuing its own independent certificate (2026-07-25; the former dual-signed joint clearance is retired)."
       }
     },
     {
@@ -414,10 +414,11 @@
     {
       "id": "status.dpreq.screening",
       "type": "Status",
-      "label": "Screening",
+      "label": "Screening (RETIRED 2026-07-25)",
       "properties": {
         "module": "dpreq",
-        "sourceFile": "1.2-dpreq-workflow.md"
+        "sourceFile": "1.2-dpreq-workflow.md",
+        "note": "RETIRED 2026-07-25 — the DPREQ workflow collapsed to draft -> submitted -> under_review -> approved -> clearance_issued (plus returned/rejected). Kept in the graph for history only; no live transitions touch it."
       }
     },
     {
@@ -441,10 +442,11 @@
     {
       "id": "status.dpreq.endorsed",
       "type": "Status",
-      "label": "Endorsed",
+      "label": "Endorsed (RETIRED 2026-07-25)",
       "properties": {
         "module": "dpreq",
-        "sourceFile": "1.2-dpreq-workflow.md"
+        "sourceFile": "1.2-dpreq-workflow.md",
+        "note": "RETIRED 2026-07-25 — see status.dpreq.screening note. Endorsement collapsed into under_review."
       }
     },
     {
@@ -1134,7 +1136,7 @@
       "target": "entity.clearance_certificate_remis",
       "type": "CO_RELEASES_WITH",
       "properties": {
-        "note": "Form 3 is one physical certificate (system-design.md clearance_certificates row, keyed to entity.research_application) requiring both signatures before issuance/download - modeled here as two GENERATES edges plus this joint-release constraint rather than merging the two certificate nodes, to preserve existing EXPOSES/LOGS_TO edges on each.",
+        "note": "RETIRED 2026-07-25 (stakeholder-additional-features, Batch A) — there is NO joint release gate. Each track issues its OWN certificate independently: DPO clearance on DPO approval, Ethics clearance/exemption on the Ethics decision (ClearanceService::signDpoTrack / signEthicsTrack). research_applications.overall_status tracks partially_cleared / clearance_issued. This edge is kept for history only.",
         "sourceFile": "0.4-dpo-ethics-integration.md"
       }
     },
@@ -1283,12 +1285,6 @@
       "type": "CAN_HAVE_STATUS"
     },
     {
-      "id": "entity.dpreq_application::CAN_HAVE_STATUS::status.dpreq.screening",
-      "source": "entity.dpreq_application",
-      "target": "status.dpreq.screening",
-      "type": "CAN_HAVE_STATUS"
-    },
-    {
       "id": "entity.dpreq_application::CAN_HAVE_STATUS::status.dpreq.returned",
       "source": "entity.dpreq_application",
       "target": "status.dpreq.returned",
@@ -1298,12 +1294,6 @@
       "id": "entity.dpreq_application::CAN_HAVE_STATUS::status.dpreq.under_review",
       "source": "entity.dpreq_application",
       "target": "status.dpreq.under_review",
-      "type": "CAN_HAVE_STATUS"
-    },
-    {
-      "id": "entity.dpreq_application::CAN_HAVE_STATUS::status.dpreq.endorsed",
-      "source": "entity.dpreq_application",
-      "target": "status.dpreq.endorsed",
       "type": "CAN_HAVE_STATUS"
     },
     {
@@ -1331,28 +1321,22 @@
       "type": "TRANSITIONS_TO"
     },
     {
-      "id": "status.dpreq.submitted::TRANSITIONS_TO::status.dpreq.screening",
+      "id": "status.dpreq.submitted::TRANSITIONS_TO::status.dpreq.under_review",
       "source": "status.dpreq.submitted",
-      "target": "status.dpreq.screening",
-      "type": "TRANSITIONS_TO"
-    },
-    {
-      "id": "status.dpreq.screening::TRANSITIONS_TO::status.dpreq.under_review",
-      "source": "status.dpreq.screening",
       "target": "status.dpreq.under_review",
-      "type": "TRANSITIONS_TO"
+      "type": "TRANSITIONS_TO",
+      "properties": {
+        "note": "2026-07-25 collapse: submitted -> under_review directly (screening/endorsement steps retired)."
+      }
     },
     {
-      "id": "status.dpreq.under_review::TRANSITIONS_TO::status.dpreq.endorsed",
+      "id": "status.dpreq.under_review::TRANSITIONS_TO::status.dpreq.approved",
       "source": "status.dpreq.under_review",
-      "target": "status.dpreq.endorsed",
-      "type": "TRANSITIONS_TO"
-    },
-    {
-      "id": "status.dpreq.endorsed::TRANSITIONS_TO::status.dpreq.approved",
-      "source": "status.dpreq.endorsed",
       "target": "status.dpreq.approved",
-      "type": "TRANSITIONS_TO"
+      "type": "TRANSITIONS_TO",
+      "properties": {
+        "note": "2026-07-25 collapse: under_review -> approved directly. Approval is gated on no outstanding mandatory revisions; the DPO clearance issues once the Research Team NDA is fully signed."
+      }
     },
     {
       "id": "status.dpreq.approved::TRANSITIONS_TO::status.dpreq.clearance_issued",

@@ -16,8 +16,15 @@ Requester-ordered audit: index the codebase, deep-read `docs/` + `reqs/`, fix lo
 (not just syntax), and produce a done/missing checklist. Full detail in `CHANGELOG.md`'s
 2026-08-31 entry; the short version for the next session:
 
-- **State:** 152 tests passing (704 assertions), `composer audit` clean (12 advisories
-  patched), `npm run build` clean. Twelve commits landed on `main`, **still not pushed**.
+- **State:** 159 tests passing (751 assertions), `composer audit` clean (12 advisories
+  patched), `npm run build` clean. All work committed on `main` in incremental commits,
+  **still not pushed**.
+- **Roadmap session (requester-delegated decisions, see `ROADMAP-TO-COMPLETION.md` Phase B):**
+  unified Form 1 Parts II–V intake fields; `{entity}.viewed` audit events on sensitive-record
+  show pages; coordinator CSV batch onboarding (`/dpnda/import`); targeted knowledge-graph
+  corrections; screenshots moved to `docs/assets/verification-screenshots/`; load-target
+  assumptions documented. B8 (purge enablement) and B9 (policy-copy legal review) remain
+  human-gated.
 - **Loopholes fixed:** non-atomic `decide()`/`screen()`; missing `for_review` gates on reviewer
   assignment/review submission; exempted studies wrongly entering monthly monitoring;
   `monitoring_paused` dead-end (resume route/policy/UI now wired); retention purge mis-bucketing
