@@ -229,7 +229,7 @@ the other hasn't issued yet. The lookup only ever returns a certificate whose ow
 | Action | Who |
 |---|---|
 | Submit Form 1 (starts DPREQ + REMIS) | Any applicant role (not DPO Staff) |
-| Screen / return / endorse a DPREQ | DPO Staff |
+| Take a DPREQ under review / return it for correction | DPO Staff (former screen/endorse steps retired 2026-07-25, see §2a) |
 | Approve a DPREQ | DPO Staff |
 | Reject a DPREQ | DPO Staff |
 | Endorse a REMIS application | Adviser → Program Head → Dean, in order |

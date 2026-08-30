@@ -10,6 +10,28 @@ found" section (§7.4) is still live knowledge, worth reading once.
 
 ---
 
+## 2026-08-31 — Full cross-audit session (senior-team review)
+
+Requester-ordered audit: index the codebase, deep-read `docs/` + `reqs/`, fix logic loopholes
+(not just syntax), and produce a done/missing checklist. Full detail in `CHANGELOG.md`'s
+2026-08-31 entry; the short version for the next session:
+
+- **State:** 148 tests passing (662 assertions), `composer audit` clean (12 advisories
+  patched), `npm run build` clean. Seven commits landed on `main`, **still not pushed**.
+- **Loopholes fixed:** non-atomic `decide()`/`screen()`; missing `for_review` gates on reviewer
+  assignment/review submission; exempted studies wrongly entering monthly monitoring;
+  `monitoring_paused` dead-end (resume route/policy/UI now wired); retention purge mis-bucketing
+  archived-issued REMIS studies and ignoring DPNDA; revision double-close.
+- **Important current-truth notes:** the REC Clearance/Exemption certificate layouts in
+  `reqs/REMIS-certs/` (2026-07-31) ARE the implemented templates; the Exempted decision outcome
+  and unified-form intake fields were built 2026-07-28 (this postdates §0's "2026-07-25
+  session-end state"); `docs/CHANGELOG.md` has a gap for 2026-07-29..08-30 — do not assume
+  absence of an entry means absence of work for that window.
+- **Still standing from §0:** no `main` push without asking; no redesign resume; the unified
+  form's remaining deltas stay deferred pending the final student/employee variants.
+
+---
+
 ## 2026-07-25 — Stakeholder additional-features work (in progress, batched)
 
 Working through `docs/stakeholder-additional-features.md` in five batches (A→E), confirmed with

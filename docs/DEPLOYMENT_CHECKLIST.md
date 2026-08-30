@@ -22,9 +22,9 @@ chmod +x scripts/deploy-checklist.sh
 
 ```
 APP_URL=https://edms.pcc.edu.ph
-DB_CONNECTION=pgsql
+DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
-DB_PORT=5432
+DB_PORT=3306
 DB_DATABASE=pcc_edms
 DB_USERNAME=edms_user
 DB_PASSWORD=secure_password
@@ -32,6 +32,10 @@ QUEUE_CONNECTION=redis
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
 ```
+
+> **2026-08-31 audit correction:** this block previously said `pgsql`/5432. The confirmed
+> database engine is **MySQL 8.0+** (ADR-003; stakeholder-package `05`) — `.env.example` was
+> always right.
 
 ## Queue Workers
 

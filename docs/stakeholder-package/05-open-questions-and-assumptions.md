@@ -1,5 +1,14 @@
 # PCC-EDMS — Open Questions and Assumptions: Sign-Off Sheet
 
+> **2026-08-31 (audit) — PARTIALLY STALE:** this sheet (≈2026-07-06) predates the 2026-07-25
+> architectural reversal and several answers. Do not re-litigate: retention schedule is
+> CONFIRMED (7 yrs issued / 3 yrs rejected) and BUILT (`config/retention.php`,
+> `edms:apply-retention`); breach-incident auto-pause of monitoring is BUILT
+> (`IncidentService::autoPauseMonitoring`); the joint dual-signed clearance is RETIRED
+> (independent per-track certificates). The dual-signature "hard system rule" in the other
+> package files is likewise retired. Controlling texts: `docs/0.4`, `docs/1.2`,
+> `docs/WORKFLOWS.md`, `docs/CHANGELOG.md`.
+
 Every row below is either tagged **ASSUMPTION** or **🔴 open** in the underlying spec (see
 `docs/9.1-review-and-open-questions.md` and `docs/0.4-dpo-ethics-integration.md` for full detail
 and rationale). None of these affect the system's overall structure — they are policy specifics

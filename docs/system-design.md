@@ -11,6 +11,13 @@ implements). Source docs: `0.1`–`9.1`, `REMIS_Functional_Requirements_Specific
 > shared `research_applications` record, converging on one dual-signed `clearance_certificates`
 > row. This changes the shape of §3.1/3.2/3.4 and the module-boundary rule in §4. See
 > `CHANGELOG.md` for the reconciliation this was built on.
+>
+> **2026-08-31 (audit):** the dual-signed model above was itself RETIRED on 2026-07-25 — the
+> tracks now issue INDEPENDENT certificates (per-side `dpreq_*`/`remis_*` issuance columns,
+> 6-digit control numbers, `overall_status` gains `partially_cleared` for the one-side-issued
+> state; no release gate). Everything in this file about "both signatures", the single
+> `issued_at`, and the joint release rule (§2 step 6, §3.1, §4) is stale. Controlling texts:
+> `0.4` §Issuance rule, `1.2`, `WORKFLOWS.md` §3. Role count is 14, not 16.
 
 ---
 

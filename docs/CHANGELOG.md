@@ -4,6 +4,62 @@ Tracks substantive edits made to the `docs/` specification files after the initi
 
 ---
 
+## 2026-08-31 — Full cross-audit: loophole fixes, retention correction, stale-doc sweep
+
+Requester-ordered audit (index → deep-read `docs/` + `reqs/` → fix logic loopholes → done/missing
+checklist). Baseline at start: 138 tests passing, clean tree on `main`; at end: **148 passing**
+(10 new), `composer audit` clean, `npm run build` clean. Seven incremental commits on `main`
+(**not pushed**, per standing instruction).
+
+**Logic loopholes fixed (code):**
+1. `RemisWorkflowService::decide()` — `Decision::create()` committed before the locked
+   transition; a failed/raced decision left an orphaned `decisions` row. Now one locked
+   transaction. Same treatment for `screen()` (orphaned `screening_checklists`).
+2. `assignReviewer()` had no status gate — the Chair could assign reviewers at any lifecycle
+   stage (including after a decision). Now requires `for_review`. Same gate added to
+   `classifyRiskAndRecommend()` (+ its mutations wrapped in a transaction).
+3. `ClearanceService::signEthicsTrack()` auto-started monthly monitoring even for **exempted**
+   studies — an exemption means "exempt from full ethics clearance," not a progress-report
+   obligation. Exempted studies now rest at `clearance_issued`.
+4. **`monitoring_paused` was a dead-end status**: Part L (2026-07-08) shipped auto-pause with a
+   `resumeMonitoring()` service method but no route, controller action, policy, or UI. Added
+   applicant-only `remis.resume-monitoring` route + a pause banner with Resume action on
+   `Remis/Show.jsx` (the Monitoring card now renders for `monitoring_paused` too; status label
+   added).
+5. `RetentionService::eligibleForPurge()` swept **archived-but-issued REMIS studies into the
+   3-year rejected bucket** (they are issued records on the 7-year schedule, anchored on
+   `remis_issued_at`), and never swept DPNDA records at all despite `9.1` ("DPREQ/DPNDA do not
+   differ"): completed NDAs → issued window, declined → rejected.
+6. `RevisionService::resolve()`/`waive()` accepted double-closes; now guarded like `respond()`.
+7. Dead code: unused `ClearanceService` injection in `DpreqWorkflowService` (issuance moved to
+   `ResearchTeamNdaService`, concern 7); `.worktrees/signup-finalized` gitlink accidentally
+   committed on 2026-08-31 removed from the index and `.gitignore`d.
+8. `composer audit`: 12 advisories (1 high Guzzle host-bypass; 4 high commonmark DoS) patched by
+   minor upgrades — audit now clean.
+
+**New tests:** `WorkflowGateTest` (gates + revision guard), `MonitoringResumeTest` (resume route
++ authorization), `RetentionBucketTest` (bucket classification), 2 exemption-monitoring cases in
+`EthicsExemptionTest`.
+
+**Doc corrections (stale-text sweep, all dated in place):** superseded joint dual-signed
+clearance text annotated in `1.1` §Output, `3.1` §Output, `3.3` banner, `2.1` Form-2 row,
+`9.1` §2a/§2b, `system-design.md` top banner; retired DPREQ screen/endorse capability rows
+annotated (`0.2`, `WORKFLOWS.md` quick reference); `5.3` student-teachers report marked retired
+and Pending-Approvals `Endorsed` filter fixed; `README.md` role count 16→14; `DEPLOYMENT_CHECKLIST.md`
+pgsql block corrected to MySQL 8.0+ (ADR-003); `4.1` Validation Flow self-registration step
+corrected; `0.4` solo-researcher flag closed; `knowledge-graph.md` and
+`stakeholder-package/05` marked stale; `9.1` XAMPP php.ini path corrected (this machine runs
+Laragon); `9.1 §2b` updated — certificate layouts arrived (`reqs/REMIS-certs/`, 2026-07-31),
+Exempted outcome and unified-form intake fields already built (2026-07-28 migrations).
+
+**Process gap found (not reconstructible retroactively):** this changelog has NO entries for
+2026-07-29 through 2026-08-30 despite commits landing in that window (14 workflow-loophole
+fixes, Form 2 obligations gate, SweetAlert layer, DPNDA schedules/calendar, EVP signature
+auto-attach, unified-form intake fields, exemption flow). `docs/HANDOFF.md`'s top section stops
+at 2026-07-25 for the same reason. Going forward: docs update in the same pass as the code.
+
+---
+
 ## 2026-07-25 — DPO workflow collapse + reuse of the revision engine (Phase 2)
 
 **Collapsed the DPO/DPREQ workflow to Review → Approve (item 5).** The old four-action chain

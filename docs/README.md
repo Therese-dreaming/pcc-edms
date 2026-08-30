@@ -47,9 +47,9 @@ cross-checked against the actual code rather than just the spec files below.
 | File | Contents |
 |---|---|
 | `0.1-purpose-and-scope.md` | System name, owning offices, scope, out-of-scope, success criteria |
-| `0.2-stakeholders-and-roles.md` | All 16 roles (DPO-side + REMIS-side + Admin) and the capability matrix |
+| `0.2-stakeholders-and-roles.md` | All 14 roles (DPO-side + REMIS-side + Admin — DPO Approver and Student Teacher retired 2026-07-06) and the capability matrix |
 | `0.3-glossary.md` | Term definitions used across every other file |
-| `0.4-dpo-ethics-integration.md` | **New.** How DPO (`1.x`) and Ethics/REMIS (`3.x`) share one application intake and converge on one dual-signed clearance — read this before `1.x`/`3.x` |
+| `0.4-dpo-ethics-integration.md` | **New.** How DPO (`1.x`) and Ethics/REMIS (`3.x`) share one application intake and each issue its own independent certificate (the original dual-signed joint clearance was retired 2026-07-25) — read this before `1.x`/`3.x` |
 
 ### 1.x — Module 1: DPREQ (DPO)
 | File | Contents |

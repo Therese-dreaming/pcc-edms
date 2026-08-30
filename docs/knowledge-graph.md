@@ -1,5 +1,11 @@
 # Knowledge Graph — Schema and Maintenance
 
+> **2026-08-31 (audit) — STALE, regenerate before trusting:** the graph (v1.2, 2026-07-02) still
+> encodes the RETIRED joint dual-signed clearance (`CO_RELEASES_WITH`: "one physical certificate
+> requiring both signatures") and the pre-collapse DPREQ status chain (screening/endorsed), and
+> predates independent certificates, control numbers, cohorts, revisions, and the exemption
+> outcome. Treat `0.4`/`1.2`/`WORKFLOWS.md` as controlling until the graph is regenerated.
+
 `knowledge-graph.json` (same folder) is the machine-readable source of truth for how PCC-EDMS's
 entities relate to each other across DPO and ORD/REC. It exists because the module docs
 (`0.x`–`9.x`) describe relationships in prose scattered across many files (e.g. "this field
