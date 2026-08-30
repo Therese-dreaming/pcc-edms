@@ -180,7 +180,9 @@ class ResearchTeamNdaService
         if ($nda->isFullySigned()) {
             $fromStatus = $nda->status;
             $nda->update(['status' => 'completed']);
-            $this->statusHistory->record($nda, $fromStatus, 'completed');
+            // The final signer may be a token-only invitee with no account (unauthenticated
+            // request) — pass their user id explicitly (nullable) instead of relying on Auth.
+            $this->statusHistory->record($nda, $fromStatus, 'completed', null, $signatory->user_id);
             $this->auditLog->record('research_team_nda.completed', $nda, ['status' => $fromStatus], ['status' => 'completed']);
 
             GenerateResearchTeamNdaPdfJob::dispatch($nda->id, $signatory->user_id);

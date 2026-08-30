@@ -12,14 +12,16 @@ use Illuminate\Support\Facades\Auth;
 // consistently.
 class StatusHistoryService
 {
-    public function record(Model $statusable, ?string $fromStatus, string $toStatus, ?string $comments = null): StatusHistory
+    public function record(Model $statusable, ?string $fromStatus, string $toStatus, ?string $comments = null, ?int $changedBy = null): StatusHistory
     {
         return StatusHistory::create([
             'statusable_type' => $statusable->getMorphClass(),
             'statusable_id' => $statusable->getKey(),
             'from_status' => $fromStatus,
             'to_status' => $toStatus,
-            'changed_by' => Auth::id(),
+            // Explicit actor wins — some legitimate transitions (token-based NDA signing and the
+            // clearance issuance it triggers) run with no authenticated session.
+            'changed_by' => $changedBy ?? Auth::id(),
             'comments' => $comments,
         ]);
     }

@@ -65,7 +65,7 @@ class ClearanceService
 
             $dpreq = DpreqApplication::where('research_application_id', $researchApplication->id)->first();
             if ($dpreq && $dpreq->canTransitionTo('clearance_issued')) {
-                $this->transitionToClearanceIssued($dpreq);
+                $this->transitionToClearanceIssued($dpreq, $signerId);
             }
 
             $this->refreshOverallStatus($researchApplication->fresh(), $certificate);
@@ -124,12 +124,12 @@ class ClearanceService
 
             $remis = RemisApplication::where('research_application_id', $researchApplication->id)->first();
             if ($remis && $remis->canTransitionTo('clearance_issued')) {
-                $this->transitionToClearanceIssued($remis);
+                $this->transitionToClearanceIssued($remis, $signerId);
                 // Only cleared studies enter monthly monitoring (docs/3.4). An exempted study is
                 // excused from full ethics clearance — and from the monitoring that follows it —
                 // so it rests at clearance_issued with no progress-report obligation.
                 if (! $exempted) {
-                    $this->startMonitoring($remis->fresh());
+                    $this->startMonitoring($remis->fresh(), $signerId);
                 }
             }
 
@@ -179,11 +179,11 @@ class ClearanceService
         }
     }
 
-    private function transitionToClearanceIssued(DpreqApplication|RemisApplication $application): void
+    private function transitionToClearanceIssued(DpreqApplication|RemisApplication $application, int $actorId): void
     {
         $fromStatus = $application->status;
         $application->update(['status' => 'clearance_issued']);
-        $this->statusHistory->record($application, $fromStatus, 'clearance_issued');
+        $this->statusHistory->record($application, $fromStatus, 'clearance_issued', null, $actorId);
         $this->auditLog->record(
             $application instanceof DpreqApplication ? 'dpreq_application.clearance_issued' : 'remis_application.clearance_issued',
             $application,
@@ -196,11 +196,11 @@ class ClearanceService
     // monitoring" action, so this ASSUMES monitoring begins automatically the moment the REMIS
     // clearance is issued (there's nothing else gating the start of study execution). DPREQ has no
     // equivalent: its track ends at `clearance_issued` (DpreqApplication::LEGAL_TRANSITIONS).
-    private function startMonitoring(RemisApplication $remis): void
+    private function startMonitoring(RemisApplication $remis, int $actorId): void
     {
         $fromStatus = $remis->status;
         $remis->update(['status' => 'monitoring']);
-        $this->statusHistory->record($remis, $fromStatus, 'monitoring');
+        $this->statusHistory->record($remis, $fromStatus, 'monitoring', null, $actorId);
         $this->auditLog->record('remis_application.monitoring_started', $remis, ['status' => $fromStatus], ['status' => 'monitoring']);
     }
 }
