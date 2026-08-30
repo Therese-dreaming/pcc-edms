@@ -98,6 +98,10 @@ class RevisionService
 
     public function resolve(RevisionRequest $request, User $resolver): RevisionRequest
     {
+        if (! $request->isOpen()) {
+            throw new RuntimeException('This request is already closed.');
+        }
+
         $request->update(['status' => 'resolved', 'resolved_by' => $resolver->id, 'resolved_at' => now()]);
         $this->auditLog->record('revision_request.resolved', $request, null, ['resolved_by' => $resolver->id]);
 
@@ -107,6 +111,10 @@ class RevisionService
     /** Waive a request that turned out not to be needed — closes it without requiring a response. */
     public function waive(RevisionRequest $request, User $resolver): RevisionRequest
     {
+        if (! $request->isOpen()) {
+            throw new RuntimeException('This request is already closed.');
+        }
+
         $request->update(['status' => 'waived', 'resolved_by' => $resolver->id, 'resolved_at' => now()]);
         $this->auditLog->record('revision_request.waived', $request, null, ['resolved_by' => $resolver->id]);
 

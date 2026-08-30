@@ -176,64 +176,75 @@ class RemisWorkflowService
      */
     public function screen(RemisApplication $application, string $decision, ?string $comments = null, array $checklist = [], ?int $screenedBy = null): RemisApplication
     {
-        // Validate the status BEFORE creating the checklist row — otherwise a failed transition
-        // leaves an orphaned screening_checklists record (the transition throws, the create doesn't
-        // roll back because it happened outside any wrapping transaction).
-        if (! $application->canTransitionTo(match ($decision) {
+        $target = match ($decision) {
             'complete' => 'for_review',
             'incomplete', 'returned_for_compliance' => 'for_revision',
             default => throw new RuntimeException("Unknown screening decision: {$decision}"),
-        })) {
-            throw new RuntimeException("Illegal REMIS transition: {$application->status} -> screening outcome '{$decision}'.");
-        }
-
-        $record = \App\Modules\Remis\Models\ScreeningChecklist::create([
-            'remis_application_id' => $application->id,
-            'proposal_attached' => $checklist['proposal_attached'] ?? false,
-            'consent_form_attached' => $checklist['consent_form_attached'] ?? false,
-            'instrument_attached' => $checklist['instrument_attached'] ?? false,
-            'signatures_complete' => $checklist['signatures_complete'] ?? false,
-            'required_templates_used' => $checklist['required_templates_used'] ?? false,
-            'decision' => $decision,
-            'comments' => $comments,
-            'screened_by' => $screenedBy ?? $application->applicant_id,
-            'screened_at' => now(),
-        ]);
-
-        $this->auditLog->record('remis_application.screened', $application, null, [
-            'decision' => $decision, 'screening_checklist_id' => $record->id,
-        ]);
-
-        return match ($decision) {
-            'complete' => (function () use ($application) {
-                $application = $this->transition($application, 'for_review', 'remis_application.screening_complete');
-
-                // docs/3.3: Routed to Ethics Reviewer(s) -> Ethics Reviewer(s). No specific
-                // reviewer is assigned yet (that's assignReviewer(), a separate step owned by the
-                // Chair) — this is a heads-up to the role that a study has entered the queue.
-                $this->notifications->notifyRole('ethics_reviewer', 'REMIS application ready for review', "REMIS application {$application->tracking_number} passed screening and is ready for review assignment.", $application);
-
-                return $application;
-            })(),
-            'incomplete', 'returned_for_compliance' => (function () use ($application, $comments, $record) {
-                $application->update(['returned_from_status' => 'for_screening']);
-
-                $application = $this->transition($application, 'for_revision', 'remis_application.screening_deficient', $comments);
-
-                // FRS §VI: auto-generate a deficiency notice on a deficient outcome.
-                \App\Modules\Remis\Jobs\GenerateDeficiencyNoticeJob::dispatch($record->id);
-
-                // docs/3.3: For Revision (from any stage) -> Researcher.
-                $this->notifications->notifyUser($application->applicant, 'REMIS application returned for revision', "REMIS application {$application->tracking_number} was returned during screening — a deficiency notice has been issued.", $application);
-
-                return $application;
-            })(),
-            default => throw new RuntimeException("Unknown screening decision: {$decision}"),
         };
+
+        // Lock the row and re-validate inside the same transaction that creates the checklist and
+        // moves the status — a concurrent state change between an up-front check and the writes
+        // would otherwise leave an orphaned screening_checklists row for a transition that never
+        // happened.
+        return DB::transaction(function () use ($application, $decision, $target, $comments, $checklist, $screenedBy) {
+            $locked = RemisApplication::lockForUpdate()->findOrFail($application->id);
+
+            if (! $locked->canTransitionTo($target)) {
+                throw new RuntimeException("Illegal REMIS transition: {$locked->status} -> screening outcome '{$decision}'.");
+            }
+
+            $record = \App\Modules\Remis\Models\ScreeningChecklist::create([
+                'remis_application_id' => $locked->id,
+                'proposal_attached' => $checklist['proposal_attached'] ?? false,
+                'consent_form_attached' => $checklist['consent_form_attached'] ?? false,
+                'instrument_attached' => $checklist['instrument_attached'] ?? false,
+                'signatures_complete' => $checklist['signatures_complete'] ?? false,
+                'required_templates_used' => $checklist['required_templates_used'] ?? false,
+                'decision' => $decision,
+                'comments' => $comments,
+                'screened_by' => $screenedBy ?? $locked->applicant_id,
+                'screened_at' => now(),
+            ]);
+
+            $this->auditLog->record('remis_application.screened', $locked, null, [
+                'decision' => $decision, 'screening_checklist_id' => $record->id,
+            ]);
+
+            return match ($decision) {
+                'complete' => (function () use ($locked) {
+                    $locked = $this->transition($locked, 'for_review', 'remis_application.screening_complete');
+
+                    // docs/3.3: Routed to Ethics Reviewer(s) -> Ethics Reviewer(s). No specific
+                    // reviewer is assigned yet (that's assignReviewer(), a separate step owned by the
+                    // Chair) — this is a heads-up to the role that a study has entered the queue.
+                    $this->notifications->notifyRole('ethics_reviewer', 'REMIS application ready for review', "REMIS application {$locked->tracking_number} passed screening and is ready for review assignment.", $locked);
+
+                    return $locked;
+                })(),
+                'incomplete', 'returned_for_compliance' => (function () use ($locked, $comments, $record) {
+                    $locked->update(['returned_from_status' => 'for_screening']);
+
+                    $locked = $this->transition($locked, 'for_revision', 'remis_application.screening_deficient', $comments);
+
+                    // FRS §VI: auto-generate a deficiency notice on a deficient outcome.
+                    \App\Modules\Remis\Jobs\GenerateDeficiencyNoticeJob::dispatch($record->id);
+
+                    // docs/3.3: For Revision (from any stage) -> Researcher.
+                    $this->notifications->notifyUser($locked->applicant, 'REMIS application returned for revision', "REMIS application {$locked->tracking_number} was returned during screening — a deficiency notice has been issued.", $locked);
+
+                    return $locked;
+                })(),
+                default => throw new RuntimeException("Unknown screening decision: {$decision}"),
+            };
+        });
     }
 
     public function assignReviewer(RemisApplication $application, int $reviewerId): ReviewAssignment
     {
+        if ($application->status !== 'for_review') {
+            throw new RuntimeException('Reviewers can only be assigned while the application is for review.');
+        }
+
         if ($application->reviewAssignments()->where('reviewer_id', $reviewerId)->exists()) {
             throw new RuntimeException('This reviewer is already assigned to this application.');
         }
@@ -268,33 +279,39 @@ class RemisWorkflowService
     ): void {
         $application = $assignment->remisApplication;
 
-        RiskClassification::create([
-            'remis_application_id' => $application->id,
-            'level' => $riskLevel,
-            'review_type' => RiskClassification::LEVEL_TO_REVIEW_TYPE[$riskLevel],
-            'classified_by' => $assignment->reviewer_id,
-            'classification_date' => now()->toDateString(),
-            'rationale' => $rationale,
-        ]);
-
-        // FRS §VIII — record the per-criterion assessment. Replace any prior set for idempotency.
-        $assignment->criteriaAssessments()->delete();
-        foreach (\App\Modules\Remis\Models\ReviewCriterionAssessment::CRITERIA as $key => $label) {
-            if (! isset($criteria[$key])) {
-                continue;
-            }
-            $assignment->criteriaAssessments()->create([
-                'criterion' => $key,
-                'verdict' => $criteria[$key]['verdict'],
-                'comment' => $criteria[$key]['comment'] ?? null,
-            ]);
+        if ($application->status !== 'for_review') {
+            throw new RuntimeException('Reviews can only be submitted while the application is for review.');
         }
 
-        $assignment->update([
-            'recommendation' => $recommendation,
-            'comments' => $comments,
-            'submitted_at' => now(),
-        ]);
+        DB::transaction(function () use ($assignment, $application, $riskLevel, $rationale, $recommendation, $comments, $criteria) {
+            RiskClassification::create([
+                'remis_application_id' => $application->id,
+                'level' => $riskLevel,
+                'review_type' => RiskClassification::LEVEL_TO_REVIEW_TYPE[$riskLevel],
+                'classified_by' => $assignment->reviewer_id,
+                'classification_date' => now()->toDateString(),
+                'rationale' => $rationale,
+            ]);
+
+            // FRS §VIII — record the per-criterion assessment. Replace any prior set for idempotency.
+            $assignment->criteriaAssessments()->delete();
+            foreach (\App\Modules\Remis\Models\ReviewCriterionAssessment::CRITERIA as $key => $label) {
+                if (! isset($criteria[$key])) {
+                    continue;
+                }
+                $assignment->criteriaAssessments()->create([
+                    'criterion' => $key,
+                    'verdict' => $criteria[$key]['verdict'],
+                    'comment' => $criteria[$key]['comment'] ?? null,
+                ]);
+            }
+
+            $assignment->update([
+                'recommendation' => $recommendation,
+                'comments' => $comments,
+                'submitted_at' => now(),
+            ]);
+        });
 
         $this->auditLog->record('remis_application.reviewed', $application, null, [
             'risk_level' => $riskLevel, 'recommendation' => $recommendation,
@@ -310,48 +327,55 @@ class RemisWorkflowService
         ?string $signature,
         ?string $signatureImage = null,
     ): RemisApplication {
-        if (! $application->canTransitionTo($outcome)) {
-            throw new RuntimeException("Illegal REMIS transition: {$application->status} -> {$outcome}.");
-        }
+        // Lock first, then create the Decision row, then transition — all inside one transaction.
+        // Without this, Decision::create commits immediately while a failed or concurrently raced
+        // transition throws afterward, leaving an orphaned decisions row for a status that never moved.
+        return DB::transaction(function () use ($application, $outcome, $chairId, $conditions, $remarks, $signature, $signatureImage) {
+            $locked = RemisApplication::lockForUpdate()->findOrFail($application->id);
 
-        $assignments = $application->reviewAssignments()->get();
+            if (! $locked->canTransitionTo($outcome)) {
+                throw new RuntimeException("Illegal REMIS transition: {$locked->status} -> {$outcome}.");
+            }
 
-        if ($assignments->isEmpty() || $assignments->contains(fn (ReviewAssignment $a) => $a->submitted_at === null)) {
-            throw new RuntimeException('All assigned reviewers must submit their recommendation before a decision can be issued.');
-        }
+            $assignments = $locked->reviewAssignments()->get();
 
-        $decisionIdentity = SignatureIdentity::capture();
+            if ($assignments->isEmpty() || $assignments->contains(fn (ReviewAssignment $a) => $a->submitted_at === null)) {
+                throw new RuntimeException('All assigned reviewers must submit their recommendation before a decision can be issued.');
+            }
 
-        Decision::create([
-            'remis_application_id' => $application->id,
-            'outcome' => $outcome,
-            'decided_by' => $chairId,
-            'decision_date' => now()->toDateString(),
-            'conditions' => $conditions,
-            'remarks' => $remarks,
-            'signature_id' => $signature,
-            'signature_image' => $signatureImage,
-            'signature_ip' => $decisionIdentity['ip'],
-            'signature_user_agent' => $decisionIdentity['user_agent'],
-        ]);
+            $decisionIdentity = SignatureIdentity::capture();
 
-        // for_revision: set returned_from_status so resubmit goes back to for_review, not endorsement.
-        if ($outcome === 'for_revision') {
-            $application->update(['returned_from_status' => 'for_review']);
-        }
+            Decision::create([
+                'remis_application_id' => $locked->id,
+                'outcome' => $outcome,
+                'decided_by' => $chairId,
+                'decision_date' => now()->toDateString(),
+                'conditions' => $conditions,
+                'remarks' => $remarks,
+                'signature_id' => $signature,
+                'signature_image' => $signatureImage,
+                'signature_ip' => $decisionIdentity['ip'],
+                'signature_user_agent' => $decisionIdentity['user_agent'],
+            ]);
 
-        $application = $this->transition($application, $outcome, "remis_application.decision_{$outcome}", $remarks);
+            // for_revision: set returned_from_status so resubmit goes back to for_review, not endorsement.
+            if ($outcome === 'for_revision') {
+                $locked->update(['returned_from_status' => 'for_review']);
+            }
 
-        // docs/3.3: Decision issued (any of the four outcomes) -> Researcher.
-        $this->notifications->notifyUser($application->applicant, 'REMIS decision issued', "REMIS application {$application->tracking_number} decision: {$outcome}.", $application);
+            $locked = $this->transition($locked, $outcome, "remis_application.decision_{$outcome}", $remarks);
 
-        if (in_array($outcome, ['approved', 'approved_with_conditions', 'exempted'], true)) {
-            // An "exempted" decision issues the Certificate of Exemption; the others issue the
-            // Research Ethics Clearance (stakeholder 2026-07-28).
-            $this->clearance->signEthicsTrack($application->researchApplication, $chairId, exempted: $outcome === 'exempted');
-        }
+            // docs/3.3: Decision issued (any of the four outcomes) -> Researcher.
+            $this->notifications->notifyUser($locked->applicant, 'REMIS decision issued', "REMIS application {$locked->tracking_number} decision: {$outcome}.", $locked);
 
-        return $application->fresh();
+            if (in_array($outcome, ['approved', 'approved_with_conditions', 'exempted'], true)) {
+                // An "exempted" decision issues the Certificate of Exemption; the others issue the
+                // Research Ethics Clearance (stakeholder 2026-07-28).
+                $this->clearance->signEthicsTrack($locked->researchApplication, $chairId, exempted: $outcome === 'exempted');
+            }
+
+            return $locked->fresh();
+        });
     }
 
     /**
@@ -415,6 +439,8 @@ class RemisWorkflowService
     public function resumeMonitoring(RemisApplication $application, int $actorId): RemisApplication
     {
         $application = $this->transition($application, 'monitoring', 'remis_application.monitoring_resumed');
+
+        $this->auditLog->record('remis_application.monitoring_resumed', $application, null, ['resumed_by' => $actorId]);
 
         $this->notifications->notifyUser($application->applicant, 'REMIS monitoring resumed', "Monitoring for your REMIS study {$application->tracking_number} has resumed after corrective actions were completed.", $application);
 
