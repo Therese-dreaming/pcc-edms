@@ -1,5 +1,4 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PageHeader from '@/Components/PageHeader';
 import ReportToolbar from '@/Components/Reports/ReportToolbar';
 import { DonutChart, ReportCard, StatCard } from '@/Components/Reports/Charts';
 import { DateField, FilterBar, ReportTable, SelectField, TextField, TrackingPill } from '@/Components/Reports/ReportFilters';
@@ -30,18 +29,16 @@ export default function RiskLevel({ filters, data }) {
     const highest = Object.entries(data.by_level ?? {}).sort((a, b) => b[1] - a[1])[0];
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconChartPie}
-                    title="Applications by Risk Level"
-                    description="Classified applications grouped by risk level, study type, and review type."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Applications by Risk Level" />
 
             <div className="mx-auto max-w-6xl px-5 py-8 sm:px-7 lg:px-10">
+                {/* Header — typographic, no icon */}
+                <div className="mb-8 border-b border-border pb-6">
+                    <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Reports</p>
+                    <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">Applications by Risk Level</h1>
+                    <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Classified applications grouped by risk level, study type, and review type.</p>
+                </div>
                 <ReportToolbar
                     csvHref={route('reports.risk-level') + '?format=csv&' + new URLSearchParams(form).toString()}
                 />

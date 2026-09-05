@@ -21,7 +21,8 @@ class UpdateDpreqApplicationRequest extends FormRequest
             // Section A/B (shared research_application)
             'research_title' => ['required', 'string', 'max:255'],
             'adviser_name' => ['required', 'string', 'max:255'],
-            'applicant_category' => ['required', 'in:student,employee'],
+            // Category is fixed at account creation, not editable on the form (2026-09-05) — preserved
+            // by ResearchApplicationService::updateForm1.
             'department' => ['nullable', 'string', 'max:255'],
             'level' => ['nullable', 'string', 'max:255'],
             'course' => ['nullable', 'string', 'max:255'],

@@ -1,8 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PageHeader from '@/Components/PageHeader';
 import { Table, THead, TBody, Tr, Th, Td, EmptyRow } from '@/Components/Table';
 import { Head, Link } from '@inertiajs/react';
-import { IconUsersGroup, IconPlus, IconCircleCheck } from '@tabler/icons-react';
+import { IconPlus, IconCircleCheck } from '@tabler/icons-react';
 
 // Adviser's classes. Each cohort is onboarded with one shared join code instead of typing every
 // student into the single-applicant form.
@@ -14,19 +13,17 @@ export default function Index({ cohorts, status }) {
     };
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconUsersGroup}
-                    title="Classes"
-                    description="Onboard a whole class with one join code — students enrol themselves."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Classes" />
 
             <div className="py-8">
                 <div className="mx-auto max-w-6xl space-y-6 px-4 sm:px-6 lg:px-8">
+                    {/* Header — typographic, no icon */}
+                    <div className="mb-8 border-b border-border pb-6">
+                        <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Adviser</p>
+                        <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">Classes</h1>
+                        <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Onboard a whole class with one join code — students enrol themselves.</p>
+                    </div>
                     {status && (
                         <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
                             <IconCircleCheck size={20} className="mt-0.5 shrink-0 text-emerald-600" />

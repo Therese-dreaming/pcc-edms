@@ -1,5 +1,4 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PageHeader from '@/Components/PageHeader';
 import ReportToolbar from '@/Components/Reports/ReportToolbar';
 import { ColumnChart, ReportCard, StatCard } from '@/Components/Reports/Charts';
 import { DateField, FilterBar, ReportTable, SelectField } from '@/Components/Reports/ReportFilters';
@@ -28,18 +27,16 @@ export default function OjtAccommodated({ filters, data }) {
     const external = data.total - internal;
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconAccessible}
-                    title="OJTs Accommodated"
-                    description="Count of on-the-job trainees placed per period, school, and department."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="OJTs Accommodated" />
 
             <div className="mx-auto max-w-5xl px-5 py-8 sm:px-7 lg:px-10">
+                {/* Header — typographic, no icon */}
+                <div className="mb-8 border-b border-border pb-6">
+                    <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Reports</p>
+                    <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">OJTs Accommodated</h1>
+                    <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Count of on-the-job trainees placed per period, school, and department.</p>
+                </div>
                 <ReportToolbar
                     csvHref={route('reports.ojt-accommodated') + '?format=csv&' + new URLSearchParams(form).toString()}
                 />

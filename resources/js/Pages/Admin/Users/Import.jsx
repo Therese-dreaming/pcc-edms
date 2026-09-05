@@ -1,10 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import InputError from '@/Components/InputError';
-import PageHeader from '@/Components/PageHeader';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { EmptyRow, TBody, THead, Table, Td, Th, Tr } from '@/Components/Table';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { IconUpload } from '@tabler/icons-react';
 
 export default function Import({ roles, preview }) {
     const { data, setData, post, processing, errors } = useForm({ file: null });
@@ -23,19 +21,17 @@ export default function Import({ roles, preview }) {
     const invalidCount = (preview?.length ?? 0) - validCount;
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconUpload}
-                    title="Bulk Import Users"
-                    description="Upload a CSV to create multiple accounts at once."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Bulk Import Users" />
 
             <div className="py-8">
                 <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
+                    {/* Header — typographic, no icon */}
+                    <div className="mb-8 border-b border-border pb-6">
+                        <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Administration</p>
+                        <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">Bulk Import Users</h1>
+                        <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Upload a CSV to create multiple accounts at once.</p>
+                    </div>
                     <div className="bg-white rounded-lg border border-zinc-200 shadow-sm overflow-hidden">
                         <div className="p-6">
                             <p className="mb-4 text-sm text-zinc-600">

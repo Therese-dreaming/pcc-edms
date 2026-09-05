@@ -71,9 +71,10 @@ class StoreDpreqApplicationRequest extends FormRequest
             'research_category' => ['required', 'in:academic,institutional,sponsored,student_thesis,faculty,other'],
             'research_category_other' => ['nullable', 'string', 'max:255', 'required_if:research_category,other'],
             'contact_number' => ['nullable', 'string', 'max:30'],
-            // The intake now serves employees too (stakeholder 2026-07-28): students give
-            // level/course/section, employees give a position — both optional, category is required.
-            'applicant_category' => ['required', 'in:student,employee'],
+            // The intake serves employees too (stakeholder 2026-07-28): students give
+            // level/course/section, employees give a position — both optional. The category itself is
+            // no longer asked here (2026-09-05): it is fixed on the account at creation and derived
+            // server-side (ResearchApplicationService::submitForm1 → User::applicantCategory()).
             'department' => ['nullable', 'string', 'max:255'],
             'level' => ['nullable', 'string', 'max:255'],
             'course' => ['nullable', 'string', 'max:255'],

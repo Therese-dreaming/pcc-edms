@@ -1,5 +1,4 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PageHeader from '@/Components/PageHeader';
 import { Head } from '@inertiajs/react';
 import { IconTrash, IconUserCircle, IconLock } from '@tabler/icons-react';
 import DeleteUserForm from './Partials/DeleteUserForm';
@@ -8,19 +7,17 @@ import UpdateProfileInformationForm from './Partials/UpdateProfileInformationFor
 
 export default function Edit({ mustVerifyEmail, status }) {
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconUserCircle}
-                    title="Profile"
-                    description="Manage your account information and security."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Profile" />
 
             <div className="py-8">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+                    {/* Header — typographic, no icon */}
+                    <div className="border-b border-border pb-6">
+                        <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Account</p>
+                        <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">Profile</h1>
+                        <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Manage your account information and security.</p>
+                    </div>
                     <div className="bg-white rounded-lg border border-zinc-200 shadow-sm overflow-hidden">
                         <div className="border-b border-zinc-200 bg-zinc-50/50 px-6 py-4">
                             <div className="flex items-center gap-3">

@@ -1,6 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import InputError from '@/Components/InputError';
-import PageHeader from '@/Components/PageHeader';
 import { confirmDanger } from '@/lib/confirm';
 import { Head, router, useForm } from '@inertiajs/react';
 import {
@@ -126,19 +125,17 @@ export default function Schedules({ schedules = [], myPlacement }) {
     };
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconCalendarTime}
-                    title="My Schedule"
-                    description="Set your weekly whereabouts for your deployment — the days, times, and places you'll be at."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="My Schedule" />
 
             <div className="py-8 font-sans text-fg-primary [font-optical-sizing:auto]">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    {/* Header — typographic, no icon */}
+                    <div className="mb-8 border-b border-border pb-6">
+                        <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">DPNDA</p>
+                        <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">My Schedule</h1>
+                        <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Set your weekly whereabouts for your deployment — the days, times, and places you'll be at.</p>
+                    </div>
                     {!myPlacement ? (
                         /* No placement yet — the coordinator creates it via Form 5. */
                         <div className={`${PANEL} p-12 text-center`}>

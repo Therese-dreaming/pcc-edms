@@ -40,6 +40,8 @@ class AdviserAccountRequestController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            // Which kind of account is being requested — decides the role approval assigns.
+            'account_type' => ['required', 'in:external_adviser,employee_researcher'],
             'email' => [
                 'required', 'email', 'max:255',
                 // No existing account, and no request already awaiting review, for this email.
@@ -55,13 +57,15 @@ class AdviserAccountRequestController extends Controller
 
         $this->auditLog->record('adviser_account_request.submitted', $adviserRequest, null, [
             'email' => $adviserRequest->email,
+            'account_type' => $adviserRequest->account_type,
         ]);
 
         // Let the DPO office know a request is waiting.
+        $kind = $adviserRequest->account_type === 'employee_researcher' ? 'employee researcher' : 'adviser';
         $this->notifications->notifyRole(
             'dpo_staff',
-            'Adviser account request',
-            "{$adviserRequest->name} ({$adviserRequest->email}) has requested an adviser account.",
+            'Account request',
+            "{$adviserRequest->name} ({$adviserRequest->email}) has requested an {$kind} account.",
             $adviserRequest,
         );
 
@@ -96,16 +100,22 @@ class AdviserAccountRequestController extends Controller
             return back()->withErrors(['request' => 'An account already exists for this email address.']);
         }
 
-        $adviserRoleId = Role::where('name', 'adviser')->value('id');
+        // 2026-09-05 — the request type decides the role: an external adviser gets `adviser`; an
+        // account-less employee/faculty researcher gets `researcher_internal` (tagged as an employee
+        // applicant so the DPREQ/REMIS form skips the student/employee question). No new role — the
+        // student-vs-employee split is a profile attribute, not a permission set (docs/0.2).
+        $isEmployeeResearcher = $adviserAccountRequest->account_type === 'employee_researcher';
+        $roleName = $isEmployeeResearcher ? 'researcher_internal' : 'adviser';
+        $roleId = Role::where('name', $roleName)->value('id');
 
-        // Every external onboarder becomes an `adviser`, regardless of their real-world role. The
-        // account is created with a random password + verification/reset email (createUser), so the
-        // adviser sets their own password and verifies before their first login.
+        // Created with a random password + verification/reset email (createUser), so the owner sets
+        // their own password and verifies before their first login.
         $user = $this->adminUsers->createUser([
             'name' => $adviserAccountRequest->name,
             'email' => $adviserAccountRequest->email,
-            'role_id' => $adviserRoleId,
+            'role_id' => $roleId,
             'department' => $adviserAccountRequest->department,
+            'applicant_category' => $isEmployeeResearcher ? 'employee' : null,
             'account_status' => 'active',
         ]);
 
@@ -121,7 +131,9 @@ class AdviserAccountRequestController extends Controller
             'reviewed_by' => $request->user()->id,
         ]);
 
-        return back()->with('status', "Adviser account created for {$user->email}. They have been emailed a link to set their password.");
+        $kind = $isEmployeeResearcher ? 'Employee researcher' : 'Adviser';
+
+        return back()->with('status', "{$kind} account created for {$user->email}. They have been emailed a link to set their password.");
     }
 
     public function reject(Request $request, AdviserAccountRequest $adviserAccountRequest): RedirectResponse

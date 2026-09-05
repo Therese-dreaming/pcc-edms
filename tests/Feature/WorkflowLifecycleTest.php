@@ -549,6 +549,25 @@ class WorkflowLifecycleTest extends TestCase
     }
 
     /** @test */
+    public function incident_breach_auto_holds_a_just_cleared_study(): void
+    {
+        // A breach reported in the brief window after clearance but before monitoring auto-starts
+        // still holds the study (docs/3.5) — resume lands it in monitoring.
+        $this->actingAs($this->secretariat);
+        $ra = $this->makeResearchApplication();
+        $remis = $this->makeRemis($ra, 'clearance_issued');
+
+        app(IncidentService::class)->file($remis, [
+            'incident_type' => 'confidentiality_breach',
+            'severity' => 'high',
+            'incident_date' => now()->toDateString(),
+            'description' => 'Participant names visible in a shared export.',
+        ], $this->secretariat->id);
+
+        $this->assertSame('monitoring_paused', $remis->fresh()->status);
+    }
+
+    /** @test */
     public function monitoring_resumes_after_incident(): void
     {
         $this->actingAs($this->chair);

@@ -1,8 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PageHeader from '@/Components/PageHeader';
 import { initialsFor } from '@/Components/Avatar';
 import { Head, router } from '@inertiajs/react';
-import { IconCalendar, IconChevronLeft, IconChevronRight, IconClock, IconMapPin, IconX } from '@tabler/icons-react';
+import { IconChevronLeft, IconChevronRight, IconClock, IconMapPin, IconX } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 
 const PANEL = 'overflow-hidden rounded-xl border border-border bg-surface-secondary shadow-resting';
@@ -87,19 +86,17 @@ export default function Calendar({ placements = [], month }) {
         : null;
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconCalendar}
-                    title="Deployment Calendar"
-                    description="Where trainees are expected to be across the month, from their weekly schedules."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Deployment Calendar" />
 
             <div className="py-8 font-sans text-fg-primary [font-optical-sizing:auto]">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    {/* Header — typographic, no icon */}
+                    <div className="mb-8 border-b border-border pb-6">
+                        <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">DPNDA</p>
+                        <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">Deployment Calendar</h1>
+                        <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Where trainees are expected to be across the month, from their weekly schedules.</p>
+                    </div>
                     {/* Toolbar */}
                     <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                         <div>

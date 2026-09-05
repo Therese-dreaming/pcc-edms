@@ -34,6 +34,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'role_id',
         'student_number',
         'department',
+        'applicant_category',
         'account_status',
         'self_registered',
         'sso_subject_id',
@@ -95,5 +96,14 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->role?->name === 'researcher_external'
             ? 'external_researcher'
             : 'internal_researcher';
+    }
+
+    // 2026-09-05 — the student/employee category is captured on the account at creation (cohort
+    // enrolment → student; the employee-researcher request flow → employee; admin's choice
+    // otherwise) so the DPREQ/REMIS intake can derive it instead of asking. Accounts predating this,
+    // and staff/admin accounts, have none — default to 'student', the historical form default.
+    public function applicantCategory(): string
+    {
+        return $this->applicant_category ?? 'student';
     }
 }

@@ -1,5 +1,4 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PageHeader from '@/Components/PageHeader';
 import ReportToolbar from '@/Components/Reports/ReportToolbar';
 import { ReportCard, StatCard } from '@/Components/Reports/Charts';
 import { DateField, FilterBar, ReportTable, TextField, TrackingPill } from '@/Components/Reports/ReportFilters';
@@ -39,18 +38,16 @@ export default function PendingApprovals({ filters, data }) {
     const avg = daysList.length ? Math.round(daysList.reduce((s, d) => s + d, 0) / daysList.length) : 0;
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconClockHour4}
-                    title="Pending DPO Approvals"
-                    description="DPREQ applications still awaiting a decision, with days pending per submission."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Pending DPO Approvals" />
 
             <div className="mx-auto max-w-6xl px-5 py-8 sm:px-7 lg:px-10">
+                {/* Header — typographic, no icon */}
+                <div className="mb-8 border-b border-border pb-6">
+                    <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Reports</p>
+                    <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">Pending DPO Approvals</h1>
+                    <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">DPREQ applications still awaiting a decision, with days pending per submission.</p>
+                </div>
                 <ReportToolbar
                     csvHref={route('reports.pending-dpo-approvals') + '?format=csv&' + new URLSearchParams(form).toString()}
                 />

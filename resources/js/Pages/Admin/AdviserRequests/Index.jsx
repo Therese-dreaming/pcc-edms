@@ -15,10 +15,14 @@ export default function Index({ requests, status }) {
         if (status) notifySuccess(status);
     }, [status]);
 
+    const accountTypeLabel = (req) =>
+        req.account_type === 'employee_researcher' ? 'Employee researcher' : 'External adviser';
+
     const approve = async (req) => {
+        const roleWord = req.account_type === 'employee_researcher' ? 'researcher' : 'adviser';
         const ok = await confirmAction({
-            title: 'Create adviser account?',
-            text: `An adviser account will be created for ${req.email} and they will be emailed a link to set their password.`,
+            title: `Create ${roleWord} account?`,
+            text: `An ${roleWord} account will be created for ${req.email} and they will be emailed a link to set their password.`,
             confirmText: 'Approve & create',
         });
         if (ok) router.post(route('admin.adviser-requests.approve', req.id), {}, { preserveScroll: true });
@@ -81,6 +85,7 @@ export default function Index({ requests, status }) {
                                             <td className="px-5 py-4">
                                                 <div className="font-semibold text-fg-primary">{req.name}</div>
                                                 <div className="text-xs text-fg-tertiary">{req.email}</div>
+                                                <div className="mt-1 inline-flex rounded-full bg-surface-tertiary px-2 py-0.5 text-[11px] font-semibold text-fg-secondary">{accountTypeLabel(req)}</div>
                                             </td>
                                             <td className="px-5 py-4 text-fg-secondary">
                                                 <div>{req.institution || '—'}</div>

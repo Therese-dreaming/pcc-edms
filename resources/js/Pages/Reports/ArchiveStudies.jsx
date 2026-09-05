@@ -1,5 +1,4 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PageHeader from '@/Components/PageHeader';
 import ReportToolbar from '@/Components/Reports/ReportToolbar';
 import { ReportCard, StatCard } from '@/Components/Reports/Charts';
 import { DateField, FilterBar, ReportTable, SelectField, TextField, TrackingPill } from '@/Components/Reports/ReportFilters';
@@ -32,18 +31,16 @@ export default function ArchiveStudies({ filters, data }) {
     }, {});
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconArchive}
-                    title="Archive Studies Report"
-                    description="Studies that have reached final outcome and been moved to the archive."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Archive Studies Report" />
 
             <div className="mx-auto max-w-6xl px-5 py-8 sm:px-7 lg:px-10">
+                {/* Header — typographic, no icon */}
+                <div className="mb-8 border-b border-border pb-6">
+                    <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Reports</p>
+                    <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">Archive Studies Report</h1>
+                    <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Studies that have reached final outcome and been moved to the archive.</p>
+                </div>
                 <ReportToolbar
                     csvHref={route('reports.archive-studies') + '?format=csv&' + new URLSearchParams(form).toString()}
                 />

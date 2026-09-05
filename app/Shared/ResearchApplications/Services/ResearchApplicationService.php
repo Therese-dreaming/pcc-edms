@@ -97,7 +97,9 @@ class ResearchApplicationService
                 'research_category' => $this->resolveChoice($validated, 'research_category'),
                 'funding_source_type' => $this->resolveChoice($validated, 'funding_source_type'),
                 'adviser_name' => $validated['adviser_name'],
-                'applicant_category' => $validated['applicant_category'] ?? 'student',
+                // 2026-09-05 — derived from the account, not the form: the "Are you filling as…?"
+                // selector was removed, since the category is fixed when the account is created.
+                'applicant_category' => $applicant->applicantCategory(),
                 'department' => $validated['department'] ?? null,
                 'level' => $validated['level'] ?? null,
                 'course' => $validated['course'] ?? null,
@@ -227,7 +229,9 @@ class ResearchApplicationService
             $research->fill([
                 'research_title' => $validated['research_title'],
                 'adviser_name' => $validated['adviser_name'],
-                'applicant_category' => $validated['applicant_category'],
+                // Category is fixed at account creation and no longer editable on the form; preserve
+                // whatever the application was filed under.
+                'applicant_category' => $research->applicant_category,
                 'department' => $validated['department'] ?? null,
                 'level' => $validated['level'] ?? null,
                 'course' => $validated['course'] ?? null,

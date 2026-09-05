@@ -1,13 +1,12 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Alert from '@/Components/Alert';
 import IconButton from '@/Components/IconButton';
-import PageHeader from '@/Components/PageHeader';
 import Pagination from '@/Components/Pagination';
 import Popover from '@/Components/Popover';
 import StatusBadge from '@/Components/StatusBadge';
 import { confirmAction, confirmDanger, notifySuccess } from '@/lib/confirm';
 import { Head, Link, router } from '@inertiajs/react';
-import { IconCheck, IconCircleCheck, IconCircleX, IconEyeOff, IconFilter, IconPencil, IconPlayerPause, IconPlus, IconSearch, IconUpload, IconUsers } from '@tabler/icons-react';
+import { IconCheck, IconCircleCheck, IconCircleX, IconEyeOff, IconFilter, IconPencil, IconPlayerPause, IconPlus, IconSearch, IconUpload } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 
 const STATUS_LABELS = {
@@ -80,19 +79,17 @@ export default function Index({ users, roles, filters, status }) {
     };
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconUsers}
-                    title="User Management"
-                    description="Manage accounts, roles, and access status."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="User Management" />
 
             <div className="py-8">
                 <div className="mx-auto max-w-6xl space-y-5 px-4 sm:px-6 lg:px-8">
+                    {/* Header — typographic, no icon */}
+                    <div className="mb-8 border-b border-border pb-6">
+                        <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Administration</p>
+                        <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">User Management</h1>
+                        <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Manage accounts, roles, and access status.</p>
+                    </div>
                     {status && <Alert variant="success">{status}</Alert>}
 
                     {/* Register header + search */}

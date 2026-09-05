@@ -1,5 +1,4 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PageHeader from '@/Components/PageHeader';
 import { Head, Link } from '@inertiajs/react';
 import {
     IconAlertTriangle, IconArrowRight, IconBuildingBank, IconCalendarStats, IconChartBar,
@@ -61,18 +60,16 @@ export default function Index({ reports }) {
         .filter((g) => g.items.length > 0);
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconChartBar}
-                    title="Reports"
-                    description="Compliance and workload reports available to your role."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Reports" />
 
             <div className="mx-auto max-w-6xl px-5 py-8 sm:px-7 lg:px-10">
+                {/* Header — typographic, no icon */}
+                <div className="mb-8 border-b border-border pb-6">
+                    <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Workspace</p>
+                    <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">Reports</h1>
+                    <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Compliance and workload reports available to your role.</p>
+                </div>
                 {reports.length === 0 ? (
                     <div className="rounded-xl border border-dashed border-border-medium bg-surface-primary p-12 text-center">
                         <IconChartBar size={36} className="mx-auto text-border-medium" />

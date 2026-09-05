@@ -187,7 +187,38 @@ class DpreqApplicationController extends Controller
             'uploadHint' => \App\Shared\Documents\Support\UploadRules::hint(),
             // B4 — Applicant Type is derived from the account role and shown read-only.
             'applicantType' => request()->user()->dpreqApplicantType(),
+            // 2026-09-05 — student/employee is fixed on the account, so the form derives it instead
+            // of asking; drives which fields (level/course/section vs position) render.
+            'applicantCategory' => request()->user()->applicantCategory(),
+            // The server's real POST ceiling (php.ini post_max_size). The form checks the total
+            // attachment size against this BEFORE uploading, so an over-limit submission fails fast
+            // with a clear message instead of a long upload ending in an opaque "POST too long" 413.
+            'maxUploadBytes' => self::postMaxBytes(),
+            // The per-file cap (UploadRules::MAX_KB). The form checks each file against it up front so
+            // an over-cap file gets a clear "too large" message instead of PHP's bare "failed to
+            // upload" (which fires before validation when a file exceeds upload_max_filesize).
+            'maxFileBytes' => \App\Shared\Documents\Support\UploadRules::MAX_KB * 1024,
         ]);
+    }
+
+    // Parse php.ini's post_max_size (e.g. "256M") into bytes. 0 means "no limit" in PHP, which we
+    // pass through as 0 so the client treats it as unbounded.
+    private static function postMaxBytes(): int
+    {
+        $value = trim((string) ini_get('post_max_size'));
+        if ($value === '' || $value === '0') {
+            return 0;
+        }
+
+        $unit = strtolower($value[strlen($value) - 1]);
+        $number = (int) $value;
+
+        return match ($unit) {
+            'g' => $number * 1024 * 1024 * 1024,
+            'm' => $number * 1024 * 1024,
+            'k' => $number * 1024,
+            default => (int) $value,
+        };
     }
 
     public function store(StoreDpreqApplicationRequest $request): RedirectResponse

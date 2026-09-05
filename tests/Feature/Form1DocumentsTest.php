@@ -268,4 +268,27 @@ class Form1DocumentsTest extends TestCase
         $this->assertNotNull($additional);
         $this->assertStringStartsWith('REC-REQ-', basename($additional->file_path));
     }
+
+    /** @test */
+    public function the_applicant_category_is_derived_from_the_account_not_the_form(): void
+    {
+        // 2026-09-05 — the "Are you filing as…?" selector was removed; the category is fixed on the
+        // account. An employee's submission is filed as 'employee' even if the payload says otherwise.
+        $employee = User::factory()->create([
+            'role_id' => Role::where('name', 'researcher_internal')->value('id'),
+            'applicant_category' => 'employee',
+            'account_status' => 'active',
+            'email_verified_at' => now(),
+        ]);
+
+        $this->actingAs($employee)
+            ->post(route('dpreq.store'), $this->payload([
+                ...$this->mandatoryDocs(),
+                'applicant_category' => 'student', // ignored — derived from the account
+                'position' => 'Faculty, College of Education',
+            ]))
+            ->assertRedirect();
+
+        $this->assertSame('employee', ResearchApplication::first()->applicant_category);
+    }
 }

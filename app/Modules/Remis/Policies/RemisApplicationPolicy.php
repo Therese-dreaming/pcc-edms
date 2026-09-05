@@ -92,11 +92,14 @@ class RemisApplicationPolicy
         return $application->applicant_id === $user->id;
     }
 
-    // docs/HANDOFF.md Part L — a Data Breach/Confidentiality Breach incident auto-pauses
-    // monitoring; the study's researcher resumes it once corrective actions are in place.
+    // docs/HANDOFF.md Part L / docs/3.5 — a Data Breach/Confidentiality Breach incident auto-holds
+    // the study; it resumes once corrective actions are in place or the incident is judged a false
+    // alarm. The researcher can resume (corrective actions done); the ethics staff who investigate
+    // the incident can also resume (false-alarm call) — both are legitimate reinstaters.
     public function resumeMonitoring(User $user, RemisApplication $application): bool
     {
-        return $application->applicant_id === $user->id;
+        return $application->applicant_id === $user->id
+            || $user->hasAnyRole(['ethics_secretariat', 'ethics_committee_chair']);
     }
 
     // docs/3.5-remis-incident-reporting.md "Who Can File" — lives here, not on IncidentPolicy,

@@ -147,14 +147,18 @@ class IncidentService
     }
 
     /**
-     * Auto-pause monitoring when a data breach is reported.
-     * Changes status from 'monitoring' to 'monitoring_paused' and records in audit log.
-     * ('monitoring_paused' is the legal status per RemisApplication::LEGAL_TRANSITIONS and the
-     * value RemisWorkflowService::resumeMonitoring() transitions back from.)
+     * Auto-cancel (hold) an active study when a breach is reported (docs/3.5). Moves it to
+     * 'monitoring_paused' — a reversible hold, not a terminal cancellation: the study resumes via
+     * RemisWorkflowService::resumeMonitoring() once the breach is judged a false alarm or its
+     * corrective actions are complete. Applies across the active research window (a cleared study
+     * in 'monitoring', or the brief 'clearance_issued' state before monitoring auto-starts); a
+     * pre-clearance study has no research in progress to hold, so it is left untouched.
+     * ('monitoring_paused' is the legal target per RemisApplication::LEGAL_TRANSITIONS from both
+     * source statuses, and the value resumeMonitoring() transitions back from.)
      */
     private function autoPauseMonitoring(RemisApplication $application): void
     {
-        if ($application->status !== 'monitoring') {
+        if (! in_array($application->status, ['monitoring', 'clearance_issued'], true)) {
             return;
         }
 

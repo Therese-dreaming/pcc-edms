@@ -1,5 +1,4 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PageHeader from '@/Components/PageHeader';
 import { Table, THead, TBody, Tr, Th, Td, EmptyRow } from '@/Components/Table';
 import { Head, Link, router } from '@inertiajs/react';
 import { IconHistory, IconDownload, IconRestore, IconColumns, IconX } from '@tabler/icons-react';
@@ -84,19 +83,17 @@ export default function VersionHistory({ documentableType, documentableId, docum
     );
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconHistory}
-                    title="Document Version History"
-                    description={`All versions of documents attached to ${documentableLabel} #${documentableId}.`}
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Document Version History" />
 
             <div className="py-8">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    {/* Header — typographic, no icon */}
+                    <div className="mb-8 border-b border-border pb-6">
+                        <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Documents</p>
+                        <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">Document Version History</h1>
+                        <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">{`All versions of documents attached to ${documentableLabel} #${documentableId}.`}</p>
+                    </div>
                     {versions.length === 0 ? (
                         <div className="rounded-lg border border-zinc-200 bg-white p-8 text-center">
                             <IconHistory size={32} className="mx-auto text-zinc-300" />

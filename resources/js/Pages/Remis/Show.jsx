@@ -1,5 +1,4 @@
 import InputError from '@/Components/InputError';
-import PageHeader from '@/Components/PageHeader';
 import RevisionPanel from '@/Components/RevisionPanel';
 import StatusBadge from '@/Components/StatusBadge';
 import CertificateHistory from '@/Components/CertificateHistory';
@@ -15,7 +14,6 @@ import {
     ClipboardText,
     Clock,
     DownloadSimple,
-    Flask,
     HourglassMedium,
     PaperPlaneTilt,
     Prohibit,
@@ -308,36 +306,31 @@ export default function Show({ application, legalTransitions, revisions }) {
     };
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={Flask}
-                    title={application.tracking_number}
-                    description={application.research_application?.research_title}
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title={application.tracking_number} />
 
-            <div className="py-8">
+            <div className="py-8 font-sans text-fg-primary [font-optical-sizing:auto]">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    
-                    {/* Slim top bar — Stripe-style: identity + status inline */}
-                    <div className="mb-6 border-b border-border pb-5">
-                        <div className="mb-1.5 flex items-center gap-2 text-xs font-medium text-fg-tertiary">
-                            <Flask size={14} className="text-primary-700" weight="regular" />
-                            {application.tracking_number}
+                    {/* Header — typographic, no icon (matches Dpreq/Show) */}
+                    <div className="mb-8 border-b border-border pb-6">
+                        <div className="flex items-center gap-3">
+                            <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">
+                                REMIS Application
+                            </p>
+                            <span className="text-border-medium">/</span>
+                            <span className="font-display text-xs font-semibold tabular-nums text-fg-tertiary">
+                                {application.tracking_number}
+                            </span>
                         </div>
-                        <h1 className="mb-2 font-display text-xl font-semibold leading-tight text-fg-primary">
+                        <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">
                             {application.research_application?.research_title || (
                                 <span className="text-fg-tertiary">Untitled Research</span>
                             )}
                         </h1>
-                        <div className="flex items-center gap-3 text-xs text-fg-tertiary">
-                            <div className="flex items-center gap-1.5">
-                                <User size={14} weight="regular" className="text-fg-tertiary" />
-                                {application.research_application?.applicant?.name || 'Unknown'}
-                            </div>
+                        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-fg-tertiary">
+                            <span className="font-medium text-fg-secondary">
+                                {application.research_application?.applicant?.name || 'Unknown applicant'}
+                            </span>
                             <span className="text-border-medium">•</span>
                             <StatusBadge status={application.status} label={STATUS_LABELS[application.status]} />
                             {application.current_endorsement_step && (

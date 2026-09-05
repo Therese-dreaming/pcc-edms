@@ -49,7 +49,10 @@ class RemisApplication extends Model
         'exempted' => ['clearance_issued'],
         'deferred' => ['for_review'],
         'disapproved' => [],
-        'clearance_issued' => ['monitoring'],
+        // A breach incident can auto-hold a just-issued study before monitoring has begun
+        // (docs/3.5) — hence monitoring_paused is reachable straight from clearance_issued, not
+        // only from monitoring. Resume lands the study in monitoring either way.
+        'clearance_issued' => ['monitoring', 'monitoring_paused'],
         'monitoring' => ['monitoring_paused', 'closed'],
         'monitoring_paused' => ['monitoring', 'closed'],
         'closed' => ['archived'],

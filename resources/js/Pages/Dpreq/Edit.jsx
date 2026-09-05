@@ -113,16 +113,13 @@ export default function Edit({ application, research = {}, applicantType = 'inte
                                 <input id="adviser_name" type="text" className={input} value={data.adviser_name} onChange={(e) => setData('adviser_name', e.target.value)} required />
                             </Field>
 
+                            {/* Category is fixed on the account and no longer editable here
+                                (2026-09-05) — shown read-only. */}
                             <div>
-                                <span className={labelCls}>Are you filing as a… <span className="text-red-600">*</span></span>
-                                <div className="mt-1.5 inline-flex rounded-lg border border-border-medium p-0.5">
-                                    {[{ value: 'student', label: 'Student' }, { value: 'employee', label: 'Employee' }].map((opt) => (
-                                        <button key={opt.value} type="button" onClick={() => setData('applicant_category', opt.value)}
-                                            className={`rounded-md px-4 py-1.5 text-sm font-bold transition-colors ${data.applicant_category === opt.value ? 'bg-primary-800 text-white' : 'text-fg-secondary hover:bg-surface-tertiary'}`}>
-                                            {opt.label}
-                                        </button>
-                                    ))}
-                                </div>
+                                <span className={labelCls}>Filing as</span>
+                                <p className="mt-1.5 inline-flex items-center rounded-lg border border-border-medium bg-surface-tertiary/50 px-3 py-1.5 text-sm font-semibold text-fg-secondary">
+                                    {data.applicant_category === 'employee' ? 'Employee' : 'Student'}
+                                </p>
                             </div>
 
                             {data.applicant_category === 'student' ? (

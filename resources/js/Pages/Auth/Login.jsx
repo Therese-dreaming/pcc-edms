@@ -340,12 +340,12 @@ export default function Login({ status, canResetPassword }) {
                                     administrator. Contact them if you don&apos;t have one yet.
                                 </p>
                                 <p className="text-center font-subtitle text-sm text-paper-600">
-                                    Are you an external adviser?{' '}
+                                    Employee researcher or external adviser?{' '}
                                     <Link
                                         href={route('adviser-request.create')}
                                         className="font-bold text-primary-700 underline-offset-4 hover:underline"
                                     >
-                                        Request an adviser account
+                                        Request an account
                                     </Link>
                                 </p>
                             </form>

@@ -1,5 +1,4 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PageHeader from '@/Components/PageHeader';
 import Pagination from '@/Components/Pagination';
 import Popover from '@/Components/Popover';
 import StatusBadge from '@/Components/StatusBadge';
@@ -105,19 +104,17 @@ export default function Index({ records, filters, statusCounts = {} }) {
     };
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconSignature}
-                    title="DPNDA Records"
-                    description="OJT / trainee non-disclosure agreements and their signing status."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="DPNDA Records" />
 
             <div className="py-8">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    {/* Header — typographic, no icon */}
+                    <div className="mb-8 border-b border-border pb-6">
+                        <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">DPNDA</p>
+                        <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">DPNDA Records</h1>
+                        <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">OJT / trainee non-disclosure agreements and their signing status.</p>
+                    </div>
                     {/* Register header + search */}
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>

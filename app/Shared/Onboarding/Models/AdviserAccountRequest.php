@@ -16,6 +16,7 @@ class AdviserAccountRequest extends Model
     protected $fillable = [
         'name',
         'email',
+        'account_type',
         'institution',
         'department',
         'purpose',

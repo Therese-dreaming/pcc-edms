@@ -12,8 +12,12 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
+        // `applicant_category` (2026-09-05) is set on researcher accounts so the DPREQ/REMIS intake
+        // derives student-vs-employee from the account instead of asking. Non-researcher roles leave
+        // it null. Rosa files as a student; Emil demonstrates the employee-researcher path.
         $accounts = [
-            ['name' => 'Rosa Researcher', 'email' => 'researcher@pcc.test', 'role' => 'researcher_internal'],
+            ['name' => 'Rosa Researcher', 'email' => 'researcher@pcc.test', 'role' => 'researcher_internal', 'applicant_category' => 'student'],
+            ['name' => 'Emil Employee', 'email' => 'employee.researcher@pcc.test', 'role' => 'researcher_internal', 'applicant_category' => 'employee'],
             ['name' => 'Dan DPO Staff', 'email' => 'dpo.staff@pcc.test', 'role' => 'dpo_staff'],
             ['name' => 'Sam Admin', 'email' => 'admin@pcc.test', 'role' => 'system_administrator'],
             ['name' => 'Cathy Coordinator', 'email' => 'coordinator@pcc.test', 'role' => 'department_coordinator'],
@@ -35,6 +39,7 @@ class UserSeeder extends Seeder
                     'name' => $account['name'],
                     'password' => 'password',
                     'role_id' => $roleId,
+                    'applicant_category' => $account['applicant_category'] ?? null,
                     'account_status' => 'active',
                     'email_verified_at' => now(),
                 ]

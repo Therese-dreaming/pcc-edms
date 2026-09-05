@@ -1,5 +1,4 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PageHeader from '@/Components/PageHeader';
 import Pagination from '@/Components/Pagination';
 import Popover from '@/Components/Popover';
 import StatusBadge from '@/Components/StatusBadge';
@@ -10,7 +9,6 @@ import {
     IconArrowUpRight,
     IconCheck,
     IconEyeOff,
-    IconFileDescription,
     IconFilter,
     IconPlus,
     IconSearch,
@@ -233,19 +231,17 @@ export default function Index({
     };
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconFileDescription}
-                    title="DPO requests"
-                    description="Track every research application from submission to decision. Keep review context, ownership, and timing in one dependable register."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="DPO Requests" />
 
             <div className="px-5 py-8 font-figtree text-fg-primary sm:px-8 lg:px-12 lg:py-10">
                 <div className="mx-auto max-w-[90rem]">
+                    {/* Header — typographic, no icon */}
+                    <div className="mb-8 border-b border-border pb-6">
+                        <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">DPREQ</p>
+                        <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">DPO requests</h1>
+                        <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Track every research application from submission to decision. Keep review context, ownership, and timing in one dependable register.</p>
+                    </div>
 
                     {/* Stat Cards */}
                     <section className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border lg:grid-cols-4">

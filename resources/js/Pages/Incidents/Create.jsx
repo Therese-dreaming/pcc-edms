@@ -1,7 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
-import PageHeader from '@/Components/PageHeader';
 import TextInput from '@/Components/TextInput';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { Head, useForm } from '@inertiajs/react';
@@ -23,19 +22,17 @@ export default function Create({ remisApplication }) {
     };
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconAlertTriangle}
-                    title={`Report Incident — ${remisApplication.tracking_number}`}
-                    description="Document what happened and any immediate actions taken."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Report Incident" />
 
             <div className="py-8">
                 <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
+                    {/* Header — typographic, no icon */}
+                    <div className="mb-8 border-b border-border pb-6">
+                        <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Incidents</p>
+                        <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">{`Report Incident — ${remisApplication.tracking_number}`}</h1>
+                        <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Document what happened and any immediate actions taken.</p>
+                    </div>
                     <div className="bg-white rounded-lg border border-zinc-200 shadow-sm overflow-hidden">
                         <div className="border-b border-zinc-200 bg-zinc-50/50 px-6 py-4">
                             <div className="flex items-center gap-3">

@@ -89,6 +89,29 @@ Semantics: infected uploads are rejected with a clear validation error and audit
 scanner that cannot run **rejects** uploads too (fail-closed). Disable again by setting
 `ANTIVIRUS_ENABLED=false` if the scanner misbehaves — availability trade-off is the operator's.
 
+## 5a. PHP upload limits (REQUIRED — the app accepts 100 MB/file)
+
+`App\Shared\Documents\Support\UploadRules` caps each uploaded file at **100 MB** (`MAX_KB`), and
+Form 1 carries up to ~27 file slots (5 mandatory + 2 conditional minors + up to 20 additional).
+PHP's defaults (`post_max_size` 8M, `upload_max_filesize` 2M, `max_file_uploads` 20) are far below
+this — two symptoms follow if they aren't raised: a whole submission overflows `post_max_size` and
+PHP rejects it with a 413 **"POST Content-Length exceeds the limit"**; or a single file over
+`upload_max_filesize` is dropped and validation reports a bare **"…failed to upload"**. Set these in
+the deploy host's `php.ini` (and restart php-fpm / the web server):
+
+```ini
+upload_max_filesize = 100M    ; must be >= UploadRules::MAX_KB (per-file cap)
+post_max_size       = 512M    ; a few 100M files + fields in one submission
+max_file_uploads    = 30      ; > the 27 file slots Form 1 can present
+max_input_vars      = 5000    ; the intake form's nested checklist/co-researcher/document arrays
+memory_limit        = 512M    ; >= post_max_size
+```
+
+Keep `upload_max_filesize` == `UploadRules::MAX_KB`; if you change the per-file cap, change both.
+The DPREQ intake reads both limits back (`ini_get`) and checks each file against the per-file cap and
+the total against `post_max_size` **before** uploading, so an over-limit submission fails fast with a
+plain-language message instead of an opaque PHP error.
+
 ## 6. SSO (Microsoft Entra ID) — what IT must provide
 
 Architecture is SSO-ready (ADR-002: nullable `users.sso_subject_id`, standalone auth in the

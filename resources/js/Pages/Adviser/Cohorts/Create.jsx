@@ -1,11 +1,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
-import PageHeader from '@/Components/PageHeader';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { IconUsersGroup } from '@tabler/icons-react';
 
 export default function Create({ applicantRoles }) {
     const roleLabels = {
@@ -31,19 +29,17 @@ export default function Create({ applicantRoles }) {
     };
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconUsersGroup}
-                    title="New Class"
-                    description="Create the class once, then share its join code with your students."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="New Class" />
 
             <div className="py-8">
                 <div className="mx-auto max-w-xl px-4 sm:px-6 lg:px-8">
+                    {/* Header — typographic, no icon */}
+                    <div className="mb-8 border-b border-border pb-6">
+                        <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Adviser</p>
+                        <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">New Class</h1>
+                        <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Create the class once, then share its join code with your students.</p>
+                    </div>
                     <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
                         <div className="p-6">
                             <form onSubmit={submit} className="space-y-4">

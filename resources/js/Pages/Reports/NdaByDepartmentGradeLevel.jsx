@@ -1,5 +1,4 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PageHeader from '@/Components/PageHeader';
 import ReportToolbar from '@/Components/Reports/ReportToolbar';
 import { ColumnChart, ReportCard, StatCard } from '@/Components/Reports/Charts';
 import { DateField, FilterBar } from '@/Components/Reports/ReportFilters';
@@ -21,18 +20,16 @@ export default function NdaByDepartmentGradeLevel({ filters, data }) {
     const byDept = Object.fromEntries(data.rows.map((r) => [r.department, r.total]));
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconFileCertificate}
-                    title="Accomplished NDAs by Department and Grade Level"
-                    description="Completed non-disclosure agreements cross-tabulated by host department and trainee grade level."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="NDAs by Department and Grade Level" />
 
             <div className="mx-auto max-w-5xl px-5 py-8 sm:px-7 lg:px-10">
+                {/* Header — typographic, no icon */}
+                <div className="mb-8 border-b border-border pb-6">
+                    <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Reports</p>
+                    <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">Accomplished NDAs by Department and Grade Level</h1>
+                    <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Completed non-disclosure agreements cross-tabulated by host department and trainee grade level.</p>
+                </div>
                 <ReportToolbar
                     csvHref={route('reports.nda-by-department-grade-level') + '?format=csv&' + new URLSearchParams(form).toString()}
                 />

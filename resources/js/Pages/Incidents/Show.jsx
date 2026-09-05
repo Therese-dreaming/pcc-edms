@@ -1,12 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import InputError from '@/Components/InputError';
-import PageHeader from '@/Components/PageHeader';
 import PrimaryButton from '@/Components/PrimaryButton';
 import StatusBadge from '@/Components/StatusBadge';
 import TextInput from '@/Components/TextInput';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import {
-    IconAlertTriangle,
     IconArrowRight,
     IconCalendar,
     IconCheck,
@@ -41,19 +39,17 @@ export default function Show({ incident, legalTransitions }) {
     const correctiveActionForm = useForm({ corrective_action_required: '', corrective_action_due_date: '' });
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconAlertTriangle}
-                    title={`Incident — ${incident.remis_application?.tracking_number}`}
-                    description={incident.incident_type}
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Incident" />
 
             <div className="py-8">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    {/* Header — typographic, no icon */}
+                    <div className="mb-8 border-b border-border pb-6">
+                        <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Incidents</p>
+                        <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">{`Incident — ${incident.remis_application?.tracking_number}`}</h1>
+                        <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">{incident.incident_type}</p>
+                    </div>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* LEFT COLUMN */}
                         <div className="lg:col-span-2 space-y-6">

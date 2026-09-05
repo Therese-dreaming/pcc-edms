@@ -77,6 +77,9 @@ class AdminUserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'role_id' => ['nullable', 'exists:roles,id'],
             'department' => ['nullable', 'string', 'max:255'],
+            // Only meaningful for researcher applicant accounts; drives the DPREQ/REMIS intake so the
+            // applicant never picks student/employee themselves (2026-09-05). Optional otherwise.
+            'applicant_category' => ['nullable', 'in:student,employee'],
             'account_status' => ['required', 'in:pending_validation,active,suspended,deactivated'],
         ]);
 

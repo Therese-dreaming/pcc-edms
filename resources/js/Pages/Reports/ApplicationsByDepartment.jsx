@@ -1,5 +1,4 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PageHeader from '@/Components/PageHeader';
 import ReportToolbar from '@/Components/Reports/ReportToolbar';
 import { ColumnChart, ReportCard, StatCard } from '@/Components/Reports/Charts';
 import { DateField, FilterBar, ReportTable, TextField } from '@/Components/Reports/ReportFilters';
@@ -24,18 +23,16 @@ export default function ApplicationsByDepartment({ filters, data }) {
     const remisTotal = data.departments.reduce((s, d) => s + d.remis_total, 0);
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconBuildingBank}
-                    title="Applications by Department"
-                    description="Breakdown of DPREQ and REMIS applications submitted by each department."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Applications by Department" />
 
             <div className="mx-auto max-w-6xl px-5 py-8 sm:px-7 lg:px-10">
+                {/* Header — typographic, no icon */}
+                <div className="mb-8 border-b border-border pb-6">
+                    <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Reports</p>
+                    <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">Applications by Department</h1>
+                    <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Breakdown of DPREQ and REMIS applications submitted by each department.</p>
+                </div>
                 <ReportToolbar
                     csvHref={route('reports.applications-by-department') + '?format=csv&' + new URLSearchParams(form).toString()}
                 />

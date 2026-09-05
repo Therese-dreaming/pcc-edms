@@ -1,9 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PageHeader from '@/Components/PageHeader';
 import Pagination from '@/Components/Pagination';
 import { relativeTime, formatDateTime } from '@/lib/datetime';
 import { Head, router } from '@inertiajs/react';
-import { IconBell, IconChecks } from '@tabler/icons-react';
+import { IconChecks } from '@tabler/icons-react';
 
 export default function Index({ notificationHistory, filter = 'all', unreadCount = 0 }) {
     const open = (notification) => {
@@ -21,14 +20,19 @@ export default function Index({ notificationHistory, filter = 'all', unreadCount
         router.get(route('notifications.index'), value === 'all' ? {} : { filter: value }, { preserveScroll: true, preserveState: true, replace: true });
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconBell}
-                    title="Notifications"
-                    description="Updates on your submissions and pending actions."
-                    actions={
-                        unreadCount > 0 ? (
+        <AuthenticatedLayout>
+            <Head title="Notifications" />
+
+            <div className="py-8">
+                <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+                    {/* Header — typographic, no icon */}
+                    <div className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-border pb-6">
+                        <div className="min-w-0">
+                            <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Workspace</p>
+                            <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">Notifications</h1>
+                            <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Updates on your submissions and pending actions.</p>
+                        </div>
+                        {unreadCount > 0 ? (
                             <button
                                 type="button"
                                 onClick={() => router.post(route('notifications.read-all'), {}, { preserveScroll: true })}
@@ -37,15 +41,8 @@ export default function Index({ notificationHistory, filter = 'all', unreadCount
                                 <IconChecks size={16} strokeWidth={2} />
                                 Mark all read
                             </button>
-                        ) : null
-                    }
-                />
-            }
-        >
-            <Head title="Notifications" />
-
-            <div className="py-8">
-                <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+                        ) : null}
+                    </div>
                     {/* Tabs */}
                     <div className="mb-4 inline-flex items-center gap-1 rounded-full border border-border bg-surface-secondary p-1">
                         {[['all', 'All'], ['unread', `Unread${unreadCount > 0 ? ` (${unreadCount})` : ''}`]].map(([key, label]) => (

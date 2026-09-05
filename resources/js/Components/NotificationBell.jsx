@@ -1,4 +1,5 @@
 import { relativeTime, formatDateTime } from '@/lib/datetime';
+import { isMutating } from '@/lib/feedback';
 import { IconBell, IconChecks } from '@tabler/icons-react';
 import { Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
@@ -16,7 +17,11 @@ export default function NotificationBell() {
 
     useEffect(() => {
         pollRef.current = setInterval(() => {
-            router.reload({ only: ['notifications'], preserveScroll: true, preserveState: true });
+            // Never poll while a form is being submitted: a synchronous Inertia visit cancels the
+            // in-flight one, which would abort an upload mid-save (nothing persisted). `async: true`
+            // keeps this reload from interrupting other visits even if one starts right after.
+            if (isMutating()) return;
+            router.reload({ only: ['notifications'], preserveScroll: true, preserveState: true, async: true });
         }, 30000);
         return () => clearInterval(pollRef.current);
     }, []);

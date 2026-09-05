@@ -1,9 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PageHeader from '@/Components/PageHeader';
 import { Head, Link, router } from '@inertiajs/react';
 import {
     IconChevronRight, IconDownload, IconEye, IconFile, IconFileText, IconFileTypePdf,
-    IconFolder, IconFolderFilled, IconFolders, IconPhoto, IconSearch, IconUser, IconX,
+    IconFolderFilled, IconFolders, IconPhoto, IconSearch, IconUser, IconX,
 } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -174,18 +173,16 @@ export default function Index({ path, search: initialSearch, breadcrumbs, folder
     const isSearching = (initialSearch ?? '') !== '';
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconFolder}
-                    title="File Manager"
-                    description="Browse system-generated documents and applicant-submitted files across every module."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="File Manager" />
 
             <div className="mx-auto max-w-6xl px-5 py-6 sm:px-7 lg:px-10">
+                {/* Header — typographic, no icon */}
+                <div className="mb-8 border-b border-border pb-6">
+                    <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Repository</p>
+                    <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">File Manager</h1>
+                    <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Browse system-generated documents and applicant-submitted files across every module.</p>
+                </div>
                 {/* Toolbar: breadcrumb + search */}
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <Breadcrumbs crumbs={breadcrumbs} />

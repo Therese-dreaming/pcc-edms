@@ -1,10 +1,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PageHeader from '@/Components/PageHeader';
 import StatCard from '@/Components/StatCard';
 import WidgetCard from '@/Components/Dashboard/WidgetCard';
 import { Head } from '@inertiajs/react';
 import {
-    IconLayoutDashboard, IconStack2, IconClockPause, IconCircleCheck, IconCircleX, IconTimeDuration30,
+    IconStack2, IconClockPause, IconCircleCheck, IconCircleX, IconTimeDuration30,
 } from '@tabler/icons-react';
 
 export default function Dashboard({ dpoWidgets, ordWidgets, endorserWidgets, adminSummary }) {
@@ -19,19 +18,17 @@ export default function Dashboard({ dpoWidgets, ordWidgets, endorserWidgets, adm
     ];
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconLayoutDashboard}
-                    title="Dashboard"
-                    description="Your submissions and pending actions at a glance."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Dashboard" />
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl space-y-8 sm:px-6 lg:px-8">
+                    {/* Header — typographic, no icon */}
+                    <div className="border-b border-border pb-6">
+                        <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Workspace</p>
+                        <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">Dashboard</h1>
+                        <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Your submissions and pending actions at a glance.</p>
+                    </div>
                     {!hasWidgets && (
                         <div className="rounded-xl border border-border bg-surface-secondary p-6 text-sm text-fg-secondary shadow-resting">
                             Nothing to show yet — new submissions and pending actions will appear here.

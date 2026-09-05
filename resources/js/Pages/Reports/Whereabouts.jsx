@@ -1,5 +1,4 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PageHeader from '@/Components/PageHeader';
 import ReportToolbar from '@/Components/Reports/ReportToolbar';
 import { ReportCard, StatCard } from '@/Components/Reports/Charts';
 import { DateField, FilterBar, ReportTable, TextField } from '@/Components/Reports/ReportFilters';
@@ -21,18 +20,16 @@ export default function Whereabouts({ filters, data }) {
     const departments = new Set(data.rows.map((r) => r.department_assigned)).size;
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconMapPin}
-                    title="Trainee Whereabouts"
-                    description="Snapshot of trainees expected on-site for a given date, by department and school."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Trainee Whereabouts" />
 
             <div className="mx-auto max-w-5xl px-5 py-8 sm:px-7 lg:px-10">
+                {/* Header — typographic, no icon */}
+                <div className="mb-8 border-b border-border pb-6">
+                    <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Reports</p>
+                    <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">Trainee Whereabouts</h1>
+                    <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Snapshot of trainees expected on-site for a given date, by department and school.</p>
+                </div>
                 <ReportToolbar
                     csvHref={route('reports.whereabouts') + '?format=csv&' + new URLSearchParams(form).toString()}
                 />

@@ -1,12 +1,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PageHeader from '@/Components/PageHeader';
 import ReportToolbar from '@/Components/Reports/ReportToolbar';
 import { DonutChart, ReportCard, StatCard } from '@/Components/Reports/Charts';
 import BarList from '@/Components/Reports/BarList';
 import { DateField, FilterBar, ReportTable, TextField, TrackingPill } from '@/Components/Reports/ReportFilters';
 import { Head, router } from '@inertiajs/react';
 import {
-    IconAlertTriangle, IconChartDonut, IconClockHour4, IconListDetails, IconShieldExclamation,
+    IconChartDonut, IconClockHour4, IconListDetails, IconShieldExclamation,
 } from '@tabler/icons-react';
 import { useState } from 'react';
 
@@ -43,18 +42,16 @@ export default function IncidentSummary({ filters, data }) {
     const criticalCount = data.by_severity?.critical ?? 0;
 
     return (
-        <AuthenticatedLayout
-            header={
-                <PageHeader
-                    icon={IconAlertTriangle}
-                    title="Incident Summary"
-                    description="Reported incidents broken down by type, severity, and resolution status."
-                />
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Incident Summary" />
 
             <div className="mx-auto max-w-6xl px-5 py-8 sm:px-7 lg:px-10">
+                {/* Header — typographic, no icon */}
+                <div className="mb-8 border-b border-border pb-6">
+                    <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-primary-700">Reports</p>
+                    <h1 className="mt-2 text-balance font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-fg-primary lg:text-4xl">Incident Summary</h1>
+                    <p className="mt-3 max-w-2xl text-sm text-fg-tertiary">Reported incidents broken down by type, severity, and resolution status.</p>
+                </div>
                 <ReportToolbar
                     csvHref={route('reports.incident-summary') + '?format=csv&' + new URLSearchParams(form).toString()}
                 />

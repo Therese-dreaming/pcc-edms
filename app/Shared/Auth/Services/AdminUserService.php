@@ -105,6 +105,9 @@ class AdminUserService
             'role_id' => $data['role_id'],
             'student_number' => $data['student_number'] ?? null,
             'department' => $data['department'] ?? null,
+            // Cohort/adviser onboarding is the student path; the DPREQ/REMIS form reads this so the
+            // applicant never has to declare student/employee themselves (2026-09-05).
+            'applicant_category' => $data['applicant_category'] ?? 'student',
             'account_status' => 'pending_validation',
         ], $password);
 

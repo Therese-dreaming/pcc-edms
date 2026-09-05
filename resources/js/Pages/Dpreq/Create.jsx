@@ -6,6 +6,9 @@ import DocumentDropzone from '@/Components/DocumentDropzone';
 import { Head, useForm } from '@inertiajs/react';
 import { IconArrowLeft, IconSend, IconShieldLock } from '@tabler/icons-react';
 import { Link } from '@inertiajs/react';
+import { notifyResultError } from '@/lib/confirm';
+
+const formatMB = (bytes) => `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 
 // docs/1.1-dpreq-application-form.md — Form 1, the single intake shared by the DPO and Ethics
 // tracks (docs/0.4-dpo-ethics-integration.md).
@@ -15,7 +18,7 @@ const APPLICANT_TYPE_LABELS = {
     student: 'Student',
 };
 
-export default function Create({ documentSlots = [], fileLabels = [], uploadHint = '', applicantType = 'internal_researcher' }) {
+export default function Create({ documentSlots = [], fileLabels = [], uploadHint = '', applicantType = 'internal_researcher', applicantCategory = 'student', maxUploadBytes = 0, maxFileBytes = 0 }) {
     const { data, setData, post, transform, processing, errors } = useForm({
         research_title: '',
         research_category: 'academic',
@@ -26,7 +29,7 @@ export default function Create({ documentSlots = [], fileLabels = [], uploadHint
         co_researchers: [],
         documents: {},
         additional_documents: [],
-        applicant_category: 'student',
+        applicant_category: applicantCategory,
         department: '',
         level: '',
         course: '',
@@ -181,6 +184,46 @@ export default function Create({ documentSlots = [], fileLabels = [], uploadHint
 
     const submit = (e) => {
         e.preventDefault();
+
+        // Reject any single file over the per-file cap up front, with a clear message. Otherwise PHP
+        // rejects an over-cap file mid-upload with a bare "…failed to upload" — it fires before
+        // validation once a file exceeds upload_max_filesize, so the applicant can't tell it's a
+        // size problem.
+        const oversized = [];
+        Object.values(data.documents ?? {})
+            .flat()
+            .forEach((file) => {
+                if (file && maxFileBytes > 0 && file.size > maxFileBytes) oversized.push(file.name);
+            });
+        (data.additional_documents ?? []).forEach((doc) => {
+            if (doc?.file && maxFileBytes > 0 && doc.file.size > maxFileBytes) oversized.push(doc.file.name);
+        });
+        if (oversized.length > 0) {
+            notifyResultError(
+                'File too large',
+                `${oversized.length === 1 ? 'This file exceeds' : 'These files exceed'} the ${formatMB(maxFileBytes)} per-file limit: ${oversized.join(', ')}. Please compress or reduce ${oversized.length === 1 ? 'it' : 'them'}, then try again.`,
+            );
+            return;
+        }
+
+        // Fail fast if the attachments would blow past the server's POST ceiling. Uploading first and
+        // letting PHP reject the request means a long wait ending in an opaque "POST too long" (413),
+        // with the loader closing but the button stuck on "Submitting…". Catch it here instead.
+        const attachmentBytes =
+            Object.values(data.documents ?? {})
+                .flat()
+                .reduce((sum, file) => sum + (file?.size ?? 0), 0)
+            + (data.additional_documents ?? []).reduce((sum, doc) => sum + (doc?.file?.size ?? 0), 0);
+
+        // Leave ~10% headroom for the other form fields, the signature image, and multipart overhead.
+        if (maxUploadBytes > 0 && attachmentBytes > maxUploadBytes * 0.9) {
+            notifyResultError(
+                'Attachments too large',
+                `Your attachments total about ${formatMB(attachmentBytes)}, but this server accepts up to about ${formatMB(maxUploadBytes)} per submission. Please compress or split the largest files and try again.`,
+            );
+            return;
+        }
+
         transform((formData) => {
             // Drop co-researcher rows the user added but left blank/whitespace — treat them as
             // accidental empty rows, and keep the researcher count in step (lead + real members).
@@ -325,32 +368,14 @@ export default function Create({ documentSlots = [], fileLabels = [], uploadHint
                                     </div>
                                 </div>
 
-                                {/* Are you filing as a student or an employee? The form adapts:
+                                {/* Student/employee is fixed on the account at creation, so it's shown
+                                    read-only here rather than asked (2026-09-05). The form still adapts:
                                     students give level/course/section, employees give a position. */}
                                 <div>
-                                    <span className="block text-xs font-bold text-fg-secondary">
-                                        Are you filing as a… <span className="text-red-600">*</span>
-                                    </span>
-                                    <div className="mt-1.5 inline-flex rounded-lg border border-border-medium p-0.5">
-                                        {[
-                                            { value: 'student', label: 'Student' },
-                                            { value: 'employee', label: 'Employee' },
-                                        ].map((opt) => (
-                                            <button
-                                                key={opt.value}
-                                                type="button"
-                                                onClick={() => setData('applicant_category', opt.value)}
-                                                className={`rounded-md px-4 py-1.5 text-sm font-bold transition-colors ${
-                                                    data.applicant_category === opt.value
-                                                        ? 'bg-primary-800 text-white'
-                                                        : 'text-fg-secondary hover:bg-surface-tertiary'
-                                                }`}
-                                            >
-                                                {opt.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <InputError message={errors.applicant_category} className="mt-1.5" />
+                                    <span className="block text-xs font-bold text-fg-secondary">Filing as</span>
+                                    <p className="mt-1.5 inline-flex items-center rounded-lg border border-border-medium bg-surface-tertiary/50 px-3 py-1.5 text-sm font-semibold text-fg-secondary">
+                                        {data.applicant_category === 'employee' ? 'Employee' : 'Student'}
+                                    </p>
                                 </div>
 
                                 {data.applicant_category === 'student' ? (
