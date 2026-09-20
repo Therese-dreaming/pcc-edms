@@ -11,6 +11,7 @@ use App\Modules\Dpreq\Models\ResearchTeamNdaSignatory;
 use App\Modules\Dpreq\Services\DpreqWorkflowService;
 use App\Modules\Dpreq\Services\ResearchTeamNdaService;
 use App\Shared\AuditLog\Services\AuditLogService;
+use App\Shared\Clearance\Jobs\GenerateDpreqClearancePdfJob;
 use App\Shared\Concurrency\Exceptions\StaleRecordException;
 use App\Shared\ResearchApplications\Services\ResearchApplicationService;
 use Illuminate\Http\Request;
@@ -264,7 +265,10 @@ class DpreqApplicationController extends Controller
                 'track' => 'dpreq',
                 'applicationId' => $dpreqApplication->id,
                 'items' => $dpreqApplication->revisionRequests,
-                'canRaise' => $user->hasAnyRole(['dpo_staff', 'system_administrator']),
+                // A revision is only actionable once the app is under review (mandatory comments
+                // return it for editing), so don't offer the raise form before "Start Review".
+                'canRaise' => $user->hasAnyRole(['dpo_staff', 'system_administrator'])
+                    && $dpreqApplication->status === 'under_review',
                 'isApplicant' => $dpreqApplication->applicant_id === $user->id,
             ],
         ]);
@@ -488,9 +492,13 @@ class DpreqApplicationController extends Controller
             ->latest()
             ->first();
 
+        // "Latest edit" across both models the Form 1 PDF renders from.
+        $lastEdit = $dpreqApplication->updated_at->max($dpreqApplication->researchApplication->updated_at);
+
         // Fall back to synchronous generation if the queued job hasn't run yet (or predates
-        // this feature) — a missing Form 1 PDF should still be downloadable on demand.
-        if (!$document) {
+        // this feature) — and when it predates a subsequent edit, so a downloaded Form 1 never
+        // lags the data on the application (stakeholder 2026-07-28: editing regenerates it).
+        if (!$document || $document->created_at->lt($lastEdit)) {
             GenerateDpreqFormPdfJob::dispatchSync($dpreqApplication->id, auth()->id());
 
             $document = $dpreqApplication->documents()
@@ -527,6 +535,19 @@ class DpreqApplicationController extends Controller
         }
 
         $document = $certificate->dpreqPdfDocument;
+
+        // Same on-demand fallback as downloadFormPdf: the certificate PDF is rendered by a queued
+        // job, so a stalled/absent worker (or a certificate predating the feature) must not turn
+        // the download into a null-property crash. Generate synchronously, then retry.
+        if (!$document) {
+            GenerateDpreqClearancePdfJob::dispatchSync($certificate->id);
+
+            $document = $certificate->refresh()->dpreqPdfDocument;
+        }
+
+        if (!$document) {
+            abort(500, 'The clearance PDF could not be generated. Please contact the DPO office.');
+        }
 
         return Storage::disk('documents')->download($document->file_path, $document->original_filename);
     }

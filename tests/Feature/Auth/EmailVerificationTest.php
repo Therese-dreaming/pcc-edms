@@ -55,4 +55,60 @@ class EmailVerificationTest extends TestCase
 
         $this->assertFalse($user->fresh()->hasVerifiedEmail());
     }
+
+    // 2026-09-21 live report — the link opened on a second device (no session there) must still
+    // verify the address and say so, instead of dumping the user on an unexplained login page.
+    public function test_a_guest_clicking_the_emailed_link_verifies_and_is_told_to_sign_in(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        Event::fake();
+
+        $verificationUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $user->id, 'hash' => sha1($user->email)]
+        );
+
+        $response = $this->get($verificationUrl);
+
+        Event::assertDispatched(Verified::class);
+        $this->assertTrue($user->fresh()->hasVerifiedEmail());
+        $response->assertRedirect(route('login'))->assertSessionHas('success');
+    }
+
+    public function test_an_authenticated_user_gets_a_success_flash_on_the_dashboard(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $verificationUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $user->id, 'hash' => sha1($user->email)]
+        );
+
+        $this->actingAs($user)
+            ->get($verificationUrl)
+            ->assertRedirect(route('dashboard', absolute: false).'?verified=1')
+            ->assertSessionHas('success');
+    }
+
+    public function test_a_link_issued_for_a_since_changed_email_is_explained_not_verified(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $verificationUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $user->id, 'hash' => sha1($user->email)]
+        );
+
+        $user->update(['email' => 'moved@example.com']);
+
+        $this->get($verificationUrl)
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('error');
+
+        $this->assertFalse($user->fresh()->hasVerifiedEmail());
+    }
 }

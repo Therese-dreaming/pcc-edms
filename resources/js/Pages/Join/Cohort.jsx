@@ -107,6 +107,15 @@ export default function Cohort({ code, state, cohort }) {
                 )}
 
                 <form onSubmit={submit} className="space-y-4">
+                    {Object.keys(errors).length > 0 && (
+                        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            <span className="font-semibold">We couldn’t complete your enrolment:</span>
+                            <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                                {Object.values(errors).map((message) => <li key={message}>{message}</li>)}
+                            </ul>
+                        </div>
+                    )}
+
                     <div>
                         <label htmlFor="full_name" className="mb-1.5 block text-sm font-medium text-stone-700">Full name</label>
                         <input

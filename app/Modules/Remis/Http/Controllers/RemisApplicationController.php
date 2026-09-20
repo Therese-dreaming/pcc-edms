@@ -9,6 +9,8 @@ use App\Modules\Remis\Monitoring\Models\ProgressReport;
 use App\Modules\Remis\Monitoring\Services\RemisMonitoringService;
 use App\Modules\Remis\Services\RemisWorkflowService;
 use App\Shared\AuditLog\Services\AuditLogService;
+use App\Shared\Clearance\Jobs\GenerateRemisClearancePdfJob;
+use App\Shared\Clearance\Jobs\GenerateRemisExemptionPdfJob;
 use App\Shared\Concurrency\Exceptions\StaleRecordException;
 use App\Shared\Documents\Services\DocumentService;
 use Illuminate\Http\Request;
@@ -517,6 +519,20 @@ class RemisApplicationController extends Controller
         }
 
         $document = $certificate->remisPdfDocument;
+
+        // On-demand fallback, mirroring DpreqApplicationController::downloadClearancePdf — a
+        // stalled/absent queue worker must not turn the download into a null-property crash.
+        if (!$document) {
+            $certificate->isRemisExemption()
+                ? GenerateRemisExemptionPdfJob::dispatchSync($certificate->id)
+                : GenerateRemisClearancePdfJob::dispatchSync($certificate->id);
+
+            $document = $certificate->refresh()->remisPdfDocument;
+        }
+
+        if (!$document) {
+            abort(500, 'The clearance PDF could not be generated. Please contact the Ethics office.');
+        }
 
         return Storage::disk('documents')->download($document->file_path, $document->original_filename);
     }

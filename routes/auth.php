@@ -35,13 +35,16 @@ Route::middleware('guest')->group(function () {
         ->name('password.store');
 });
 
+// Deliberately outside BOTH the guest and auth groups (2026-09-21): the mailbox signature — not
+// the session — is the credential here, so the link also completes verification when opened on
+// another device. See App\Http\Controllers\Auth\VerifyEmailController.
+Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('verification.verify');
+
 Route::middleware('auth')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
-
-    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
-        ->middleware(['signed', 'throttle:6,1'])
-        ->name('verification.verify');
 
     Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
         ->middleware('throttle:6,1')

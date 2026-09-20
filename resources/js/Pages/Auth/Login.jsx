@@ -625,7 +625,7 @@ export default function Login({ status, canResetPassword }) {
                         )}
 
                         <footer className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-white/15 pt-6 font-subtitle text-xs text-white/48">
-                            <p>Policy draft v0.1 Â· Last revised July 2026</p>
+                            <p>Policy draft v0.1 · Last revised July 2026</p>
                             <p>Signing in records your access in the EDMS audit trail.</p>
                         </footer>
                     </div>

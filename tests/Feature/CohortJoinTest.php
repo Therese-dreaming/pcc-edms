@@ -62,7 +62,10 @@ class CohortJoinTest extends TestCase
     {
         $response = $this->post(route('join.cohort.store', $this->cohort->join_code), $this->joinPayload());
 
-        $response->assertRedirect(route('dashboard'));
+        // 2026-09-21 — joiners get a visible success message and land on /verify-email directly
+        // (a new account is never yet verified; the extra dashboard hop would age out the flash).
+        $response->assertRedirect(route('verification.notice'));
+        $response->assertSessionHas('success');
 
         $user = User::where('email', 'ana.cruz@pcc.edu.ph')->first();
         $this->assertNotNull($user);
@@ -179,7 +182,7 @@ class CohortJoinTest extends TestCase
             'student_number' => '2026-00124',
             'password' => self::PASSWORD,
             'password_confirmation' => self::PASSWORD,
-        ])->assertRedirect(route('dashboard'));
+        ])->assertRedirect(route('verification.notice'))->assertSessionHas('success');
 
         $member->refresh();
         $this->assertSame('joined', $member->status);

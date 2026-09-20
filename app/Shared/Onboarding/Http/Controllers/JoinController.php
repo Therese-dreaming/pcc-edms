@@ -67,10 +67,14 @@ class JoinController extends Controller
 
         // Sign them straight in; the `verified` middleware then routes them to /verify-email, which
         // is the same path a Breeze signup took. They never see /select-role — their role came from
-        // the cohort (see EnsureUserHasSelectedRole).
+        // the cohort (see EnsureUserHasSelectedRole). We redirect there directly (rather than to
+        // the dashboard) because a fresh joiner is never yet verified — the extra redirect hop
+        // would age out the flash before any page renders it.
         Auth::login($member->user);
 
-        return redirect()->route('dashboard');
+        return redirect()->route('verification.notice')->with('success',
+            "Welcome, {$member->full_name}! You've joined {$member->cohort->name}. "
+            .'Check your inbox and verify your email address to activate your account.');
     }
 
     public function showInvitation(string $token): Response
@@ -115,6 +119,8 @@ class JoinController extends Controller
 
         Auth::login($member->user);
 
-        return redirect()->route('dashboard');
+        return redirect()->route('verification.notice')->with('success',
+            "Welcome, {$member->full_name}! Your invitation to {$member->cohort->name} is confirmed. "
+            .'Check your inbox and verify your email address to activate your account.');
     }
 }

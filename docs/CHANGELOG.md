@@ -4,6 +4,77 @@ Tracks substantive edits made to the `docs/` specification files after the initi
 
 ---
 
+## 2026-09-21 — Live-testing fix round (requester UAT feedback, six items)
+
+1. **DPO clearance download crash** (`Attempt to read property "file_path" on null`) — the
+   certificate PDF is rendered by a queued job, and with no worker running the download read a
+   null relation. `downloadClearancePdf` on BOTH tracks (DPREQ + REMIS, clearance and exemption
+   variants) now regenerates on demand via `dispatchSync`, mirroring the existing Form 1 fallback,
+   with a clear abort if generation still yields nothing.
+2. **Forms now visibly track edits** — two halves. `dpreq.form-pdf` additionally regenerates when
+   the stored current version predates the application/research record's last edit, so a stalled
+   queue can never serve a stale Form 1; and the Form 1 template now actually **prints** the
+   Parts II–V intake answers (funding source, recruitment method, target participants, risk band +
+   explanation, DPA classification, storage/access/retention/disposal) that the intake collects and
+   the edit form edits but no PDF ever rendered — without this, a regenerated form still looked
+   unchanged on paper. `docs/` claim that "every editable field appears on Form 1" is now true.
+3. **Cohort join / invitation** — success now shows a toast ("Welcome… verify your email") by
+   landing directly on `/verify-email` (the old dashboard hop aged the flash out before any page
+   rendered it), and both join pages gained an aggregated error banner so server rejections
+   ("account already exists", domain rules…) can't be missed.
+4. **Email verification, second-device clicks** — the signed `verification.verify` link now works
+   WITHOUT an active session (signature is the credential; still `signed`+`throttle:6,1`): guests
+   who click land back on the login page **with a success message** instead of a silent login
+   wall; authenticated clicks still reach the dashboard and get a success flash. Stale links
+   (email since changed) explain themselves.
+5. **`/verify-email` real-time** — poll tightened to 2.5s plus immediate checks on mount, window
+   focus and tab visibility; a verified tab shows an inline "Email verified!" card and
+   auto-redirects to the dashboard.
+6. **Mojibake sweep** — `Dpreq/Edit.jsx` had been committed with double-encoded UTF-8 (`â€”`,
+   `â€“`, `â€¦`, `Â·`); all repaired, plus one artifact in `Auth/Login.jsx` (single characters
+   only, no restyle). Database content verified clean.
+
+Tests: `PdfDownloadResilienceTest` (4), 4 new `EmailVerificationTest` cases, `CohortJoinTest`
+assertions updated for the new landing route. UTF-8 BOMs that had crept into five JSX files
+(`Dpreq/Show.jsx`, `Dpreq/Edit.jsx`, three `Dpreq/Show/*`) were stripped in the same pass.
+
+Suite: **182 passed (829 assertions)** across both rounds, `npm run build` clean.
+
+---
+
+## 2026-09-20 — PDF signatory + revision round-trip round (found uncommitted, documented here)
+
+This round was already in the working tree when the live-testing fixes landed; it had code and
+tests but no changelog entry, so it is recorded here for the next session's benefit.
+
+1. **EVP approval block removed from every form** (request 2026-09): `pdf/partials/_approval.blade.php`
+   and `pdf/partials/_version_control.blade.php` deleted along with their `@include`s (Form 1,
+   Form 2 NDA, Form 5 NDA, DPREQ clearance) and the now-unused `.approval-*` print CSS. The
+   `pdf.approval_signatory|title|signature` config keys and `EVP_NAME`/`EVP_TITLE`/`EVP_SIGNATURE_PATH`
+   env vars no longer exist — `docs/SIGNATORIES.md` says so explicitly, so nobody re-adds them.
+2. **DPREQ revision round-trip** — raising a revision is hard-gated to `under_review`; a *mandatory*
+   comment on a DPREQ now actually returns the application to the applicant (`returnForCorrection`,
+   duplicate notification suppressed), optional comments leave the status alone, and resubmitting
+   auto-resolves outstanding revision items instead of hard-blocking — approval stays gated until
+   mandatory items are cleared. `RevisionPanel` explains the two kinds.
+3. **Token-only NDA signer crash** — a co-researcher who signs with an emailed token and has no
+   user account 500'd because the PDF job and `documents.uploaded_by` need an integer; falls back to
+   the applicant's id.
+4. **Edit-form parity** — `Dpreq/Edit.jsx` now exposes the Parts II–V intake fields Create collects
+   (previously impossible to satisfy a "change the data risks" revision).
+5. **DPREQ show page split** — `Dpreq/Show.jsx` (~1,300 lines) extracted into `Dpreq/Show/*`
+   components (header, sidebar, stepper, NDA/documents/actions panels, primitives).
+   **Needs a requester decision:** extraction was supposed to be visual-neutral, but it also added
+   net-new UI (`ProgressStepper`, `WhatsNext`) to a hand-edited, protected page — and only on the
+   DPREQ side (`Remis/Show.jsx` is still monolithic). A leftover TODO marks the applicant-only
+   simplified view as unbuilt. REMIS parity or a rollback of the new widgets is the open question.
+
+Tests: `DpreqEditTest` (5 — return-for-correction paths and the raise gate),
+`ResearchTeamNdaSigningTest` (2 — token-only guest signing + public signing page), and
+`WorkflowLifecycleTest`'s resubmit case inverted from "throws" to "auto-resolves".
+
+---
+
 ## 2026-08-31 — Phase execution pass (A→E, requester: "continue through Phases")
 
 1. **Phase A leftovers:** certificate issuance history cards on the DPREQ/REMIS show pages

@@ -1,9 +1,10 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { EnvelopeOpen, PaperPlaneRight, CheckCircle, SignOut } from '@phosphor-icons/react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function VerifyEmail({ status }) {
     const { post, processing } = useForm({});
+    const [verified, setVerified] = useState(false);
 
     const submit = (e) => {
         e.preventDefault();
@@ -11,25 +12,45 @@ export default function VerifyEmail({ status }) {
     };
 
     // C1 (concern 2) — if the user verifies on another device, this waiting tab notices and
-    // redirects itself to the dashboard. Poll-based, matching the app's other live-update patterns.
+    // redirects itself to the dashboard. Poll-based, matching the app's other live-update
+    // patterns; the immediate check + focus/visibility triggers make a manual tab switch
+    // resolve instantly instead of waiting out the interval (2026-09-21: stakeholder asked for
+    // real-time).
     useEffect(() => {
-        const timer = setInterval(async () => {
+        let done = false;
+
+        const check = async () => {
+            if (done) return;
             try {
                 const res = await fetch(route('verification.status'), {
                     headers: { Accept: 'application/json' },
                     credentials: 'same-origin',
                 });
                 if (!res.ok) return;
-                const { verified } = await res.json();
-                if (verified) {
+                const { verified: isVerified } = await res.json();
+                if (isVerified && !done) {
+                    done = true;
                     clearInterval(timer);
-                    router.visit(route('dashboard'));
+                    setVerified(true);
+                    // Brief pause so the success state is actually seen before navigating.
+                    setTimeout(() => router.visit(route('dashboard', { verified: 1 })), 1200);
                 }
             } catch {
                 // Transient network error — keep polling.
             }
-        }, 5000);
-        return () => clearInterval(timer);
+        };
+
+        const timer = setInterval(check, 2500);
+        window.addEventListener('focus', check);
+        document.addEventListener('visibilitychange', check);
+        check();
+
+        return () => {
+            done = true;
+            clearInterval(timer);
+            window.removeEventListener('focus', check);
+            document.removeEventListener('visibilitychange', check);
+        };
     }, []);
 
     return (
@@ -55,6 +76,21 @@ export default function VerifyEmail({ status }) {
                                 Thanks for signing up! Before getting started, please verify your email address by clicking the link we just sent you.
                             </p>
                         </div>
+
+                        {/* Verified on another device — shown for the beat before auto-redirect */}
+                        {verified && (
+                            <div className="mb-6 p-4 bg-success-bg border border-success/20 rounded-lg flex items-start gap-3">
+                                <CheckCircle size={20} weight="fill" className="text-success mt-0.5 shrink-0" />
+                                <div>
+                                    <p className="text-sm font-semibold text-success-text mb-1">
+                                        Email verified!
+                                    </p>
+                                    <p className="text-sm text-success-text/80 leading-relaxed">
+                                        You&apos;re all set — taking you to your dashboard…
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Success message */}
                         {status === 'verification-link-sent' && (

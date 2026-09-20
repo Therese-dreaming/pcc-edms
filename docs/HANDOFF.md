@@ -10,6 +10,42 @@ found" section (§7.4) is still live knowledge, worth reading once.
 
 ---
 
+## 2026-09-20/21 — Live-testing round + a recovered uncommitted round
+
+Requester ran the system and filed six issues (join page silent, verification link lands on login
+with no message, `/verify-email` not real-time, mojibake on `/dpreq/9/edit`, forms not tracking
+edits, DPO clearance download 500). All six fixed; full detail in `CHANGELOG.md`'s 2026-09-21
+entry. That pass also turned up a **previous round sitting uncommitted in the working tree**
+(2026-09-20: EVP approval block removed from all PDFs, DPREQ revision → return → resubmit
+round-trip, token-only NDA signer crash fix, Edit-form field parity, `Dpreq/Show.jsx` split into
+`Show/*`) — reviewed, verified green, documented and committed rather than left dangling.
+
+What the next session needs to know:
+
+- **Queued PDFs are the fragile surface.** Certificate/Form 1 PDFs are produced by queue jobs; if no
+  worker runs, every download used to either crash or serve a stale document. Downloads now
+  self-heal with `dispatchSync`. Gotcha for tests: `Queue::fake()` also swallows `dispatchSync`, so
+  simulate a missing artifact by deleting the `Document` row and nulling the certificate FK — do not
+  fake the queue.
+- **Laravel flash aging** decided the join UX: success flashes land on `/verify-email` directly,
+  because a dashboard → notice middleware bounce consumes the flash before any page renders it.
+- **The signed verification link is now a credential in its own right** — it works for guests
+  (still `signed` + `throttle:6,1`), which is what makes second-device clicking work. Do not move
+  `verification.verify` back into the `guest` group; `RedirectIfAuthenticated` would bounce
+  logged-in users away from their own link.
+- **Open requester decision:** the `Dpreq/Show/*` extraction added net-new widgets
+  (`ProgressStepper`, `WhatsNext`) to a hand-edited, protected page and only on the DPREQ side —
+  REMIS is still monolithic. Roll the widgets back or bring REMIS to parity; don't leave it split
+  (see CHANGELOG 2026-09-20 §5).
+- **Encoding hygiene:** double-encoded UTF-8 had been committed in `Dpreq/Edit.jsx`, and five JSX
+  files carried UTF-8 BOMs. Both repaired; if a file suddenly shows a one-character diff at the
+  very first byte, suspect a BOM.
+
+Suite after this round: see the "Suite:" line in `CHANGELOG.md`'s 2026-09-21 entry. All work is
+committed on `main`, **not pushed**.
+
+---
+
 ## 2026-08-31 — Full cross-audit session (senior-team review)
 
 Requester-ordered audit: index the codebase, deep-read `docs/` + `reqs/`, fix logic loopholes
