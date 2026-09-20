@@ -16,6 +16,23 @@
     $dataTypes = collect($application->data_types ?? [])->implode(', ');
     $dataSubjects = collect($application->data_subjects ?? [])->implode(', ');
 
+    // Parts II–V intake fields (stakeholder 2026-08-31). Stored values are option keys, except
+    // "other" answers which resolveChoice stores as free text — those print as typed.
+    $optionLabel = function ($value, array $labels) use ($fmt) {
+        return $labels[$value] ?? $fmt($value);
+    };
+    $participantLabels = [
+        'students' => 'Students', 'employees' => 'Employees', 'faculty' => 'Faculty', 'parents' => 'Parents',
+        'community_members' => 'Community Members', 'minors' => 'Minors', 'vulnerable_groups' => 'Vulnerable Groups',
+        'others' => 'Others',
+    ];
+    $classificationLabels = [
+        'non_personal' => 'Non-Personal Data', 'personal_information' => 'Personal Information',
+        'sensitive_personal_information' => 'Sensitive Personal Information', 'privileged_information' => 'Privileged Information',
+    ];
+    $participants = collect($r->target_participants ?? [])
+        ->map(fn($p) => $participantLabels[$p] ?? $fmt($p))->implode(', ');
+
     // Checklist items 1–2 come from Section A/B; items 3–7 are now answered on the intake and stored
     // in review_checklist (stakeholder 2026-07-28). Item 8 stays a printed declaration.
     $rc = $r->review_checklist ?? [];
@@ -117,6 +134,22 @@
                 <td class="answer">{{ $fmt($r->data_capturing_tool) }}</td>
             </tr>
             <tr>
+                <td class="label">Source of funding?</td>
+                <td class="answer">{{ $optionLabel($r->funding_source_type, [
+                    'self_funded' => 'Self-funded',
+                    'university_funded' => 'University-funded',
+                    'externally_funded' => 'Externally funded',
+                ]) ?: '—' }}</td>
+            </tr>
+            <tr>
+                <td class="label">How will participants be recruited?</td>
+                <td class="answer">{{ $r->recruitment_method ?: '—' }}</td>
+            </tr>
+            <tr>
+                <td class="label">Target participants?</td>
+                <td class="answer">{{ $participants ?: '—' }}</td>
+            </tr>
+            <tr>
                 <td class="label">Duration of the research?</td>
                 <td class="answer">
                     <strong>Start:</strong> {{ optional($r->target_start_date)->format('n/j/y') ?: '—' }} |
@@ -153,6 +186,21 @@
             </tbody>
         </table>
 
+        {{-- Risk self-assessment (Part II intake) --}}
+        <div class="spacer-sm"></div>
+        <table class="question-table">
+            <tr>
+                <td class="label">Risk band (researcher's assessment)?</td>
+                <td class="answer">{{ $optionLabel($r->risk_band, ['none' => 'None', 'minimal' => 'Minimal', 'moderate' => 'Moderate', 'high' => 'High']) ?: '—' }}</td>
+            </tr>
+            @if(filled($r->risk_band_explanation))
+                <tr>
+                    <td class="label">How are the risks minimized?</td>
+                    <td class="answer">{{ $r->risk_band_explanation }}</td>
+                </tr>
+            @endif
+        </table>
+
         {{-- Section III — DPO / Data Privacy review information --}}
         <div class="section-heading">Data Privacy (DPO Review) Information</div>
         <table class="question-table">
@@ -172,6 +220,34 @@
                 <td class="label">Data Storage / Retention Plan?</td>
                 <td class="answer">{{ $application->retention_plan ?: '—' }}</td>
             </tr>
+            <tr>
+                <td class="label">Classification of Data (DPA)?</td>
+                <td class="answer">{{ $optionLabel($r->data_classification, $classificationLabels) ?: '—' }}</td>
+            </tr>
+            @if(filled($r->data_storage_method))
+                <tr>
+                    <td class="label">Data Storage Method?</td>
+                    <td class="answer">{{ $r->data_storage_method }}</td>
+                </tr>
+            @endif
+            @if(filled($r->data_access_persons))
+                <tr>
+                    <td class="label">Persons with Access to Data?</td>
+                    <td class="answer">{{ $r->data_access_persons }}</td>
+                </tr>
+            @endif
+            @if(filled($r->data_retention_period))
+                <tr>
+                    <td class="label">Retention Period?</td>
+                    <td class="answer">{{ $r->data_retention_period }}</td>
+                </tr>
+            @endif
+            @if(filled($r->data_disposal_method))
+                <tr>
+                    <td class="label">Disposal Method?</td>
+                    <td class="answer">{{ $r->data_disposal_method }}</td>
+                </tr>
+            @endif
             <tr>
                 <td class="label">Shared with 3rd parties?</td>
                 <td class="answer">{{ $application->third_party_sharing ? 'Yes' : 'No' }}</td>
@@ -222,13 +298,6 @@
                 </tr>
             </table>
 
-            <div class="spacer-md"></div>
-
-            @include('pdf.partials._version_control', ['initialVersionDate' => 'April 15, 2026'])
-
-            <div class="spacer-md"></div>
-
-            @include('pdf.partials._approval')
         </div>
 
     </div>

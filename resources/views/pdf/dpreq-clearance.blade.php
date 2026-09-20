@@ -109,10 +109,6 @@
     </tr>
 </table>
 
-<div class="spacer-md"></div>
-
-@include('pdf.partials._approval')
-
 </div>
 @include('pdf.partials._footer', ['documentId' => 'DPO-EFORM-3DP'])
 </body>

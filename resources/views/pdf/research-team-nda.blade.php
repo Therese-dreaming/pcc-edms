@@ -124,14 +124,6 @@ $signatories = $nda->signatories;
     </tbody>
 </table>
 
-<div class="spacer-md"></div>
-
-@include('pdf.partials._version_control', ['initialVersionDate' => 'April 15, 2026'])
-
-<div class="spacer-md"></div>
-
-@include('pdf.partials._approval')
-
 </div>
 @include('pdf.partials._footer', ['documentId' => 'DPO-EFORM-2'])
 </body>

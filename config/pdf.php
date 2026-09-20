@@ -53,18 +53,15 @@ return [
     | .env — change the people without touching code or templates. Full guide:
     | docs/SIGNATORIES.md.
     |
-    | `approval_signature` is the public-relative path to the EVP's captured
-    | signature PNG. When present it renders as an image above the approval
-    | line in every PDF that includes pdf/partials/_approval.blade.php.
-    | Stakeholder confirmed 2026-08-03: capture once, auto-attach to docs.
+    | The EVP approval block (name/title + captured signature image) was removed
+    | from every form on request (2026-09). The former `approval_signatory`,
+    | `approval_title` and `approval_signature` keys no longer exist; those forms
+    | now end with their applicant/approver signature blocks only.
     |
     | REC-side signatories (ethics clearance / exemption) live in
     | config/rec.php, also env-driven (REC_CHAIR_* / REC_MEMBER_*).
     |
     */
-    'approval_signatory' => env('EVP_NAME', 'Dr. Jennifer S. Apolinario'),
-    'approval_title' => env('EVP_TITLE', 'Executive Vice President'),
-    'approval_signature' => env('EVP_SIGNATURE_PATH', 'images/signatures/evp.png'),
     'dpo_officer_title' => env('DPO_OFFICER_TITLE', 'DPO Officer'),
 
 ];

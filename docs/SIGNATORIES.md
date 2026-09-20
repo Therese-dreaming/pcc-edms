@@ -15,7 +15,13 @@ Confirmed current as of 2026-08-31 (requester confirmation).
 | Research Ethics Clearance Certificate (`remis-clearance.blade.php`) | REC Chair + REC Member | `config('rec.chair')`, `config('rec.member')` |
 | Certificate of Exemption (`remis-exemption.blade.php`) | REC Chair + REC Member | same |
 | Data Privacy Clearance (`dpreq-clearance.blade.php`) | Name: the `dpo_staff` user who approved (`clearance_certificates.dpo_signed_by`) · Title: `config('pdf.dpo_officer_title')` | account data + config |
-| DPO forms with EVP approval block (`pdf/partials/_approval.blade.php`: Form 1 PDF, Form 2 NDA, Form 5 NDA) | EVP name/title + signature image | `config('pdf.approval_signatory')`, `config('pdf.approval_title')`, `config('pdf.approval_signature')` |
+
+> **Removed 2026-09:** the EVP approval block (`pdf/partials/_approval.blade.php`) that used to
+> print "Approved by: Dr. Jennifer S. Apolinario / Executive Vice President" was removed from
+> **every form** (Form 1 PDF, Form 2 NDA, Form 5 NDA, DPREQ clearance) on request, along with the
+> per-form **version-control table** (`pdf/partials/_version_control.blade.php`). The former
+> `EVP_NAME` / `EVP_TITLE` / `EVP_SIGNATURE_PATH` env vars and the matching `config/pdf.php` keys no
+> longer exist. Those forms now end with their own applicant/approver signature blocks.
 
 ## Env overrides (all optional — defaults in `config/rec.php` and `config/pdf.php`)
 
@@ -26,11 +32,6 @@ REC_CHAIR_TITLE="Chair, Institutional Research Ethics Committee"
 REC_MEMBER_NAME="Dr. Antonio L. Cruz"
 REC_MEMBER_TITLE="Member, Institutional Research Ethics Committee/ORD"
 
-# EVP approval block — config/pdf.php
-EVP_NAME="Dr. Jennifer S. Apolinario"
-EVP_TITLE="Executive Vice President"
-EVP_SIGNATURE_PATH="images/signatures/evp.png"   # public-relative path to the captured PNG
-
 # DPO clearance title — config/pdf.php
 DPO_OFFICER_TITLE="DPO Officer"
 ```
@@ -40,9 +41,6 @@ DPO_OFFICER_TITLE="DPO Officer"
 - **The DPO clearance signature name is not a setting** — it is the account name of whoever with
   the `dpo_staff` role approved the application. Personnel change there = update the user account
   (Admin → Users), not `.env`. Only the printed *title* is configurable.
-- **EVP signature image:** place the captured PNG at `public/images/signatures/evp.png` (or set
-  `EVP_SIGNATURE_PATH`). If the file is missing the approval block falls back to a blank signature
-  line — PDFs still generate.
 - **REC layout source of truth:** `reqs/REMIS-certs/REC-Clearance-Certificate.pdf` and
   `REC-Exemption-Certificate.pdf` (stakeholder 2026-07-31). If the committee composition changes,
   update `.env` first; only touch the Blade templates if the *layout* itself changes.

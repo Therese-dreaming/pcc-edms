@@ -167,11 +167,6 @@
         transform: translate(-50%, -50%);
     }
 
-    .approval-block { margin-top: 8px; text-align: left; float: left; width: 50%; font-family: 'Aptos', Arial, Helvetica, sans-serif; }
-    .approval-line { border-top: 1.5px solid #000; width: 240px; margin: 20px 0 4px 0; }
-    .approval-name { font-weight: bold; font-size: 9pt; }
-    .approval-title { font-size: 8pt; margin-top: 2px; }
-
     .section-heading { font-family: 'Aptos', Arial, Helvetica, sans-serif; font-weight: bold; font-size: 10pt; margin: 8px 0 4px; }
     .narrative { font-family: 'Times New Roman', Georgia, serif; font-size: 9pt; text-align: justify; margin-bottom: 6px; line-height: 1.4; }
 

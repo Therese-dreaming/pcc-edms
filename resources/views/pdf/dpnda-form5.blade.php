@@ -163,14 +163,6 @@
     </tr>
 </table>
 
-<div class="spacer-sm"></div>
-
-@include('pdf.partials._version_control', ['initialVersionDate' => 'April 17, 2026'])
-
-<div class="spacer-sm"></div>
-
-@include('pdf.partials._approval')
-
 </div>
 @include('pdf.partials._footer', ['documentId' => 'DPO-EFORM-5'])
 </body>
