@@ -14,11 +14,32 @@ const APPLICANT_TYPE_LABELS = {
 const dateInput = (value) => (value ? String(value).slice(0, 10) : '');
 const asCsv = (value) => (Array.isArray(value) ? value.join(', ') : (value ?? ''));
 
+// Unified Form 1, Parts II–V (resolution B1) — the risk/data-management fields the Create form
+// collects but the Edit form previously omitted, which made "change the data risks" revisions
+// impossible to satisfy. Mirrored from Create.jsx.
+const PARTICIPANT_OPTIONS = [
+    { value: 'students', label: 'Students' },
+    { value: 'employees', label: 'Employees' },
+    { value: 'faculty', label: 'Faculty' },
+    { value: 'parents', label: 'Parents' },
+    { value: 'community_members', label: 'Community Members' },
+    { value: 'minors', label: 'Minors' },
+    { value: 'vulnerable_groups', label: 'Vulnerable Groups' },
+    { value: 'others', label: 'Others' },
+];
+const RISK_BANDS = ['none', 'minimal', 'moderate', 'high'];
+const FUNDING_OPTIONS = [
+    { value: 'self_funded', label: 'Self-funded' },
+    { value: 'university_funded', label: 'University-funded' },
+    { value: 'externally_funded', label: 'Externally funded' },
+];
+
 // Edit only the fields that appear on Form 1 (stakeholder 2026-07-28). Saving regenerates the Form 1
 // PDF when something actually changed. Ethics-only fields are edited on the REMIS side.
 export default function Edit({ application, research = {}, applicantType = 'internal_researcher' }) {
     const [collMethod, collMethodOther] = splitChoice(research.data_collection_method, 'data_collection_method');
     const [capTool, capToolOther] = splitChoice(research.data_capturing_tool, 'data_capturing_tool');
+    const [funding, fundingOther] = splitChoice(research.funding_source_type, 'funding_source_type');
 
     const { data, setData, put, transform, processing, errors } = useForm({
         research_title: research.research_title ?? '',
@@ -39,6 +60,18 @@ export default function Edit({ application, research = {}, applicantType = 'inte
         target_end_date: dateInput(research.target_end_date),
         minors_involved: Boolean(research.minors_involved),
         respondent_head_letter_approved: Boolean(research.respondent_head_letter_approved),
+        // Parts II–V (B1) — optional on edit; current values stand unless changed.
+        funding_source_type: funding,
+        funding_source_type_other: fundingOther,
+        recruitment_method: research.recruitment_method ?? '',
+        target_participants: Array.isArray(research.target_participants) ? research.target_participants : [],
+        risk_band: research.risk_band ?? '',
+        risk_band_explanation: research.risk_band_explanation ?? '',
+        data_classification: research.data_classification ?? 'non_personal',
+        data_storage_method: research.data_storage_method ?? '',
+        data_access_persons: research.data_access_persons ?? '',
+        data_retention_period: research.data_retention_period ?? '',
+        data_disposal_method: research.data_disposal_method ?? '',
         review_checklist: {
             voluntary_participation: research.review_checklist?.voluntary_participation ?? 'yes',
             confidentiality: research.review_checklist?.confidentiality ?? 'yes',
@@ -56,6 +89,10 @@ export default function Edit({ application, research = {}, applicantType = 'inte
     });
 
     const setChecklist = (key, value) => setData('review_checklist', { ...data.review_checklist, [key]: value });
+    const toggleParticipant = (value) =>
+        setData('target_participants', data.target_participants.includes(value)
+            ? data.target_participants.filter((v) => v !== value)
+            : [...data.target_participants, value]);
 
     const submit = (e) => {
         e.preventDefault();
@@ -185,6 +222,94 @@ export default function Edit({ application, research = {}, applicantType = 'inte
                             </label>
                         </Section>
 
+                        {/* Research Details & Data Management — Parts II–V (B1). Present on Create
+                            but previously missing here, which made "change the data risks" revisions
+                            impossible to satisfy on edit. */}
+                        <Section title="Research Details & Data Management">
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <SelectWithOther
+                                    id="funding_source_type"
+                                    label="Funding Source"
+                                    value={data.funding_source_type}
+                                    otherValue={data.funding_source_type_other}
+                                    onValueChange={(v) => setData('funding_source_type', v)}
+                                    onOtherChange={(v) => setData('funding_source_type_other', v)}
+                                    options={FUNDING_OPTIONS}
+                                    error={errors.funding_source_type}
+                                    otherError={errors.funding_source_type_other}
+                                />
+                                <Field id="recruitment_method" label="Recruitment Method" error={errors.recruitment_method}>
+                                    <input id="recruitment_method" type="text" className={input} placeholder="e.g. class announcements, purposive sampling" value={data.recruitment_method} onChange={(e) => setData('recruitment_method', e.target.value)} />
+                                </Field>
+                            </div>
+
+                            <div>
+                                <p className="mb-2 text-xs font-bold text-fg-secondary">Target Participants</p>
+                                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                    {PARTICIPANT_OPTIONS.map((opt) => (
+                                        <label key={opt.value} className="flex items-center gap-2 text-sm text-fg-secondary">
+                                            <input
+                                                type="checkbox"
+                                                checked={data.target_participants.includes(opt.value)}
+                                                onChange={() => toggleParticipant(opt.value)}
+                                                className="h-4 w-4 rounded border-border-medium text-primary-700 focus:ring-4 focus:ring-primary-700/20"
+                                            />
+                                            {opt.label}
+                                        </label>
+                                    ))}
+                                </div>
+                                <InputError message={errors.target_participants} className="mt-1.5" />
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <p className="mb-2 text-xs font-bold text-fg-secondary">Risk Level</p>
+                                    <div className="flex flex-wrap gap-3">
+                                        {RISK_BANDS.map((band) => (
+                                            <label key={band} className="flex items-center gap-1.5 text-sm capitalize text-fg-secondary">
+                                                <input
+                                                    type="radio"
+                                                    name="risk_band"
+                                                    checked={data.risk_band === band}
+                                                    onChange={() => setData('risk_band', band)}
+                                                    className="h-4 w-4 border-border-medium text-primary-700 focus:ring-4 focus:ring-primary-700/20"
+                                                />
+                                                {band}
+                                            </label>
+                                        ))}
+                                    </div>
+                                    <InputError message={errors.risk_band} className="mt-1.5" />
+                                </div>
+                                <Field id="data_classification" label="Classification of Data (Data Privacy Act)" error={errors.data_classification}>
+                                    <select id="data_classification" className={input} value={data.data_classification} onChange={(e) => setData('data_classification', e.target.value)}>
+                                        <option value="non_personal">Non-Personal Data</option>
+                                        <option value="personal_information">Personal Information</option>
+                                        <option value="sensitive_personal_information">Sensitive Personal Information</option>
+                                        <option value="privileged_information">Privileged Information</option>
+                                    </select>
+                                </Field>
+                            </div>
+
+                            <Field id="risk_band_explanation" label="Explain the risks (and how they are minimized)" error={errors.risk_band_explanation}>
+                                <textarea id="risk_band_explanation" rows={2} className={input} value={data.risk_band_explanation} onChange={(e) => setData('risk_band_explanation', e.target.value)} />
+                            </Field>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <Field id="data_storage_method" label="Data Storage Method" error={errors.data_storage_method}>
+                                    <input id="data_storage_method" type="text" className={input} placeholder="e.g. encrypted drive, locked cabinet" value={data.data_storage_method} onChange={(e) => setData('data_storage_method', e.target.value)} />
+                                </Field>
+                                <Field id="data_access_persons" label="Persons with Access to Data" error={errors.data_access_persons}>
+                                    <input id="data_access_persons" type="text" className={input} placeholder="e.g. researcher and adviser only" value={data.data_access_persons} onChange={(e) => setData('data_access_persons', e.target.value)} />
+                                </Field>
+                                <Field id="data_retention_period" label="Data Retention Period" error={errors.data_retention_period}>
+                                    <input id="data_retention_period" type="text" className={input} placeholder="e.g. 1 year after completion" value={data.data_retention_period} onChange={(e) => setData('data_retention_period', e.target.value)} />
+                                </Field>
+                                <Field id="data_disposal_method" label="Disposal Method" error={errors.data_disposal_method}>
+                                    <input id="data_disposal_method" type="text" className={input} placeholder="e.g. secure deletion, shredding" value={data.data_disposal_method} onChange={(e) => setData('data_disposal_method', e.target.value)} />
+                                </Field>
+                            </div>
+                        </Section>
+
                         {/* Review checklist */}
                         <Section title="Review Checklist">
                             <div className="divide-y divide-border">
@@ -238,10 +363,8 @@ export default function Edit({ application, research = {}, applicantType = 'inte
                         </Section>
 
                         {/* Re-sign (optional) */}
-                        <Section title="Signature (optional re-sign)">
-                            <p className="text-xs leading-relaxed text-fg-tertiary">
-                                Leave blank to keep your existing signature. Signing again replaces it on the regenerated Form 1.
-                            </p>
+                        <Section title="Signature">
+                            <p className="text-xs leading-relaxed text-fg-tertiary"><span className="font-semibold text-emerald-700">Your existing signature is kept automatically</span> — you don't need to sign again to save or resubmit. Only sign below to replace it on the regenerated Form 1.</p>
                             <SignaturePad onChange={(image) => setData('researcher_signature', image)} />
                             <InputError message={errors.researcher_signature} className="mt-2" />
                         </Section>

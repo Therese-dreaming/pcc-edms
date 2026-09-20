@@ -299,7 +299,7 @@ class WorkflowLifecycleTest extends TestCase
     }
 
     /** @test */
-    public function dpreq_resubmit_is_blocked_by_outstanding_mandatory_revision(): void
+    public function dpreq_resubmit_auto_resolves_outstanding_mandatory_revision(): void
     {
         $this->actingAs($this->dpo);
         $workflow = app(DpreqWorkflowService::class);
@@ -310,18 +310,16 @@ class WorkflowLifecycleTest extends TestCase
         $workflow->returnForCorrection($app->fresh(), 'Missing document.');
 
         // DPO raises a mandatory request while returned.
-        app(RevisionService::class)->raise(
+        $request = app(RevisionService::class)->raise(
             $app->fresh(), $this->dpo, 'Supply the data-sharing agreement.', $this->applicant, 'document_required', true,
         );
 
-        // Resubmit is blocked.
-        try {
-            $workflow->resubmit($app->fresh());
-            $this->fail('Resubmit should have been blocked.');
-        } catch (RuntimeException $e) {
-            $this->assertStringContainsString('outstanding required items', $e->getMessage());
-        }
-        $this->assertSame('returned', $app->fresh()->status);
+        // Resubmitting from `returned` is the applicant's attestation that the item is addressed, so
+        // it succeeds and auto-resolves the request (approval remains separately gated).
+        $workflow->resubmit($app->fresh());
+
+        $this->assertSame('submitted', $app->fresh()->status);
+        $this->assertSame('resolved', $request->fresh()->status);
     }
 
     /** @test */

@@ -89,6 +89,11 @@ export default function RevisionPanel({ revisions }) {
                             Send request
                         </button>
                     </div>
+                    {track === 'dpreq' && (
+                        <p className="text-[0.6875rem] leading-relaxed text-zinc-500">
+                            A <span className="font-semibold text-zinc-700">mandatory comment</span> returns the application to the researcher so they can edit Form 1 and resubmit (the PDF is re-versioned). A <span className="font-semibold text-zinc-700">document request</span> leaves the application under review and only holds approval until the file arrives.
+                        </p>
+                    )}
                 </form>
             )}
         </div>

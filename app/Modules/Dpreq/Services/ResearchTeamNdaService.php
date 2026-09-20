@@ -185,7 +185,14 @@ class ResearchTeamNdaService
             $this->statusHistory->record($nda, $fromStatus, 'completed', null, $signatory->user_id);
             $this->auditLog->record('research_team_nda.completed', $nda, ['status' => $fromStatus], ['status' => 'completed']);
 
-            GenerateResearchTeamNdaPdfJob::dispatch($nda->id, $signatory->user_id);
+            // The final signer may be a token-only invitee with no account (unauthenticated
+            // request), so never hand a bare `$signatory->user_id` to the job — documents.uploaded_by
+            // is a non-nullable FK to users, and the job's constructor is typed `int`, so a null
+            // crashed the signing request with a 500 *after* the signature was already recorded.
+            // Fall back to the application's applicant (always a real user), the same explicit
+            // attribution used for the clearance issuance directly below.
+            $generatedBy = $signatory->user_id ?? $nda->researchApplication->applicant_id;
+            GenerateResearchTeamNdaPdfJob::dispatch($nda->id, $generatedBy);
 
             // concern 7 (2026-07-26): the DPO clearance is gated on the whole team signing, not on
             // approval. Now that every signatory has signed, issue it — attributed to the DPO who

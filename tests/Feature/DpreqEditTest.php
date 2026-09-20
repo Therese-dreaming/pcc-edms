@@ -154,4 +154,144 @@ class DpreqEditTest extends TestCase
             ->put(route('dpreq.update', $dpreq->id), $this->editPayload(['research_title' => 'Hijack']))
             ->assertForbidden();
     }
+
+    // 2026-09 revision→edit fix — the plot hole this closes: DPO staff raises a MANDATORY revision
+    // (e.g. "fix the data risks") on an under-review application; the application must return to the
+    // applicant so they can edit the Form-1 inputs, which regenerates the Form 1 PDF as a new version.
+    private function dpoStaff(): User
+    {
+        return User::factory()->create([
+            'role_id' => Role::where('name', 'dpo_staff')->value('id'),
+            'account_status' => 'active',
+            'email_verified_at' => now(),
+        ]);
+    }
+
+    /** @test */
+    public function a_mandatory_dpreq_revision_returns_the_application_so_the_owner_can_edit_and_reversion_form1(): void
+    {
+        $staff = $this->dpoStaff();
+
+        // Build an application and move it to under_review (the state DPO staff review from).
+        $dpreq = $this->returnedApplication();
+        $dpreq->update(['status' => 'under_review']);
+
+        // Staff raises a mandatory revision request ("change the data risks").
+        $this->actingAs($staff)
+            ->post(route('revisions.raise', ['dpreq', $dpreq->id]), [
+                'item' => 'Please expand the data-risk section.',
+                'kind' => 'comment',
+                'is_mandatory' => true,
+            ])->assertRedirect();
+
+        // The application is returned to the applicant and the request is open.
+        $this->assertSame('returned', $dpreq->fresh()->status);
+        $this->assertDatabaseHas('revision_requests', [
+            'requestable_id' => $dpreq->id,
+            'is_mandatory' => true,
+            'status' => 'open',
+        ]);
+
+        // The owner can now edit the Form-1 inputs → Form 1 PDF regenerates as a new version.
+        Bus::fake();
+        $this->actingAs($this->researcher)
+            ->put(route('dpreq.update', $dpreq->id), $this->editPayload(['risk_band' => 'high', 'research_title' => 'Revised Title']))
+            ->assertRedirect(route('dpreq.show', $dpreq->id));
+        $this->assertSame('Revised Title', $dpreq->researchApplication->fresh()->research_title);
+        Bus::assertDispatched(GenerateDpreqFormPdfJob::class);
+    }
+
+    /** @test */
+    public function an_optional_dpreq_revision_does_not_change_status(): void
+    {
+        $staff = $this->dpoStaff();
+        $dpreq = $this->returnedApplication();
+        $dpreq->update(['status' => 'under_review']);
+
+        $this->actingAs($staff)
+            ->post(route('revisions.raise', ['dpreq', $dpreq->id]), [
+                'item' => 'Optional: consider citing a source.',
+                'kind' => 'comment',
+                'is_mandatory' => false,
+            ])->assertRedirect();
+
+        // Optional / non-mandatory requests must NOT bounce the application out of review.
+        $this->assertSame('under_review', $dpreq->fresh()->status);
+    }
+
+    /** @test */
+    public function a_revision_cannot_be_raised_before_the_review_has_started(): void
+    {
+        $staff = $this->dpoStaff();
+        $dpreq = $this->returnedApplication();
+        $dpreq->update(['status' => 'submitted']); // not yet under review
+
+        $this->actingAs($staff)
+            ->post(route('revisions.raise', ['dpreq', $dpreq->id]), [
+                'item' => 'Please expand the data-risk section.',
+                'kind' => 'comment',
+                'is_mandatory' => true,
+            ])->assertSessionHasErrors('item');
+
+        // No request created, status untouched.
+        $this->assertSame(0, $dpreq->revisionRequests()->count());
+        $this->assertSame('submitted', $dpreq->fresh()->status);
+    }
+
+    /** @test */
+    public function resubmitting_a_returned_application_auto_resolves_the_mandatory_revision(): void
+    {
+        $staff = $this->dpoStaff();
+        $dpreq = $this->returnedApplication();
+        $dpreq->update(['status' => 'under_review']);
+
+        // DPO raises a mandatory comment revision → returns the app for editing.
+        $this->actingAs($staff)
+            ->post(route('revisions.raise', ['dpreq', $dpreq->id]), [
+                'item' => 'Please expand the data-risk section.',
+                'kind' => 'comment',
+                'is_mandatory' => true,
+            ])->assertRedirect();
+        $this->assertSame('returned', $dpreq->fresh()->status);
+
+        // The researcher edits the data-risk inputs and resubmits — no manual "resolve" needed.
+        $this->actingAs($this->researcher)
+            ->put(route('dpreq.update', $dpreq->id), $this->editPayload(['risk_band' => 'high', 'risk_band_explanation' => 'Expanded.']))
+            ->assertRedirect(route('dpreq.show', $dpreq->id));
+
+        $this->actingAs($this->researcher)
+            ->post(route('dpreq.resubmit', $dpreq->id))
+            ->assertSessionHasNoErrors();
+
+        // Back in the queue and the revision is auto-resolved (annotated via resubmission).
+        $this->assertSame('submitted', $dpreq->fresh()->status);
+        $this->assertDatabaseHas('revision_requests', [
+            'requestable_id' => $dpreq->id,
+            'status' => 'resolved',
+        ]);
+    }
+
+    /** @test */
+    public function a_mandatory_document_request_does_not_return_the_application_but_blocks_approval(): void
+    {
+        $staff = $this->dpoStaff();
+        $dpreq = $this->returnedApplication();
+        $dpreq->update(['status' => 'under_review']);
+
+        // A mandatory DOCUMENT request needs no input edits — the app must stay under_review and
+        // only approval is held (the applicant uploads the file from the revision panel).
+        $this->actingAs($staff)
+            ->post(route('revisions.raise', ['dpreq', $dpreq->id]), [
+                'item' => 'Please attach the signed parental-consent letter.',
+                'kind' => 'document_required',
+                'is_mandatory' => true,
+            ])->assertRedirect();
+
+        $this->assertSame('under_review', $dpreq->fresh()->status);
+
+        // Approval is blocked while the mandatory document request is outstanding.
+        $this->actingAs($staff)
+            ->post(route('dpreq.approve', $dpreq->id))
+            ->assertSessionHasErrors('nda');
+    }
 }

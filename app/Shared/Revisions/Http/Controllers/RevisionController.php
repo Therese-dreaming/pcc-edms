@@ -8,6 +8,7 @@ use App\Modules\Remis\Models\RemisApplication;
 use App\Shared\Documents\Services\DocumentService;
 use App\Shared\Documents\Support\FileLabel;
 use App\Shared\Documents\Support\UploadRules;
+use App\Modules\Dpreq\Services\DpreqWorkflowService;
 use App\Shared\Revisions\Models\RevisionRequest;
 use App\Shared\Revisions\Services\RevisionService;
 use Illuminate\Database\Eloquent\Model;
@@ -35,6 +36,7 @@ class RevisionController extends Controller
     public function __construct(
         private readonly RevisionService $revisions,
         private readonly DocumentService $documents,
+        private readonly DpreqWorkflowService $dpreqWorkflow,
     ) {
     }
 
@@ -43,6 +45,13 @@ class RevisionController extends Controller
         $requestable = $this->resolveRequestable($track, $id);
         $this->assertStaff($request, $track);
 
+        // DPREQ revisions are only meaningful once the application is under review — a mandatory
+        // one returns it for editing, which isn't a legal transition before "Start Review". Mirror
+        // the show-page gate (canRaise) server-side so a direct POST can't bypass it.
+        if ($track === 'dpreq' && $requestable->status !== 'under_review') {
+            return back()->withErrors(['item' => 'This application is not under review yet — click "Start Review" first, then you can request revisions.']);
+        }
+
         $data = $request->validate([
             'item' => ['required', 'string', 'max:2000'],
             'kind' => ['required', 'in:comment,document_required'],
@@ -50,17 +59,42 @@ class RevisionController extends Controller
             'due_date' => ['nullable', 'date'],
         ]);
 
+        $mandatory = $request->boolean('is_mandatory', true);
+
+        // 2026-09 revision→edit fix: a MANDATORY `comment` request on the DPREQ track sends the
+        // application back to the applicant (`returned`) so they can edit the Form-1 inputs to
+        // comply — the update regenerates the Form 1 PDF as a new version. A `document_required`
+        // request does NOT return the app: the applicant uploads the file from the revision panel
+        // regardless of status, and the outstanding-mandatory gate already blocks approval until it
+        // arrives — so the app stays `under_review` and only approval is held. Optional requests
+        // (either kind) and all REMIS requests leave the status untouched.
+        //
+        // The 'returned' transition already notifies the applicant with the item as the reason, so
+        // the revision's own applicant notification is skipped in that case to avoid a duplicate.
+        $returnsToApplicant =
+            $mandatory
+            && $data['kind'] === 'comment'
+            && $requestable instanceof DpreqApplication
+            && $requestable->canTransitionTo('returned');
+
         $this->revisions->raise(
             $requestable,
             $request->user(),
             $data['item'],
             $requestable->applicant,
             $data['kind'],
-            $request->boolean('is_mandatory', true),
+            $mandatory,
             $data['due_date'] ?? null,
+            notifyApplicant: ! $returnsToApplicant,
         );
 
-        return back()->with('success', 'Revision request sent to the applicant.');
+        if ($returnsToApplicant) {
+            $this->dpreqWorkflow->returnForCorrection($requestable, $data['item']);
+        }
+
+        return back()->with('success', $returnsToApplicant
+            ? 'Revision request sent and the application was returned to the applicant for correction.'
+            : 'Revision request sent to the applicant.');
     }
 
     public function respond(Request $request, RevisionRequest $revisionRequest): RedirectResponse

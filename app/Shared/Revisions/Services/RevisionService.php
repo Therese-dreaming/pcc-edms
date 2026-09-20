@@ -39,6 +39,7 @@ class RevisionService
         string $kind = 'comment',
         bool $mandatory = true,
         ?string $dueDate = null,
+        bool $notifyApplicant = true,
     ): RevisionRequest {
         $request = $requestable->revisionRequests()->create([
             'raised_by' => $raisedBy->id,
@@ -53,8 +54,10 @@ class RevisionService
             'item' => $item, 'kind' => $kind, 'is_mandatory' => $mandatory,
         ]);
 
-        $label = $kind === 'document_required' ? 'Additional document requested' : 'Revision requested';
-        $this->notifications->notifyUser($applicant, $label, $item, $requestable);
+        if ($notifyApplicant) {
+            $label = $kind === 'document_required' ? 'Additional document requested' : 'Revision requested';
+            $this->notifications->notifyUser($applicant, $label, $item, $requestable);
+        }
 
         return $request;
     }
@@ -119,6 +122,33 @@ class RevisionService
         $this->auditLog->record('revision_request.waived', $request, null, ['resolved_by' => $resolver->id]);
 
         return $request->fresh();
+    }
+
+    /**
+     * Auto-resolve every still-open (open/responded) request when the applicant resubmits a
+     * returned application — their resubmission is the attestation that the items are addressed.
+     * Each is annotated so the trail shows it was closed by resubmission, not by a reviewer. Used
+     * by the DPREQ return-for-edit loop; approval stays separately gated by hasOutstandingMandatory.
+     */
+    public function autoResolveOutstanding(Model $requestable, User $actor): int
+    {
+        $open = $requestable->revisionRequests()
+            ->whereIn('status', ['open', 'responded'])
+            ->get();
+
+        foreach ($open as $request) {
+            $request->update([
+                'status' => 'resolved',
+                'resolved_by' => $actor->id,
+                'resolved_at' => now(),
+            ]);
+            $this->auditLog->record('revision_request.resolved', $request, null, [
+                'resolved_by' => $actor->id,
+                'via' => 'applicant_resubmission',
+            ]);
+        }
+
+        return $open->count();
     }
 
     /**
